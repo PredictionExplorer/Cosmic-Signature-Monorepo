@@ -1,8 +1,5 @@
-require("@nomicfoundation/hardhat-toolbox");
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
-require('hardhat-abi-exporter');
-require("dotenv").config();
 
 module.exports = {
   solidity: {
@@ -27,8 +24,8 @@ module.exports = {
       url: `https://rinkeby.infura.io/v3/REDACTED_RPC_CREDENTIAL`,
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
-    rinkarby: {
-      url: `https://rinkeby.arbitrum.io/rpc`,
+    arbigoerli: {
+      url: `https://goerli-rollup.arbitrum.io/rpc`,
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
     arbitrum: {
