@@ -1,3 +1,4 @@
+export const RPC_URL = "https://sepolia-rollup.arbitrum.io/rpc"
 export const INFURA_KEY = 'REDACTED_LEGACY_PROVIDER_ID'
 export const SEPOLIA_KEY = 'REDACTED_RPC_CREDENTIAL'
 export const MARKET_ADDRESS = '0x47eF85Dfb775aCE0934fBa9EEd09D22e6eC0Cc08'
