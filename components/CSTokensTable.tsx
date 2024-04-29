@@ -24,7 +24,7 @@ import { Tr } from "react-super-responsive-table";
 
 const CSTokensRow = ({ row, handleStake, isItemSelected, handleClick }) => {
   if (!row) {
-    return <TablePrimaryRow></TablePrimaryRow>;
+    return <TablePrimaryRow />;
   }
 
   return (
@@ -218,7 +218,7 @@ export const CSTokensTable = ({ list, handleStake, handleStakeMany }) => {
               <TablePrimaryHeadCell>Token ID</TablePrimaryHeadCell>
               <TablePrimaryHeadCell>Round</TablePrimaryHeadCell>
               <TablePrimaryHeadCell>Winner Address</TablePrimaryHeadCell>
-              <TablePrimaryHeadCell></TablePrimaryHeadCell>
+              <TablePrimaryHeadCell />
             </Tr>
           </TablePrimaryHead>
           <TableBody>
