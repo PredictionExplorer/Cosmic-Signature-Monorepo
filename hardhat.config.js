@@ -105,6 +105,9 @@ module.exports = {
 		pretty: true,
 	},
 	networks: {
+		hardhat :{
+			allowUnlimitedContractSize: true
+		},
 		rinkeby: {
 			url: `https://rinkeby.infura.io/v3/REDACTED_RPC_CREDENTIAL`,
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
