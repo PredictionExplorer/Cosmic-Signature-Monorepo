@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, TableBody, Tooltip, Typography } from "@mui/material";
+import { Link, TableBody, Typography } from "@mui/material";
 import {
   TablePrimary,
   TablePrimaryCell,
@@ -8,7 +8,7 @@ import {
   TablePrimaryHeadCell,
   TablePrimaryRow,
 } from "./styled";
-import { convertTimestampToDateTime, shortenHex } from "../utils";
+import { convertTimestampToDateTime } from "../utils";
 import "react-super-responsive-table/dist/SuperResponsiveTableStyle.css";
 import { Tr } from "react-super-responsive-table";
 import { CustomPagination } from "./CustomPagination";
@@ -47,7 +47,7 @@ export const CollectedCSTStakingRewardsTable = ({ list }) => {
   const perPage = 5;
   const [page, setPage] = useState(1);
   if (list.length === 0) {
-    return <Typography>No actions yet.</Typography>;
+    return <Typography>No rewards yet.</Typography>;
   }
   return (
     <>
