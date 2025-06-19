@@ -456,20 +456,20 @@ const hardhatUserConfig = {
 		},
 		rinkeby: {
 			url: "https://rinkeby.infura.io/v3/REDACTED_RPC_CREDENTIAL",
-			accounts: process.env.PRIVATE_KEY != undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: (process.env.PRIVATE_KEY != undefined) ? [process.env.PRIVATE_KEY] : [],
 		},
 		sepolia: {
 			url: "http://170.187.142.12:22545/",
-			accounts: process.env.SEPOLIA_PRIVATE_KEY != undefined ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
+			accounts: (process.env.SEPOLIA_PRIVATE_KEY != undefined) ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
 			// gasMultiplier: 2,
 		},
 		arbigoerli: {
 			url: "https://goerli-rollup.arbitrum.io/rpc",
-			accounts: process.env.PRIVATE_KEY != undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: (process.env.PRIVATE_KEY != undefined) ? [process.env.PRIVATE_KEY] : [],
 		},
-		arbitrum: {
+		arbitrumOne: {
 			url: "https://arb1.arbitrum.io/rpc",
-			accounts: process.env.MAINNET_PRIVATE_KEY != undefined ? [process.env.MAINNET_PRIVATE_KEY] : [],
+			accounts: (process.env.MAINNET_PRIVATE_KEY != undefined) ? [process.env.MAINNET_PRIVATE_KEY] : [],
 		},
 	},
 
