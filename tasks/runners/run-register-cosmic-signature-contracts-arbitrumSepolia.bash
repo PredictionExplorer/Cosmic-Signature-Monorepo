@@ -1,5 +1,9 @@
 #!/usr/bin/bash
 
+# [Comment-202511024]
+# Multiple similar scripts exist.
+# [/Comment-202511024]
+
 '/usr/bin/clear'
 
 (
