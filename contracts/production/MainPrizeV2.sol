@@ -14,12 +14,12 @@ import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
-import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
+import { IMainPrize } from "./interfaces/IMainPrize.sol";
+import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
 import { BiddingBaseV2 } from "./BiddingBaseV2.sol";
 import { MainPrizeBaseV2 } from "./MainPrizeBaseV2.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
 import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
-import { IMainPrizeV2 } from "./interfaces/IMainPrizeV2.sol";
 
 // #endregion
 // #region
@@ -27,12 +27,12 @@ import { IMainPrizeV2 } from "./interfaces/IMainPrizeV2.sol";
 abstract contract MainPrizeV2 is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
-	CosmicSignatureGameStorageV2,
+	IMainPrize,
+	CosmicSignatureGameStorageV2Base,
 	BiddingBaseV2,
 	MainPrizeBaseV2,
 	BidStatisticsV2,
-	SecondaryPrizesV2,
-	IMainPrizeV2 {
+	SecondaryPrizesV2 {
 	// #region `claimMainPrize`
 
 	/// @dev Comment-202411169 relates and/or applies.
@@ -85,7 +85,7 @@ abstract contract MainPrizeV2 is
 	// #endregion
 	// #region `_distributePrizes`
 
-	function _distributePrizes() private {
+	function _distributePrizes() internal virtual {
 		// #region
 
 		// Comment-202605311 applies.
