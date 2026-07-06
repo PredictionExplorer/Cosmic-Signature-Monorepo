@@ -16,11 +16,11 @@ interface NftMarketplaceButtonProps extends Omit<
 }
 
 const LABELS: Record<NftMarketplaceButtonVariant, string> = {
-  default: 'Open NFT Marketplace',
-  secondary: 'Open NFT Marketplace',
-  compact: 'NFT Marketplace',
-  menu: 'NFT Marketplace',
-  card: 'NFT Marketplace',
+  default: 'NFTs on Axiom Zero',
+  secondary: 'NFTs on Axiom Zero',
+  compact: 'Axiom Zero',
+  menu: 'Axiom Zero Marketplace',
+  card: 'Axiom Zero',
 };
 
 const buttonClasses: Record<Exclude<NftMarketplaceButtonVariant, 'menu'>, string> = {
@@ -34,7 +34,7 @@ export function NftMarketplaceButton({
   variant = 'default',
   label,
   className,
-  'aria-label': ariaLabel = 'Open Cosmic Signature marketplace',
+  'aria-label': ariaLabel = 'Axiom Zero NFT marketplace',
   ...props
 }: NftMarketplaceButtonProps) {
   const text = label ?? LABELS[variant];
