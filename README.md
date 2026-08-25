@@ -56,6 +56,12 @@ corepack pnpm build
 corepack pnpm test:e2e
 ```
 
+GitHub Actions runs the same gates, including the Playwright end-to-end and
+axe accessibility suites, on every push to `main` and on pull requests (see
+`.github/workflows/ci.yml`). The e2e pages read the live collection backends
+and the public Arbitrum RPC; configure an `ARBITRUM_RPC_URL` dedicated
+endpoint if public-RPC rate limiting makes runs flaky.
+
 ## Deployment
 
 Deploy on Vercel with Node 20+ and the variables listed in `env.example`.
