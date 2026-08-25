@@ -5,6 +5,7 @@ import {
   fetchRandomWalkSales,
   fetchRandomWalkTokenIds,
   fetchRandomWalkTokensByUser,
+  resetRandomWalkMarketCachesForTests,
 } from "@/lib/marketplace/random-walk-market-live";
 import {
   RANDOM_WALK_API,
@@ -199,6 +200,37 @@ describe("random walk market adapter", () => {
     );
 
     await expect(fetchRandomWalkTokenIds()).resolves.toEqual([0, 2, 5]);
+  });
+
+  it("caches the minted token index in production until reset", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      resetRandomWalkMarketCachesForTests();
+      const fetchMock = routedFetchMock([
+        [
+          /\/api\/randomwalk\/tokens\/list\/sequential$/,
+          () =>
+            jsonResponse({
+              status: 1,
+              error: "",
+              MintedTokens: [{ TokenId: 5 }, { TokenId: 0 }, { TokenId: 2 }],
+            }),
+        ],
+      ]);
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(fetchRandomWalkTokenIds()).resolves.toEqual([0, 2, 5]);
+      await expect(fetchRandomWalkTokenIds()).resolves.toEqual([0, 2, 5]);
+      // The ~2.8MB minted list is served from the in-process cache.
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      resetRandomWalkMarketCachesForTests();
+      await expect(fetchRandomWalkTokenIds()).resolves.toEqual([0, 2, 5]);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.unstubAllEnvs();
+      resetRandomWalkMarketCachesForTests();
+    }
   });
 
   it("reads a user's owned token ids via a raw address", async () => {

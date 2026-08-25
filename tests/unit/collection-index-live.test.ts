@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   fallbackCollectionTokenIds,
@@ -11,6 +11,7 @@ import {
   type Erc721IndexClient,
 } from "@/lib/marketplace/collection-index-live";
 import { requireCollection } from "@/config/collections";
+import { resetRandomWalkMarketCachesForTests } from "@/lib/marketplace/random-walk-market-live";
 import { jsonResponse, routedFetchMock } from "../helpers/go-api-fixtures";
 
 function mockClient({
@@ -330,5 +331,87 @@ describe("collection index live adapter", () => {
         client,
       }),
     ).resolves.toBeUndefined();
+  });
+});
+
+/**
+ * The Random Walk minted list is only preferred outside tests (NODE_ENV gate)
+ * so the on-chain enumeration stays unit-tested above; these cases stub a
+ * production env to cover the backend-preference branches.
+ */
+describe("random walk backend preference", () => {
+  beforeEach(() => {
+    vi.stubEnv("NODE_ENV", "production");
+    resetRandomWalkMarketCachesForTests();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  function mintedListFetch(tokenIds: number[]) {
+    return routedFetchMock([
+      [
+        /\/api\/randomwalk\/tokens\/list\/sequential$/,
+        () =>
+          jsonResponse({
+            status: 1,
+            error: "",
+            MintedTokens: tokenIds.map((tokenId) => ({ TokenId: tokenId })),
+          }),
+      ],
+    ]);
+  }
+
+  it("prefers the Random Walk API minted list for token ids", async () => {
+    vi.stubGlobal("fetch", mintedListFetch([5, 0, 2]));
+    const client = mockClient();
+
+    await expect(
+      fetchCollectionTokenIds({
+        collectionId: "random-walk",
+        client,
+      }),
+    ).resolves.toEqual([0, 2, 5]);
+    expect(client.readContract).not.toHaveBeenCalled();
+    expect(client.multicall).not.toHaveBeenCalled();
+  });
+
+  it("derives Random Walk supply from the API minted list", async () => {
+    vi.stubGlobal("fetch", mintedListFetch([5, 0, 2]));
+    const client = mockClient();
+
+    await expect(
+      fetchCollectionSupply({
+        collectionId: "random-walk",
+        client,
+      }),
+    ).resolves.toBe(3);
+    expect(client.readContract).not.toHaveBeenCalled();
+  });
+
+  it("falls through to the chain when the Random Walk minted list is empty", async () => {
+    vi.stubGlobal("fetch", mintedListFetch([]));
+    const client = mockClient({ totalSupply: 3n, tokenIds: [5n, 0n, 2n] });
+
+    await expect(
+      fetchCollectionTokenIds({
+        collectionId: "random-walk",
+        client,
+      }),
+    ).resolves.toEqual([0, 2, 5]);
+  });
+
+  it("falls back to the on-chain supply when the Random Walk API fails", async () => {
+    vi.stubGlobal("fetch", failingFetch());
+    const client = mockClient({ totalSupply: 4086n });
+
+    await expect(
+      fetchCollectionSupply({
+        collectionId: "random-walk",
+        client,
+      }),
+    ).resolves.toBe(4086);
   });
 });

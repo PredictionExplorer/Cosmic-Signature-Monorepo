@@ -246,4 +246,17 @@ describe("BuyNowButton", () => {
     expect(dialog.open).toBe(false);
     expect(wagmiMock.writeContractAsync).not.toHaveBeenCalled();
   });
+
+  it("closes when the backdrop is clicked", () => {
+    connectWallet(buyerAddress);
+    renderBuyNow();
+
+    const dialog = openDialog();
+
+    // A click landing on the dialog element itself means the backdrop.
+    fireEvent.click(dialog);
+
+    expect(dialog.open).toBe(false);
+    expect(wagmiMock.writeContractAsync).not.toHaveBeenCalled();
+  });
 });

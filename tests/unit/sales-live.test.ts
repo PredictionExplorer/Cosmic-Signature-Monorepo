@@ -8,6 +8,7 @@ import {
   type SalesClient,
 } from "@/lib/marketplace/sales-live";
 import type { MarketSale } from "@/lib/marketplace/types";
+import { jsonResponse, routedFetchMock } from "../helpers/go-api-fixtures";
 
 const MARKETPLACE = "0x47eF85Dfb775aCE0934fBa9EEd09D22e6eC0Cc08" as const;
 const RANDOM_WALK_NFT = "0x895a6F444BE4ba9d124F61DF736605792B35D66b" as const;
@@ -252,6 +253,76 @@ describe("getCollectionSales", () => {
 
     try {
       await expect(getCollectionSales("random-walk")).resolves.toBeUndefined();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("prefers the Cosmic Signature backend when no client is injected", async () => {
+    vi.stubGlobal(
+      "fetch",
+      routedFetchMock([
+        [
+          /\/api\/cosmicgame\/marketplace\/trading\/sales\/0\/\d+$/,
+          () =>
+            jsonResponse({
+              status: 1,
+              error: "",
+              Trading: [
+                {
+                  OfferId: 8,
+                  OfferType: 1,
+                  TokenId: 7,
+                  Price: 0.5,
+                  SellerAddr: SELLER,
+                  BuyerAddr: BUYER,
+                  TimeStamp: 1_700_000_100,
+                  BlockNum: 100,
+                },
+                {
+                  OfferId: 9,
+                  OfferType: 1,
+                  TokenId: 3,
+                  Price: 1.25,
+                  SellerAddr: SELLER,
+                  BuyerAddr: BUYER,
+                  TimeStamp: 1_700_000_200,
+                  BlockNum: 300,
+                },
+              ],
+            }),
+        ],
+      ]),
+    );
+
+    try {
+      const sales = await getCollectionSales("cosmic-signature");
+
+      expect(sales?.map((sale) => sale.tokenId)).toEqual([3, 7]);
+      expect(sales?.[0]).toMatchObject({
+        collectionId: "cosmic-signature",
+        offerId: 9,
+        priceEth: 1.25,
+        blockNumber: 300,
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("falls back to the RPC snapshot when the Cosmic Signature backend fails", async () => {
+    resetSalesCachesForTests();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("offline");
+      }),
+    );
+
+    try {
+      await expect(
+        getCollectionSales("cosmic-signature"),
+      ).resolves.toBeUndefined();
     } finally {
       vi.unstubAllGlobals();
     }
