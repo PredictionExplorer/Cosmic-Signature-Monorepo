@@ -185,7 +185,7 @@ export default async function Home() {
       </section>
 
       <ArtSystemsSection showcases={showcases} />
-      <FeaturedArtworksRail items={overview.featured} />
+      <FeaturedArtworksRail items={overview.featured} usdPerEth={usdPerEth} />
 
       <section className="mx-auto max-w-7xl px-5 pb-20 sm:px-8">
         <Reveal>

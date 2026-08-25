@@ -17,6 +17,7 @@ import type { Collection, MarketOffer } from "@/lib/marketplace/types";
 import { Button } from "@/components/ui/button";
 import { erc721Abi, marketplaceAbi } from "@/lib/web3/abis";
 import { prepareContractWrite } from "@/lib/web3/transaction-preflight";
+import { useBuyListing } from "@/lib/marketplace/use-buy-listing";
 import { formatEth } from "@/lib/utils";
 import {
   isPositiveEthAmount,
@@ -167,6 +168,17 @@ function TokenActionsInner({
     tokenId,
   ]);
 
+  const {
+    buy: buyListing,
+    isPending: isBuyPending,
+    blocker: buyBlocker,
+  } = useBuyListing({
+    collection,
+    offer: activeSellOffer,
+    onSuccess: refreshTokenState,
+  });
+  const anyPending = isPending || isBuyPending;
+
   const ownOffers = useMemo(
     () =>
       address
@@ -204,11 +216,6 @@ function TokenActionsInner({
     walletBlocker ??
     amountBlocker ??
     (isOwner ? "Owners cannot bid on their own NFT." : undefined);
-  const buyBlocker =
-    walletBlocker ??
-    (activeSellOffer && sameAddress(activeSellOffer.maker, address)
-      ? "You cannot buy your own listing."
-      : undefined);
 
   async function runTransaction(action: () => Promise<`0x${string}`>) {
     try {
@@ -371,36 +378,6 @@ function TokenActionsInner({
     });
   }
 
-  async function acceptSellOffer() {
-    if (!publicClient || !address) {
-      throw new Error("Connect your wallet to continue.");
-    }
-
-    if (!activeSellOffer?.offerId) {
-      throw new Error("This listing is missing a live on-chain offer ID.");
-    }
-
-    const value = parseEther(String(activeSellOffer.priceEth));
-    const prepared = await prepareContractWrite({
-      publicClient,
-      account: address,
-      address: collection.marketplaceAddress,
-      abi: marketplaceAbi,
-      functionName: "acceptSellOffer",
-      args: [BigInt(activeSellOffer.offerId)],
-      value,
-    });
-
-    return writeContractAsync({
-      address: collection.marketplaceAddress,
-      abi: marketplaceAbi,
-      functionName: "acceptSellOffer",
-      args: [BigInt(activeSellOffer.offerId)],
-      value,
-      ...prepared,
-    });
-  }
-
   async function cancelOffer(offer: MarketOffer) {
     if (!publicClient || !address) {
       throw new Error("Connect your wallet to continue.");
@@ -488,19 +465,13 @@ function TokenActionsInner({
           </p>
           <Button
             className="mt-4 w-full"
-            disabled={Boolean(buyBlocker) || isPending || !activeSellOffer.offerId}
-            onClick={() => void runTransaction(acceptSellOffer)}
+            disabled={Boolean(buyBlocker) || anyPending}
+            onClick={() => void buyListing()}
           >
             Buy now for {formatEth(activeSellOffer.priceEth)}
           </Button>
-          {!activeSellOffer.offerId ? (
-            <p className="mt-2 text-xs text-bone/70">
-              Buying is disabled because this listing did not include an offer
-              ID.
-            </p>
-          ) : null}
           {buyBlocker ? (
-            <p className="mt-2 text-xs text-bone/70">{buyBlocker}</p>
+            <p className="mt-2 text-xs text-bone/70">{buyBlocker.message}</p>
           ) : null}
         </div>
       ) : null}
@@ -513,7 +484,7 @@ function TokenActionsInner({
           </p>
           <Button
             className="mt-4 w-full"
-            disabled={Boolean(walletBlocker) || isPending}
+            disabled={Boolean(walletBlocker) || anyPending}
             onClick={() => void runTransaction(acceptHighestBid)}
           >
             {isApprovedForMarketplace
@@ -566,14 +537,14 @@ function TokenActionsInner({
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <Button
-          disabled={Boolean(listingBlocker) || isPending}
+          disabled={Boolean(listingBlocker) || anyPending}
           onClick={() => void runTransaction(createSellOffer)}
         >
           {isApprovedForMarketplace ? "List this NFT" : "Approve and list"}
         </Button>
         <Button
           variant="secondary"
-          disabled={Boolean(bidBlocker) || isPending}
+          disabled={Boolean(bidBlocker) || anyPending}
           onClick={() => void runTransaction(createBuyOffer)}
         >
           Bid
@@ -600,7 +571,7 @@ function TokenActionsInner({
               </span>
               <Button
                 variant="secondary"
-                disabled={Boolean(walletBlocker) || isPending}
+                disabled={Boolean(walletBlocker) || anyPending}
                 onClick={() => void runTransaction(() => cancelOffer(offer))}
               >
                 Cancel

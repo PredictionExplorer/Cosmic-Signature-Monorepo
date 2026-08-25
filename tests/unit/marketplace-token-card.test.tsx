@@ -1,5 +1,10 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Cuts the RainbowKit import chain; the quick-buy dialog is tested on its own.
+vi.mock("@/components/wallet/connect-wallet-button", () => ({
+  ConnectWalletButton: () => <button type="button">Connect wallet</button>,
+}));
 
 import { MarketplaceTokenCard } from "@/components/marketplace/marketplace-token-card";
 import type { TokenMarketSummary } from "@/lib/marketplace/types";
@@ -91,5 +96,27 @@ describe("MarketplaceTokenCard", () => {
     );
 
     expect(screen.getByText("At floor")).toBeInTheDocument();
+  });
+
+  it("offers a quick buy for listed tokens", () => {
+    render(
+      <MarketplaceTokenCard
+        item={summary({}, { activeSellOffer: listing, offers: [listing] })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /buy 1\.15 eth/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /view and bid/i })).toBeNull();
+  });
+
+  it("keeps the view-and-bid link for unlisted tokens", () => {
+    render(<MarketplaceTokenCard item={summary()} />);
+
+    expect(
+      screen.getByRole("link", { name: /view and bid/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^buy/i })).toBeNull();
   });
 });

@@ -123,6 +123,12 @@ describe("home data", () => {
     expect(overview.pulses[0]?.stats.floorOffer?.priceEth).toBe(1);
     expect(overview.featured.map((item) => item.tokenId)).toEqual([7, 8]);
     expect(overview.featured[0]?.priceEth).toBe(1);
+    // The backing sell offer rides along so the rail can offer a quick buy.
+    expect(overview.featured[0]?.offer).toMatchObject({
+      id: "sell-cheap",
+      kind: "sell",
+      priceEth: 1,
+    });
   });
 
   it("falls back to config supply and empty offers on failures", async () => {

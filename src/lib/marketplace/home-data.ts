@@ -37,6 +37,8 @@ export type HomeArtworkItem = {
   name: string;
   artwork: TokenArtwork;
   priceEth?: number;
+  /** The live sell offer backing priceEth, when the item is buyable. */
+  offer?: MarketOffer;
 };
 
 export type HomeRecentSale = MarketSale & {
@@ -100,6 +102,7 @@ function featuredFromOffers(offers: MarketOffer[], limit: number) {
         name: `${collection.shortName} #${offer.tokenId}`,
         artwork: offer.artwork as TokenArtwork,
         priceEth: offer.priceEth,
+        offer,
       } satisfies HomeArtworkItem;
     });
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { requireCollection } from "@/config/collections";
 import type { TokenMarketSummary } from "@/lib/marketplace/types";
 import { AnchorStatusPill } from "@/components/marketplace/anchor-status-pill";
+import { BuyNowButton } from "@/components/marketplace/buy-now-button";
 import { WatchButton } from "@/components/marketplace/watch-button";
 import { ButtonLink } from "@/components/ui/button";
 import { tokenPath } from "@/lib/marketplace/routes";
@@ -141,12 +142,23 @@ export function MarketplaceTokenCard({
               collectionId={item.token.collectionId}
               tokenId={item.token.tokenId}
             />
-            <ButtonLink
-              href={tokenPath(item.token.collectionId, item.token.tokenId)}
-              variant="secondary"
-            >
-              View and bid
-            </ButtonLink>
+            {item.activeSellOffer?.offerId ? (
+              <BuyNowButton
+                collection={collection}
+                tokenId={item.token.tokenId}
+                tokenName={item.token.name}
+                artwork={item.token.artwork}
+                offer={item.activeSellOffer}
+                usdPerEth={usdPerEth}
+              />
+            ) : (
+              <ButtonLink
+                href={tokenPath(item.token.collectionId, item.token.tokenId)}
+                variant="secondary"
+              >
+                View and bid
+              </ButtonLink>
+            )}
           </div>
         </div>
       </div>

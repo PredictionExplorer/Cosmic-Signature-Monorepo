@@ -1,5 +1,10 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Cuts the RainbowKit import chain; the quick-buy dialog is tested on its own.
+vi.mock("@/components/wallet/connect-wallet-button", () => ({
+  ConnectWalletButton: () => <button type="button">Connect wallet</button>,
+}));
 
 import { ArtSystemsSection } from "@/components/home/art-systems-section";
 import { FeaturedArtworksRail } from "@/components/home/featured-artworks-rail";
@@ -202,6 +207,37 @@ describe("home components", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("1.50 ETH")).toBeInTheDocument();
     expect(screen.getByText("Unlisted")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^buy/i })).toBeNull();
+  });
+
+  it("lets visitors start a purchase from the featured rail", () => {
+    render(
+      <FeaturedArtworksRail
+        items={[
+          artwork({
+            priceEth: 1.5,
+            offer: {
+              id: "sell-7",
+              offerId: 40,
+              collectionId: "random-walk",
+              tokenId: 7,
+              kind: "sell",
+              priceEth: 1.5,
+              maker: "0x0000000000000000000000000000000000000001",
+              createdAt: "2026-01-01T00:00:00.000Z",
+            },
+          }),
+        ]}
+        usdPerEth={2000}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /buy 1\.50 eth/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /random walk #7/i }),
+    ).toHaveAttribute("href", "/token/random-walk/7");
   });
 
   it("renders art system panels with showcase backdrops", () => {

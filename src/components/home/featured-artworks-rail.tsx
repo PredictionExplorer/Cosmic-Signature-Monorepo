@@ -1,15 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { BuyNowButton } from "@/components/marketplace/buy-now-button";
 import { Reveal } from "@/components/ui/reveal";
+import { requireCollection } from "@/config/collections";
 import type { HomeArtworkItem } from "@/lib/marketplace/home-data";
 import { tokenPath } from "@/lib/marketplace/routes";
 import { formatEth } from "@/lib/utils";
 
 export function FeaturedArtworksRail({
   items,
+  usdPerEth,
 }: {
   items: HomeArtworkItem[];
+  usdPerEth?: number;
 }) {
   if (!items.length) {
     return null;
@@ -32,30 +36,45 @@ export function FeaturedArtworksRail({
             key={`${item.collectionId}-${item.tokenId}`}
             delayMs={index * 60}
           >
-            <Link
-              href={tokenPath(item.collectionId, item.tokenId)}
-              className="group block w-[17rem] shrink-0 overflow-hidden rounded-[2rem] border border-ivory/10 bg-ivory/[0.045] transition hover:-translate-y-1 hover:border-copper/35"
-            >
-              <div className="relative aspect-square bg-carbon">
-                <Image
-                  src={item.artwork.image}
-                  alt={item.artwork.alt}
-                  fill
-                  sizes="17rem"
-                  className="object-contain p-4 transition duration-500 group-hover:scale-[1.03]"
-                />
-              </div>
-              <div className="p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-bone/70">
-                  {item.name}
-                </p>
-                <p className="font-display mt-2 text-2xl font-semibold text-chartreuse">
-                  {item.priceEth !== undefined
-                    ? formatEth(item.priceEth)
-                    : "Unlisted"}
-                </p>
-              </div>
-            </Link>
+            <article className="group flex w-[17rem] shrink-0 flex-col overflow-hidden rounded-[2rem] border border-ivory/10 bg-ivory/[0.045] transition hover:-translate-y-1 hover:border-copper/35">
+              <Link
+                href={tokenPath(item.collectionId, item.tokenId)}
+                className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-chartreuse"
+              >
+                <div className="relative aspect-square bg-carbon">
+                  <Image
+                    src={item.artwork.image}
+                    alt={item.artwork.alt}
+                    fill
+                    sizes="17rem"
+                    className="object-contain p-4 transition duration-500 group-hover:scale-[1.03]"
+                  />
+                </div>
+                <div className="p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-bone/70">
+                    {item.name}
+                  </p>
+                  <p className="font-display mt-2 text-2xl font-semibold text-chartreuse">
+                    {item.priceEth !== undefined
+                      ? formatEth(item.priceEth)
+                      : "Unlisted"}
+                  </p>
+                </div>
+              </Link>
+              {item.offer?.offerId ? (
+                <div className="mt-auto px-4 pb-4">
+                  <BuyNowButton
+                    collection={requireCollection(item.collectionId)}
+                    tokenId={item.tokenId}
+                    tokenName={item.name}
+                    artwork={item.artwork}
+                    offer={item.offer}
+                    usdPerEth={usdPerEth}
+                    triggerClassName="w-full"
+                  />
+                </div>
+              ) : null}
+            </article>
           </Reveal>
         ))}
       </div>
