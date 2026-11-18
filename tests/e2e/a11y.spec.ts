@@ -4,6 +4,9 @@ import { expect, test } from "@playwright/test";
 for (const path of [
   "/",
   "/faq",
+  "/auctions",
+  "/auctions/account",
+  "/auctions/results",
   "/random-walk",
   "/cosmic-signature",
   "/my-nfts",

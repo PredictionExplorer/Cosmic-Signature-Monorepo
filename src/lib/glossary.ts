@@ -77,17 +77,17 @@ export const GLOSSARY = {
   sold: {
     term: "Sold",
     definition:
-      "Completed sales settled through the verified marketplace contract, counted live from its on-chain sale events. Every sale transferred an NFT and paid the seller in the same transaction.",
+      "A completed order-book purchase or settled artwork auction. Each sale counts once, including when an auction winner collects the NFT later.",
   },
   volume: {
     term: "Volume",
     definition:
-      "The combined ETH value of every completed sale on the marketplace contract. Axiom Zero takes 0% of it — the full amount moved between buyers and sellers.",
+      "The combined ETH value of completed order-book purchases and settled artwork auctions. Axiom Zero charges zero marketplace commission.",
   },
   lastSale: {
     term: "Last sale",
     definition:
-      "The most recent completed on-chain sale of this token through the marketplace contract. A useful anchor for judging listings and bids.",
+      "The most recent completed order-book purchase or settled artwork auction for this token.",
   },
 } as const satisfies Record<string, GlossaryTerm>;
 

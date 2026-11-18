@@ -1,0 +1,606 @@
+.shell {
+  --line: rgb(244 238 226 / 19%);
+  --muted: #c3b7a3;
+  max-width: 85rem;
+  margin: 0 auto;
+  padding: 2rem clamp(1.1rem, 4vw, 4rem) 6rem;
+  min-height: 70vh;
+  color: var(--ivory);
+}
+.shell :is(a, button, input, summary):focus-visible {
+  outline: 2px solid var(--chartreuse);
+  outline-offset: 4px;
+}
+.shell h1,
+.shell h2,
+.cardTitle h3,
+.accountList h3,
+.message h1,
+.message h2 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 440;
+  text-wrap: balance;
+  margin: 0;
+}
+.shell h1 {
+  font-size: clamp(3.1rem, 6.8vw, 6.4rem);
+  letter-spacing: -0.065em;
+  line-height: 1;
+}
+.shell h2 {
+  font-size: clamp(2.15rem, 4.2vw, 3.5rem);
+  letter-spacing: -0.055em;
+  line-height: 1.12;
+}
+.kicker,
+.cardPrice > span:first-child,
+.bidTiming > span,
+.provenance > div > span {
+  font-family: var(--font-geist-mono), monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.69rem;
+  line-height: 1.5;
+}
+.kicker {
+  color: var(--chartreuse);
+  margin: 0 0 0.9rem;
+}
+.nav {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.nav a,
+.textLink,
+.pages a,
+.previewArt figcaption a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--bone);
+  font-size: 0.86rem;
+  text-decoration: none;
+  min-height: 2.75rem;
+}
+.nav a:first-child {
+  margin-right: auto;
+}
+.nav {
+  flex-wrap: wrap;
+  column-gap: 1.4rem;
+  row-gap: 0;
+}
+.nav [aria-current],
+.nav a:hover,
+.pages a:hover,
+.textLink:hover,
+.previewArt figcaption a:hover {
+  color: var(--chartreuse);
+}
+.intro,
+.previewIntro,
+.lotHead {
+  padding-block: clamp(2.5rem, 5vw, 4.75rem);
+}
+.introCopy {
+  max-width: 42rem;
+  margin: 1.3rem 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+  font-size: clamp(1rem, 1.65vw, 1.22rem);
+}
+.previewIntro {
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: clamp(2rem, 5vw, 5rem);
+}
+.previewIntro .textLink {
+  margin-top: 1.2rem;
+  color: var(--chartreuse);
+}
+.previewArt {
+  margin: 0;
+  min-width: 0;
+}
+.previewArt img {
+  width: 100%;
+  aspect-ratio: 1.55;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+.previewArt figcaption {
+  text-align: right;
+}
+.sectionHeading,
+.lotHead,
+.cardTitle,
+.cardPrice,
+.pages,
+.row,
+.provenance,
+.leader,
+.review > div,
+.settlement > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.sectionHeading {
+  border-top: 1px solid var(--line);
+  padding: 2rem 0 1.35rem;
+}
+.sectionHeading p:not(.kicker),
+.cardPrice > span:first-child,
+.cardClock,
+.provenance,
+.pages > span,
+.message p,
+.bidTiming,
+.bidPanel > p:not(.kicker),
+.settlement dt,
+.accountList p,
+.credit > div > p:not(.kicker),
+.form > p,
+.history > p {
+  color: var(--muted);
+}
+.sectionHeading .kicker {
+  margin-bottom: 0.4rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2rem 1.1rem;
+}
+.card {
+  display: block;
+  min-width: 0;
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+.card:hover .cardTitle,
+.accountList li a:hover,
+.textLink {
+  color: var(--chartreuse);
+}
+.artwork {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  aspect-ratio: 1.45;
+  background: #080707;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+}
+.artwork img {
+  object-fit: contain;
+}
+.artwork[data-large="true"] {
+  aspect-ratio: 1.4;
+}
+.rendering {
+  color: var(--muted);
+  font:
+    0.77rem var(--font-geist-mono),
+    monospace;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+}
+.cardBody {
+  padding: 1rem 0;
+}
+.cardTitle {
+  margin: 0.45rem 0 0.85rem;
+  transition: color 0.15s ease;
+}
+.cardTitle h3 {
+  font-size: clamp(1.4rem, 2vw, 1.8rem);
+  letter-spacing: -0.045em;
+}
+.phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  color: var(--bone);
+  font:
+    0.75rem var(--font-geist-mono),
+    monospace;
+}
+.phase i {
+  border-radius: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+  background: currentColor;
+}
+.phase[data-phase="waiting"],
+.phase[data-phase="active"] {
+  color: var(--chartreuse);
+}
+.phase[data-phase="preview"] {
+  color: #efad74;
+}
+.price {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.price small {
+  font-size: 0.8em;
+  color: inherit;
+}
+.cardPrice {
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.cardClock {
+  font-size: 0.74rem;
+  margin-top: 0.5rem;
+  line-height: 1.45;
+}
+.pages {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  margin-top: 1rem;
+  padding: 0.65rem 0;
+  font-size: 0.82rem;
+}
+.terms {
+  margin-top: 3.5rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.terms summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  padding: 1.3rem 0.05rem;
+  font-size: 1.13rem;
+}
+.terms summary::-webkit-details-marker {
+  display: none;
+}
+.terms[open] summary svg {
+  transform: rotate(-45deg);
+}
+.terms dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  padding: 0 0 1.6rem;
+}
+.terms dt {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+.terms dd {
+  color: var(--muted);
+  font-size: 0.93rem;
+  line-height: 1.65;
+}
+.lotHead {
+  align-items: flex-end;
+}
+.lotHead h1 {
+  font-size: clamp(2.9rem, 6vw, 5.4rem);
+}
+.lotHead > .phase {
+  margin-bottom: 0.45rem;
+}
+.lotLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 4.2rem);
+  align-items: start;
+}
+.provenance {
+  padding: 0.95rem 0;
+  border-bottom: 1px solid var(--line);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.provenance > div {
+  min-width: 0;
+  flex: 1 1 15rem;
+}
+.provenance code {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font:
+    0.73rem/1.65 var(--font-geist-mono),
+    monospace;
+}
+.provenance .textLink {
+  min-height: 2rem;
+}
+.bidPanel {
+  padding: clamp(1.25rem, 2.4vw, 2.2rem);
+  background: rgb(35 38 27 / 65%);
+  border: 1px solid rgb(215 255 95 / 25%);
+  border-radius: 0.85rem;
+}
+.bidPanel .kicker {
+  margin-bottom: 0.4rem;
+}
+.heroPrice,
+.credit h2 {
+  font:
+    450 clamp(2.25rem, 4.1vw, 3.9rem)/1.13 var(--font-fraunces),
+    Georgia,
+    serif;
+  letter-spacing: -0.05em;
+}
+.heroPrice .price small,
+.credit h2 .price small {
+  font:
+    500 0.37em var(--font-geist-mono),
+    monospace;
+  letter-spacing: 0.02em;
+}
+.leader,
+.bidPanel > p:not(.kicker) {
+  font-size: 0.86rem;
+  line-height: 1.6;
+  margin-top: 0.65rem;
+}
+.leader span {
+  font-family: var(--font-geist-mono), monospace;
+  color: var(--ivory);
+}
+.bidTiming {
+  margin: 1.35rem 0;
+  padding: 1rem 0;
+  border-block: 1px solid var(--line);
+}
+.bidTiming :is(span, strong, time) {
+  display: block;
+}
+.bidTiming strong {
+  font-size: 1.45rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ivory);
+  margin-top: 0.25rem;
+}
+.bidTiming time,
+.bidTiming p {
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+}
+.form {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.85rem 0;
+}
+.form label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 550;
+  font-size: 0.93rem;
+}
+.form input {
+  min-width: 0;
+  color: var(--ivory);
+  background: var(--carbon);
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  padding: 0.73rem;
+  font:
+    1rem var(--font-geist-mono),
+    monospace;
+}
+.form .address {
+  font-size: 0.875rem;
+}
+.form small,
+.form > p {
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+.action,
+.secondary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 2.8rem;
+  padding: 0.65rem 1.15rem;
+  border-radius: 0.42rem;
+  font-size: 0.91rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.action {
+  background: var(--chartreuse);
+  color: var(--carbon);
+}
+.secondary {
+  border: 1px solid var(--line);
+  color: var(--ivory);
+}
+.action:hover:enabled {
+  background: #e7ff9e;
+}
+.secondary:hover:enabled {
+  border-color: var(--ivory);
+}
+.action:disabled,
+.secondary:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+.form .warning,
+.notice {
+  color: #ffd1a8;
+}
+.review,
+.notice {
+  border-left: 2px solid var(--chartreuse);
+  padding: 0.75rem 0.85rem;
+  background: rgb(255 255 255 / 4%);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+.notice {
+  border-color: #eab787;
+  margin: 0.8rem 0;
+  overflow-wrap: anywhere;
+}
+.notice button {
+  text-decoration: underline;
+  cursor: pointer;
+}
+.review > div {
+  margin: 0.28rem 0;
+}
+.settlement {
+  margin-bottom: 1rem;
+}
+.settlement > div {
+  font-size: 0.87rem;
+  margin: 0.2rem 0;
+}
+.history,
+.accountList {
+  margin-top: 3rem;
+}
+.history > h2 {
+  margin-bottom: 1rem;
+}
+.bidList li,
+.accountList li a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid var(--line);
+  padding: 0.9rem 0.1rem;
+}
+.bidList li > div span,
+.accountList li a > div span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.bidList .textLink {
+  font-size: 0.8rem;
+  min-height: 1.7rem;
+}
+.credit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4rem;
+  align-items: center;
+  padding: clamp(1.2rem, 3vw, 2.6rem);
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  margin-bottom: 2.5rem;
+  background: rgb(35 38 27 / 65%);
+}
+.credit h2 {
+  margin: 0.3rem 0 0.6rem;
+}
+.accountList h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+.accountList li a > div {
+  margin-right: auto;
+}
+.message {
+  padding: clamp(1.3rem, 4vw, 3rem);
+  background: rgb(244 238 226 / 3%);
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+}
+.message p {
+  margin: 0.8rem 0 1.25rem;
+  max-width: 43rem;
+}
+.message h1 {
+  font-size: clamp(2rem, 4vw, 3.3rem);
+}
+.row {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+@media (max-width: 64rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 50rem) {
+  .previewIntro,
+  .lotLayout,
+  .credit {
+    grid-template-columns: 1fr;
+  }
+  .previewIntro {
+    gap: 1.25rem;
+  }
+  .lotHead {
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .terms dl {
+    grid-template-columns: 1fr;
+  }
+  .nav a {
+    font-size: 0.8rem;
+  }
+  .credit {
+    gap: 0.4rem;
+  }
+}
+@media (max-width: 34rem) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .sectionHeading {
+    align-items: flex-end;
+  }
+  .shell {
+    padding-top: 1.2rem;
+  }
+  .lotHead {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .pages {
+    justify-content: space-between;
+  }
+  .heroPrice {
+    font-size: 2.8rem;
+  }
+}
+
+@media (max-width: 34rem) {
+  .nav {
+    column-gap: 0.85rem;
+  }
+  .nav a {
+    font-size: 0.76rem;
+  }
+  .nav a svg {
+    width: 0.8rem;
+  }
+}
+
+.minimum {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 0 1rem;
+}
+.minimum .price {
+  color: var(--ivory);
+}

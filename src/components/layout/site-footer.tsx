@@ -1,7 +1,12 @@
 import Link from "next/link";
 
+import { auctionAddress, auctionChainId } from "@/lib/auctions/config";
 import { collections } from "@/config/collections";
-import { BRAND_NAME, BRAND_PRINCIPLES, FOUNDATION_STATEMENT } from "@/lib/brand";
+import {
+  BRAND_NAME,
+  BRAND_PRINCIPLES,
+  FOUNDATION_STATEMENT,
+} from "@/lib/brand";
 import {
   collectionPath,
   FAQ_PATH,
@@ -11,6 +16,7 @@ import { shortenAddress } from "@/lib/utils";
 
 const footerLinks = [
   { href: "/", label: "Home" },
+  { href: "/auctions", label: "Auctions" },
   { href: MY_NFTS_PATH, label: "My NFTs" },
   ...collections.map((collection) => ({
     href: collectionPath(collection.id),
@@ -40,10 +46,7 @@ export function SiteFooter() {
           <ul className="mt-4 space-y-2 text-sm">
             {footerLinks.map((link) => (
               <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="transition hover:text-ivory"
-                >
+                <Link href={link.href} className="transition hover:text-ivory">
                   {link.label}
                 </Link>
               </li>
@@ -58,7 +61,9 @@ export function SiteFooter() {
           <ul className="mt-4 space-y-4 text-sm">
             {collections.map((collection) => (
               <li key={collection.id}>
-                <p className="font-semibold text-ivory">{collection.shortName}</p>
+                <p className="font-semibold text-ivory">
+                  {collection.shortName}
+                </p>
                 <p className="mt-1 font-mono text-xs text-bone/70">
                   NFT{" "}
                   <a
@@ -81,6 +86,22 @@ export function SiteFooter() {
                     {shortenAddress(collection.marketplaceAddress, 6)}
                   </a>
                 </p>
+                {collection.id === "cosmic-signature" &&
+                  auctionChainId === 42161 &&
+                  auctionAddress && (
+                    <p className="mt-1 font-mono text-xs text-bone/70">
+                      Auction{" "}
+                      <a
+                        href={`https://arbiscan.io/address/${auctionAddress}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={auctionAddress}
+                        className="text-copper transition hover:text-ember"
+                      >
+                        {shortenAddress(auctionAddress, 6)}
+                      </a>
+                    </p>
+                  )}
                 <a
                   href={collection.externalUrl}
                   target="_blank"

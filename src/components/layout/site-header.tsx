@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  { href: "/auctions", label: "Auctions" },
   { href: MY_NFTS_PATH, label: "My NFTs" },
   { href: collectionPath("random-walk"), label: "Random Walk" },
   { href: collectionPath("cosmic-signature"), label: "Cosmic Signature" },
@@ -78,7 +79,11 @@ export function SiteHeader() {
             aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
             onClick={() => setMobileOpen((open) => !open)}
           >
-            {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            {mobileOpen ? (
+              <X className="size-5" />
+            ) : (
+              <Menu className="size-5" />
+            )}
           </button>
         </div>
       </div>
@@ -88,6 +93,7 @@ export function SiteHeader() {
           viewport-fixed coordinates. */}
       <div
         id="mobile-nav"
+        inert={!mobileOpen}
         className={cn(
           "absolute inset-x-0 top-full z-30 h-screen bg-ink transition lg:hidden",
           mobileOpen

@@ -1,3 +1,40 @@
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+
+# This wallet integration only needs the browser-compatible SDK. Newer CDP
+# bundles import optional x402/Solana modules even from the ETH connector.
+overrides:
+  '@base-org/account@2.4.0>@coinbase/cdp-sdk': 1.51.2
+  '@coinbase/cdp-sdk@1.51.2>axios': 1.21.1
+
+  # The connector bundle pins a WalletConnect release that still installs older socket
+  # and query-string parsers. Preserve the EthereumProvider 2.x interface.
+  '@wagmi/connectors@6.2.0>@walletconnect/ethereum-provider': 2.26.0
+
+  # These consumers use the v4 UUID generator and validator. 11.1.1 is
+  # patched and still publishes both CommonJS and ESM entry points.
+  '@metamask/sdk@0.33.1>uuid': 11.1.1
+  '@metamask/sdk-communication-layer@0.33.1>uuid': 11.1.1
+  '@metamask/utils@8.5.0>uuid': 11.1.1
+  '@metamask/utils@9.3.0>uuid': 11.1.1
+  '@metamask/utils@11.12.1>uuid': 11.1.1
+
+  # Use the native v4 validators. The consumer patches preserve the frame
+  # protocol, policy schemas and public types across the major change.
+  '@reown/appkit-wallet@1.8.19>zod': 4.6.7
+  '@coinbase/cdp-sdk@1.51.2>zod': 4.6.7
+  '@coinbase/cdp-sdk@1.51.2>abitype': 1.3.0
+
+  # The patch below replaces every runtime picomatch import in anymatch.
+  'anymatch@3.1.3>picomatch': '-'
+
+packageExtensions:
+  'anymatch@3.1.3':
+    dependencies:
+      minimatch: 11.0.9
+
+patchedDependencies:
+  'anymatch@3.1.3': patches/anymatch@3.1.3.patch
+  '@reown/appkit-wallet@1.8.19': patches/@reown__appkit-wallet@1.8.19.patch
+  '@coinbase/cdp-sdk@1.51.2': patches/@coinbase__cdp-sdk@1.51.2.patch

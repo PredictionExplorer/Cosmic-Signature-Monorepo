@@ -16,7 +16,8 @@ export const FAQ_CATEGORIES: readonly FaqCategory[] = [
   {
     id: "getting-started",
     title: "Getting started",
-    description: "What Axiom Zero is and what you need before your first trade.",
+    description:
+      "What Axiom Zero is and what you need before your first trade.",
     items: [
       {
         question: "What is Axiom Zero?",
@@ -45,7 +46,8 @@ export const FAQ_CATEGORIES: readonly FaqCategory[] = [
   {
     id: "buying-bidding",
     title: "Buying and bidding",
-    description: "How purchases and bids work on the on-chain order book.",
+    description:
+      "How purchases and standing offers work on the secondary order book.",
     items: [
       {
         question: "How do I buy an NFT on Axiom Zero?",
@@ -54,7 +56,7 @@ export const FAQ_CATEGORIES: readonly FaqCategory[] = [
         featured: true,
       },
       {
-        question: "How do I place a bid?",
+        question: "How do I make a secondary-market offer?",
         answer:
           "Open the token page for the NFT you want, enter your bid amount in ETH under Market actions, and press Bid. Your ETH is held by the verified marketplace contract while the bid is active.",
       },
@@ -64,9 +66,37 @@ export const FAQ_CATEGORIES: readonly FaqCategory[] = [
           "A listing is a sell offer: the owner names a price that anyone can accept instantly with Buy now. A bid is a buy offer: a collector locks ETH behind a price, and the bid stays open on-chain until it is accepted or cancelled. Both sit in the same on-chain order book.",
       },
       {
-        question: "Can I cancel a bid or get my ETH back?",
+        question: "Can I cancel a secondary-market offer?",
         answer:
           "Yes. Your active bids appear under Your active orders on the token page. Press Cancel and confirm in your wallet; the marketplace contract returns your escrowed ETH. You only spend network gas.",
+      },
+    ],
+  },
+  {
+    id: "artwork-auctions",
+    title: "Artwork auctions",
+    description:
+      "Bidding for new Cosmic Signature artworks and collecting a settled lot.",
+    items: [
+      {
+        question: "When does bidding start and end?",
+        answer:
+          "Each new cycle exhibition has a seven-day preview. The first fully funded bid starts a 48-hour clock for that artwork. A bid accepted with less than ten minutes remaining restores ten full minutes. A work without a first bid stays available.",
+      },
+      {
+        question: "How much ETH does a bid require?",
+        answer:
+          "The initial opening price is 0.001 ETH. Each batch keeps the opening price recorded at registration. Later bids must raise the highest bid by at least 10%, rounded up to the next wei. A new bidder sends the full amount. The current leader sends only the increase. The confirmed amount is a direct bid and cannot be cancelled.",
+      },
+      {
+        question: "What happens when I am outbid?",
+        answer:
+          "The auction contract credits your full bid back to your wallet’s refund balance. Open My auctions to retrieve available ETH, even before the lot ends. Your wallet pays the network fee.",
+      },
+      {
+        question: "How do I collect the artwork?",
+        answer:
+          "After the deadline, anyone can settle the lot. The winning wallet can then send the NFT to its chosen recipient. The full sale price can be forwarded to the Cosmic Signature game reserve independently of delivery.",
       },
     ],
   },
@@ -93,7 +123,7 @@ export const FAQ_CATEGORIES: readonly FaqCategory[] = [
       {
         question: "When do I get paid after a sale?",
         answer:
-          "Immediately. Sales settle atomically on-chain: the same transaction that transfers the NFT to the buyer sends the full sale amount to you. Axiom Zero adds no platform fee on top.",
+          "For secondary-market listings and offers, the purchase transfers the NFT and pays the seller in one transaction. For V4 artwork auctions, the winner collects the NFT after settlement and the full winning price goes to the Cosmic Signature reserve.",
       },
     ],
   },

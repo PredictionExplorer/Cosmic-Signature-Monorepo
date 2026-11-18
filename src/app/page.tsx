@@ -8,15 +8,13 @@ import { FeaturedArtworksRail } from "@/components/home/featured-artworks-rail";
 import { HomeFaqSection } from "@/components/home/home-faq-section";
 import { HomeHero } from "@/components/home/home-hero";
 import { HowItWorksSection } from "@/components/home/how-it-works-section";
+import { AuctionExhibition } from "@/components/marketplace/auction-exhibition";
+import { latestAuctionWorks } from "@/lib/marketplace/auction-exhibition";
 import { MarketActivitySection } from "@/components/home/market-activity-section";
 import { MarketPulseStrip } from "@/components/home/market-pulse-strip";
 import { ButtonLink } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
-import {
-  BRAND_NAME,
-  FOUNDATION_STATEMENT,
-  ZERO_PROMISES,
-} from "@/lib/brand";
+import { BRAND_NAME, FOUNDATION_STATEMENT, ZERO_PROMISES } from "@/lib/brand";
 import {
   getHomeHeroArtworks,
   getHomeMarketOverview,
@@ -33,6 +31,8 @@ import type { Collection, MarketOffer } from "@/lib/marketplace/types";
 import { getEthUsdPrice } from "@/lib/pricing/eth-usd";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { formatEth, formatTokenId } from "@/lib/utils";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Generative NFT Marketplace",
@@ -136,18 +136,25 @@ function CollectionCard({ pulse }: { pulse: HomeCollectionPulse }) {
 }
 
 export default async function Home() {
-  const [heroArtworks, overview, usdPerEth] = await Promise.all([
+  const [heroArtworks, overview, usdPerEth, lots] = await Promise.all([
     getHomeHeroArtworks(),
     getHomeMarketOverview(),
     getEthUsdPrice().catch(() => undefined),
+    latestAuctionWorks(),
   ]);
   const showcases = pickArtSystemShowcases(heroArtworks);
 
   return (
     <div className="overflow-hidden">
       <HomeHero artworks={heroArtworks} />
+      <div className="mx-auto max-w-7xl px-5 sm:px-8">
+        <AuctionExhibition lots={lots} />
+      </div>
       <MarketPulseStrip pulses={overview.pulses} />
-      <MarketActivitySection activity={overview.activity} usdPerEth={usdPerEth} />
+      <MarketActivitySection
+        activity={overview.activity}
+        usdPerEth={usdPerEth}
+      />
       <HowItWorksSection />
 
       <section
@@ -171,7 +178,11 @@ export default async function Home() {
               Connect your wallet to see owned NFTs, review bids, and manage
               listings across both Axiom Zero collections.
             </p>
-            <ButtonLink href={MY_NFTS_PATH} className="mt-6" variant="secondary">
+            <ButtonLink
+              href={MY_NFTS_PATH}
+              className="mt-6"
+              variant="secondary"
+            >
               Open My NFTs
             </ButtonLink>
           </article>

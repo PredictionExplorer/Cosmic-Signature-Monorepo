@@ -1,4 +1,13 @@
-import { notFound } from "next/navigation";
+import Link from "next/link";
+import { formatEther } from "viem";
+import {
+  auctionAddress,
+  auctionConfigured,
+  readLot,
+} from "@/lib/auctions/client";
+import { LotPhase } from "@/components/auctions/auction-display";
+import { logMarketplaceDegradation } from "@/lib/marketplace/log";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getCollection } from "@/config/collections";
@@ -37,10 +46,7 @@ import {
 } from "@/lib/marketplace/token-detail";
 import { getEthUsdPrice } from "@/lib/pricing/eth-usd";
 import { sameAddress } from "@/lib/marketplace/trading-actions";
-import {
-  breadcrumbJsonLd,
-  tokenArtworkJsonLd,
-} from "@/lib/seo/json-ld";
+import { breadcrumbJsonLd, tokenArtworkJsonLd } from "@/lib/seo/json-ld";
 import { formatEth, formatTokenId, shortenAddress } from "@/lib/utils";
 import { absoluteUrl, buildPageMetadata } from "@/lib/seo/metadata";
 
@@ -125,11 +131,19 @@ export default async function TokenPage({
     notFound();
   }
 
+  const auctionRead =
+    collection.id === "cosmic-signature" && auctionConfigured
+      ? readLot(parsedTokenId).catch((error) => {
+          logMarketplaceDegradation("auction status unavailable", error);
+          return undefined;
+        })
+      : Promise.resolve(null);
   let market;
 
   try {
     market = await getTokenMarket(collection.id, parsedTokenId);
   } catch (error) {
+    if (await auctionRead) redirect(`/auctions/${parsedTokenId}`);
     if (isTokenNotFoundError(error)) {
       notFound();
     }
@@ -148,11 +162,17 @@ export default async function TokenPage({
   const requestedState = parseTokenDetailState(resolvedSearchParams);
   const mediaModel = buildTokenMediaModel(collection.id, token, requestedState);
   const snapshotTrait = primaryTokenTrait(token);
-  const [tokenIds, usdPerEth, collectionSales] = await Promise.all([
+  const [tokenIds, usdPerEth, collectionSales, auction] = await Promise.all([
     getCollectionTokenIds(collection.id),
     getEthUsdPrice(),
     getCollectionSales(collection.id).catch(() => undefined),
+    auctionRead,
   ]);
+  const inAuction = auction
+    ? !auction.lot.delivered
+    : auction === undefined &&
+      !!auctionAddress &&
+      sameAddress(token.owner, auctionAddress);
   const tokenSales = collectionSales?.filter(
     (sale) => sale.tokenId === token.tokenId,
   );
@@ -229,7 +249,7 @@ export default async function TokenPage({
             path: tokenPath,
             image: token.artwork.image,
             collectionName: collection.name,
-            priceEth: activeSellOffer?.priceEth,
+            priceEth: inAuction ? undefined : activeSellOffer?.priceEth,
           }),
         ]}
       />
@@ -260,17 +280,23 @@ export default async function TokenPage({
                 <GlossaryTip termKey="beautyScore" align="start" />
               </span>
             ) : null}
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-chartreuse/20 bg-chartreuse/10 px-3 py-1 text-sm font-semibold text-chartreuse">
-              <span>
-                {activeSellOffer
-                  ? `Listed at ${formatEth(activeSellOffer.priceEth)}`
-                  : "Unlisted"}
+            {inAuction && auction ? (
+              <LotPhase lot={auction.lot} time={auction.blockTime} />
+            ) : inAuction ? (
+              <span>Auction status unavailable</span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-chartreuse/20 bg-chartreuse/10 px-3 py-1 text-sm font-semibold text-chartreuse">
+                <span>
+                  {activeSellOffer
+                    ? `Listed at ${formatEth(activeSellOffer.priceEth)}`
+                    : "Unlisted"}
+                </span>
+                <GlossaryTip
+                  termKey={activeSellOffer ? "listing" : "unlisted"}
+                  align="start"
+                />
               </span>
-              <GlossaryTip
-                termKey={activeSellOffer ? "listing" : "unlisted"}
-                align="start"
-              />
-            </span>
+            )}
             {token.anchored !== undefined ? (
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold ${
@@ -279,7 +305,9 @@ export default async function TokenPage({
                     : "border-chartreuse/25 bg-chartreuse/12 text-chartreuse"
                 }`}
               >
-                <span>{anchorStatusLabel(token.anchored, isInAnchorVault)}</span>
+                <span>
+                  {anchorStatusLabel(token.anchored, isInAnchorVault)}
+                </span>
                 <GlossaryTip termKey="anchored" align="start" />
               </span>
             ) : null}
@@ -296,13 +324,26 @@ export default async function TokenPage({
             {collection.description}
           </p>
 
+          {(auction || inAuction) && (
+            <Link
+              className="mt-4 inline-flex min-h-11 items-center text-copper underline underline-offset-4"
+              href={`/auctions/${parsedTokenId}`}
+            >
+              {auction?.lot.settled
+                ? "View primary sale result"
+                : "View artwork auction"}{" "}
+              →
+            </Link>
+          )}
           <dl className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <HeroStat
               label="Owner"
               value={
-                isInAnchorVault
-                  ? "Anchoring vault"
-                  : shortenAddress(token.owner, 6)
+                inAuction
+                  ? "Auction contract"
+                  : isInAnchorVault
+                    ? "Anchoring vault"
+                    : shortenAddress(token.owner, 6)
               }
             />
             <HeroStat label={snapshotTrait.label} value={snapshotTrait.value} />
@@ -312,9 +353,23 @@ export default async function TokenPage({
               termKey="minted"
             />
             <HeroStat
-              label="Highest bid"
-              value={highestBid ? formatEth(highestBid.priceEth) : "No bids"}
-              termKey="topBid"
+              label={
+                inAuction
+                  ? auction?.lot.highestBid
+                    ? "Auction bid"
+                    : "Opening bid"
+                  : "Highest bid"
+              }
+              value={
+                inAuction
+                  ? auction
+                    ? `${formatEther(auction.lot.highestBid || auction.lot.openingBid)} ETH`
+                    : "Unavailable"
+                  : highestBid
+                    ? formatEth(highestBid.priceEth)
+                    : "No bids"
+              }
+              termKey={inAuction ? undefined : "topBid"}
             />
           </dl>
 
@@ -341,6 +396,22 @@ export default async function TokenPage({
             imageHref={stillImageHref}
             videoHref={videoHref}
           />
+        ) : inAuction ? (
+          <div className="rounded-2xl border border-ivory/15 p-6">
+            <h2 className="font-display text-2xl text-ivory">
+              Artwork auction
+            </h2>
+            <p className="mt-2 text-bone">
+              This work is in auction custody. Its lot page shows the current
+              terms and available wallet actions.
+            </p>
+            <Link
+              href={`/auctions/${parsedTokenId}`}
+              className="mt-3 inline-flex min-h-11 items-center font-semibold text-copper underline"
+            >
+              Open lot #{parsedTokenId}
+            </Link>
+          </div>
         ) : (
           <TokenMarketPanel
             collection={collection}

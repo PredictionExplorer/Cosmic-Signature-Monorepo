@@ -47,6 +47,7 @@ export type HomeRecentSale = MarketSale & {
 };
 
 export type HomeActivity = {
+  unavailableCollections?: string[];
   totalSales: number;
   totalVolumeEth: number;
   activeOrders: number;
@@ -142,7 +143,9 @@ function buildHomeActivity(
     pulse: HomeCollectionPulse;
     sales: MarketSale[] | undefined;
   }>,
-): { totals: Omit<HomeActivity, "recentSales">; recent: MarketSale[] } | undefined {
+):
+  | { totals: Omit<HomeActivity, "recentSales">; recent: MarketSale[] }
+  | undefined {
   const withSales = perCollection.filter(
     (entry): entry is typeof entry & { sales: MarketSale[] } =>
       entry.sales !== undefined,
@@ -160,6 +163,9 @@ function buildHomeActivity(
 
   return {
     totals: {
+      unavailableCollections: perCollection
+        .filter((entry) => entry.sales === undefined)
+        .map((entry) => entry.pulse.shortName),
       totalSales: summaries.reduce((sum, entry) => sum + entry.sales.count, 0),
       totalVolumeEth: summaries.reduce(
         (sum, entry) => sum + entry.sales.volumeEth,

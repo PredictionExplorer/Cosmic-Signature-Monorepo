@@ -52,12 +52,36 @@ function activity(overrides: Partial<HomeActivity> = {}): HomeActivity {
 
 describe("MarketActivitySection", () => {
   it("hides the latest sales rail when no recent sales resolved", () => {
-    render(
-      <MarketActivitySection activity={activity({ recentSales: [] })} />,
-    );
+    render(<MarketActivitySection activity={activity({ recentSales: [] })} />);
 
     expect(screen.getByText("169")).toBeInTheDocument();
     expect(screen.queryByText(/latest sales/i)).toBeNull();
+  });
+
+  it("marks the auction venue, links its settled lot, and discloses missing collections", () => {
+    const { offerId: _offer, ...recent } = activity().recentSales[0];
+    void _offer;
+    render(
+      <MarketActivitySection
+        activity={activity({
+          recentSales: [
+            {
+              ...recent,
+              source: "auction",
+              settlementId: "auction:0xab:1",
+              transactionHash: "0xab",
+              logIndex: 1,
+              roundNum: "4",
+            },
+          ],
+          unavailableCollections: ["Random Walk"],
+        })}
+      />,
+    );
+    expect(
+      screen.getByRole("link", { name: /Auction sale.*Cosmic Signature #8/i }),
+    ).toHaveAttribute("href", "/auctions/8");
+    expect(screen.getByText(/Totals exclude Random Walk/)).toBeInTheDocument();
   });
 
   it("renders nothing without activity data or sales", () => {

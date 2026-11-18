@@ -192,3 +192,52 @@ test("cosmic signature token detail page renders live metadata", async ({
     page.getByRole("button", { name: /copy detail link/i }),
   ).toBeVisible();
 });
+
+test("collectors can browse auctions, sale results and their account without signing", async ({
+  page,
+}) => {
+  await page.goto("/cosmic-signature");
+  await page.getByRole("link", { name: "Auction catalogue" }).click();
+  await expect(page).toHaveURL(/\/auctions$/);
+  await expect(
+    page.getByRole("heading", { name: "Cycle auctions" }),
+  ).toBeVisible();
+  const navigation = page.getByRole("navigation", {
+    name: "Auction navigation",
+  });
+  await navigation.getByRole("link", { name: "Sale results" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Auction results" }),
+  ).toBeVisible();
+  await navigation.getByRole("link", { name: "Collector account" }).click();
+  await expect(page).toHaveURL(/\/auctions\/account$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+});
+
+test("the wallet picker offers the supported wallets without connecting", async ({
+  context,
+  page,
+  baseURL,
+}) => {
+  // Exercise the real production connectors, with no external requests or relay sessions.
+  const origin = new URL("/", baseURL).origin;
+  await context.route("**/*", (route) =>
+    new URL(route.request().url()).origin === origin
+      ? route.continue()
+      : route.abort(),
+  );
+  await context.routeWebSocket(/^wss?:\/\//, (socket) => socket.close());
+  await page.goto("/auctions/account");
+  await page
+    .getByRole("banner")
+    .getByRole("button", { name: /connect wallet/i })
+    .click();
+  const picker = page.getByRole("dialog", { name: /connect a wallet/i });
+  for (const name of ["Rainbow", "Base", "MetaMask", "WalletConnect"]) {
+    await expect(
+      picker.getByRole("button", { name, exact: true }),
+    ).toBeVisible();
+  }
+  await picker.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(picker).not.toBeVisible();
+});

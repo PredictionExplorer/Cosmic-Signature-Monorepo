@@ -9,6 +9,13 @@ const queryMocks = vi.hoisted(() => ({
   isTokenNotFoundError: vi.fn(() => false),
 }));
 
+const auctionMocks = vi.hoisted(() => ({
+  auctionConfigured: true,
+  auctionAddress: "0x0000000000000000000000000000000000000099",
+  readLot: vi.fn(),
+}));
+vi.mock("@/lib/auctions/client", () => auctionMocks);
+
 const collectionIndexMocks = vi.hoisted(() => ({
   getCollectionTokenIds: vi.fn(),
 }));
@@ -82,6 +89,84 @@ function offer(overrides: Partial<MarketOffer>): MarketOffer {
 describe("TokenPage", () => {
   beforeEach(() => {
     salesMocks.getCollectionSales.mockResolvedValue(undefined);
+    auctionMocks.readLot.mockResolvedValue(null);
+  });
+
+  it.each([
+    {
+      settled: false,
+      delivered: false,
+      bid: 0n,
+      link: "View artwork auction",
+      actions: false,
+    },
+    {
+      settled: true,
+      delivered: false,
+      bid: 1000000000000000n,
+      link: "View primary sale result",
+      actions: false,
+    },
+    {
+      settled: true,
+      delivered: true,
+      bid: 1000000000000000n,
+      link: "View primary sale result",
+      actions: true,
+    },
+  ])(
+    "routes a registered work to the lot, preserving resale after delivery ($settled, $delivered)",
+    async ({ settled, delivered, bid, link, actions }) => {
+      auctionMocks.readLot.mockResolvedValue({
+        lot: {
+          highestBid: bid,
+          openingBid: 1000000000000000n,
+          eligibleAt: 5n,
+          endAt: bid ? 9n : 0n,
+          settled,
+          delivered,
+        },
+        blockTime: 10n,
+      });
+      queryMocks.getTokenMarket.mockResolvedValueOnce({
+        token: token(),
+        offers: [],
+      });
+      collectionIndexMocks.getCollectionTokenIds.mockResolvedValueOnce([19]);
+      render(
+        await TokenPage({
+          params: Promise.resolve({
+            collectionId: "cosmic-signature",
+            tokenId: "19",
+          }),
+          searchParams: Promise.resolve({}),
+        }),
+      );
+      expect(
+        screen.getByRole("link", { name: new RegExp(link) }),
+      ).toHaveAttribute("href", "/auctions/19");
+      expect(!!screen.queryByText("Mock trading controls")).toBe(actions);
+    },
+  );
+
+  it("keeps order-book actions off a lot still in custody when its auction RPC is unavailable", async () => {
+    auctionMocks.readLot.mockRejectedValue(new Error("RPC unavailable"));
+    queryMocks.getTokenMarket.mockResolvedValueOnce({
+      token: token({ owner: auctionMocks.auctionAddress as `0x${string}` }),
+      offers: [],
+    });
+    collectionIndexMocks.getCollectionTokenIds.mockResolvedValueOnce([19]);
+    render(
+      await TokenPage({
+        params: Promise.resolve({
+          collectionId: "cosmic-signature",
+          tokenId: "19",
+        }),
+        searchParams: Promise.resolve({}),
+      }),
+    );
+    expect(screen.getByText("Auction status unavailable")).toBeVisible();
+    expect(screen.queryByText("Mock trading controls")).toBeNull();
   });
 
   it("renders Cosmic Signature from metadata and hides unavailable controls", async () => {

@@ -45,7 +45,9 @@ import {
 } from "@/lib/marketplace/home-data";
 import type { MarketSale } from "@/lib/marketplace/types";
 
-function sale(overrides: Partial<MarketSale> = {}): MarketSale {
+function sale(
+  overrides: Partial<Extract<MarketSale, { offerId: number }>> = {},
+): MarketSale {
   return {
     collectionId: "random-walk",
     tokenId: 7,
@@ -287,9 +289,9 @@ describe("home data", () => {
     const artworks = await getHomeHeroArtworks();
 
     expect(artworks.length).toBe(3);
-    expect(
-      artworks.every((item) => item.collectionId === "random-walk"),
-    ).toBe(true);
+    expect(artworks.every((item) => item.collectionId === "random-walk")).toBe(
+      true,
+    );
 
     const showcases = pickArtSystemShowcases(artworks);
     expect(showcases[0]?.collectionId).toBe("random-walk");

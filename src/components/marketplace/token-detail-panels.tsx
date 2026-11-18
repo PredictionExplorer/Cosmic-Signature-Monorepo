@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import type {
@@ -7,6 +8,7 @@ import type {
   MarketToken,
   SalesSummary,
 } from "@/lib/marketplace/types";
+import { auctionConfigured } from "@/lib/auctions/config";
 import { anchorStatusLabel } from "@/components/marketplace/anchor-status-pill";
 import { PriceSparkline } from "@/components/marketplace/price-sparkline";
 import { TokenActions } from "@/components/marketplace/token-actions";
@@ -47,7 +49,9 @@ function PriceLabel({
 
   return (
     <div>
-      <p className={`font-display text-3xl font-semibold tracking-[-0.04em] ${className}`}>
+      <p
+        className={`font-display text-3xl font-semibold tracking-[-0.04em] ${className}`}
+      >
         {formatEth(eth)}
       </p>
       {usd ? <p className="mt-1 text-sm text-bone/70">≈ {usd}</p> : null}
@@ -87,7 +91,10 @@ export function TokenMarketPanel({
           </p>
           <div className="mt-3">
             {activeSellOffer ? (
-              <PriceLabel eth={activeSellOffer.priceEth} usdPerEth={usdPerEth} />
+              <PriceLabel
+                eth={activeSellOffer.priceEth}
+                usdPerEth={usdPerEth}
+              />
             ) : (
               <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-ivory">
                 Unlisted
@@ -199,6 +206,34 @@ export function TokenHistoryPanel({
 
       <PriceSparkline records={records} />
 
+      {auctionConfigured &&
+      token.collectionId === "cosmic-signature" &&
+      !sales ? (
+        <p className="mt-4 text-sm text-bone/70">
+          Complete sales history is temporarily unavailable.{" "}
+          <Link
+            href="/auctions/results"
+            className="text-copper underline underline-offset-4"
+          >
+            Browse auction results
+          </Link>
+          .
+        </p>
+      ) : null}
+      {sales?.primarySale ? (
+        <p className="mt-5 rounded-2xl border border-ivory/10 p-4 text-sm text-bone/85">
+          <Link
+            href={`/auctions/${token.tokenId}`}
+            className="text-copper underline underline-offset-4"
+          >
+            Primary auction sale
+          </Link>
+          {" · "}
+          {formatEth(sales.primarySale.priceEth)}
+          {" · "}
+          {formatFullDate(sales.primarySale.soldAt)}
+        </p>
+      ) : null}
       {records.length ? (
         <ol className="relative mt-8 space-y-0 border-l border-ivory/15 pl-6">
           {records.map((record, index) => (
@@ -304,10 +339,7 @@ export function TokenCollectorNotesPanel({
                 ? "Unknown"
                 : anchorStatusLabel(
                     token.anchored,
-                    sameAddress(
-                      token.owner,
-                      collection.anchoringWalletAddress,
-                    ),
+                    sameAddress(token.owner, collection.anchoringWalletAddress),
                   )
             }
             termKey="anchored"

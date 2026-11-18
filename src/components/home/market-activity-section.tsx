@@ -76,8 +76,16 @@ export function MarketActivitySection({
             </h2>
           </div>
           <p className="max-w-sm text-sm leading-6 text-bone/72">
-            Every number here is read live from the verified marketplace
-            contract on Arbitrum — no curation, no off-chain edits.
+            Order-book trades and finalized{" "}
+            <Link
+              href="/auctions/results"
+              className="text-copper underline underline-offset-4"
+            >
+              artwork auction sales
+            </Link>{" "}
+            on Arbitrum.
+            {Boolean(activity.unavailableCollections?.length) &&
+              ` Totals exclude ${activity.unavailableCollections?.join(" and ")} while its sales history is unavailable.`}
           </p>
         </div>
       </Reveal>
@@ -132,11 +140,19 @@ export function MarketActivitySection({
 
               return (
                 <Reveal
-                  key={`${sale.collectionId}-${sale.offerId}`}
+                  key={
+                    sale.source === "auction"
+                      ? sale.settlementId
+                      : `${sale.collectionId}-offer-${sale.offerId}`
+                  }
                   delayMs={index * 60}
                 >
                   <Link
-                    href={tokenPath(sale.collectionId, sale.tokenId)}
+                    href={
+                      sale.source === "auction"
+                        ? `/auctions/${sale.tokenId}`
+                        : tokenPath(sale.collectionId, sale.tokenId)
+                    }
                     className="group block w-[13.5rem] shrink-0 overflow-hidden rounded-[2rem] border border-ivory/10 bg-ivory/[0.045] transition hover:-translate-y-1 hover:border-copper/35"
                   >
                     <div className="relative aspect-square bg-carbon">
@@ -154,7 +170,7 @@ export function MarketActivitySection({
                         </div>
                       )}
                       <span className="absolute left-3 top-3 rounded-full border border-chartreuse/25 bg-ink/80 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-chartreuse backdrop-blur">
-                        Sold
+                        {sale.source === "auction" ? "Auction sale" : "Sold"}
                       </span>
                     </div>
                     <div className="p-4">

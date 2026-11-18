@@ -141,13 +141,24 @@ export type MarketplaceStats = {
 };
 
 /**
- * A completed marketplace sale reconstructed from an on-chain ItemBought
- * event joined with its offer record.
+ * A secondary order-book execution or a primary auction settlement.
  */
-export type MarketSale = {
+export type MarketSale = (
+  | {
+      source?: "orderbook";
+      offerId: number;
+    }
+  | {
+      source: "auction";
+      offerId?: never;
+      settlementId: string;
+      transactionHash: `0x${string}`;
+      logIndex: number;
+      roundNum: string;
+    }
+) & {
   collectionId: CollectionId;
   tokenId: number;
-  offerId: number;
   priceEth: number;
   seller: `0x${string}`;
   buyer: `0x${string}`;
@@ -161,6 +172,8 @@ export type SalesSummary = {
   volumeEth: number;
   /** Most recent sale. */
   lastSale?: MarketSale;
+  /** The newest primary settlement in the selection (at most one for a single token). */
+  primarySale?: Extract<MarketSale, { source: "auction" }>;
   /** Highest-priced sale. */
   topSale?: MarketSale;
 };

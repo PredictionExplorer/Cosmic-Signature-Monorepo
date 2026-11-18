@@ -1,3 +1,5 @@
+import { AuctionExhibition } from "@/components/marketplace/auction-exhibition";
+import { latestAuctionWorks } from "@/lib/marketplace/auction-exhibition";
 import Image from "next/image";
 
 import { requireCollection } from "@/config/collections";
@@ -26,10 +28,7 @@ import {
   formatCollectionSupplyLabel,
 } from "@/lib/marketplace/collection-supply";
 import { collectionMarketHref, collectionPath } from "@/lib/marketplace/routes";
-import {
-  breadcrumbJsonLd,
-  collectionPageJsonLd,
-} from "@/lib/seo/json-ld";
+import { breadcrumbJsonLd, collectionPageJsonLd } from "@/lib/seo/json-ld";
 import type {
   CollectionId,
   MarketplaceSearchParams,
@@ -78,6 +77,7 @@ export async function CollectionMarketPage({
     anchoredTokenIds,
     usdPerEth,
     collectionSales,
+    lots,
   ] = await Promise.all([
     getMarketplaceOffers(offerSearch).catch(() => []),
     canReuseVisibleOffers
@@ -90,6 +90,7 @@ export async function CollectionMarketPage({
     getAnchoredTokenIdSet(collectionId).catch(() => undefined),
     getEthUsdPrice().catch(() => undefined),
     getCollectionSales(collectionId).catch(() => undefined),
+    collectionId === "cosmic-signature" ? latestAuctionWorks() : [],
   ]);
   const stats = getMarketplaceStats(statsOffers ?? visibleOffers);
   const sales = collectionSales ? summarizeSales(collectionSales) : undefined;
@@ -175,6 +176,11 @@ export async function CollectionMarketPage({
         </div>
       </section>
 
+      {collectionId === "cosmic-signature" && (
+        <div className="mt-8">
+          <AuctionExhibition lots={lots} />
+        </div>
+      )}
       <div className="mt-10">
         <MarketplaceControls
           collectionId={collectionId}

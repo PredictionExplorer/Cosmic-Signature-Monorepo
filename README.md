@@ -46,9 +46,23 @@ always read from the verified Arbitrum marketplace contract. Wallet actions
 are signed client-side with wagmi and viem, then the app refreshes
 server-rendered data after confirmations.
 
+## Wallet dependency compatibility
+
+The scoped resolutions and versioned patches in `pnpm-workspace.yaml` keep the production wallet graph on patched dependencies. Keep the patch files with the lockfile when installing or building the site.
+
+| Consumer | Compatibility requirement |
+| --- | --- |
+| Wagmi and MetaMask | WalletConnect’s Ethereum provider 2.26 uses an updated transport and URL parser. The pinned MetaMask consumers use UUID 11.1.1 for its CommonJS and ESM generator and validator. |
+| WalletConnect storage | Its filesystem filter uses `minimatch` in place of the vulnerable `picomatch` dependency. The storage driver, keys, and serialized wallet sessions retain their existing formats. |
+| Reown frame messages | Runtime schemas use native Zod 4. The patch preserves optional RPC parameters and empty success responses. The former schema declarations are used only to describe existing message types. |
+| Base and Coinbase CDP | Base uses CDP SDK 1.51.2 with Axios 1.21.1. Later SDKs import optional payment modules that prevent this wallet bundle from building. Its scoped ABI dependency supports Zod 4. The CDP patch keeps EIP-712 field maps and their exported policy types aligned across module formats. |
+
+Retire the compatibility changes when upstream releases support the patched dependencies. Run the frozen install, production audit, wallet compatibility tests, and local auction rehearsal when updating these packages.
+
 ## Quality Gates
 
 ```bash
+corepack pnpm audit --prod
 corepack pnpm lint
 corepack pnpm typecheck
 corepack pnpm test:unit
@@ -83,3 +97,13 @@ memorable without turning the market into a casino-like interface.
 The marketplace should remain calm under pressure: clear filters, readable
 prices, obvious wallet states, accessible focus rings, strong contrast, and
 minimal motion.
+
+## V4 artwork auctions
+
+The catalogue at `/auctions` groups eight works per cycle. Each lot at `/auctions/{tokenId}` has a seven-day preview, a 48-hour clock from its first funded bid, and a ten-minute rolling close. The opening price starts at 0.001 ETH and is frozen per batch. Subsequent bids raise the current total by at least 10%, rounded up to whole wei. The winning price goes to the game reserve. Outbid collectors can retrieve ETH before the lot ends.
+
+Use `/auctions/account` for funded bids, won lots, delivery and refunds. The settlement archive at `/auctions/results` links primary sales to their on-chain records. A settled primary sale and a later order-book resale are separate trades.
+
+Public browsing and signing for the separate ETH auction use the reviewed auction address, runtime hash and creation block in `env.example`. Leave these empty before launch. Arbitrum deployments must match the production game and Cosmic Signature collection. Every lot reads its frozen opening price and next minimum from the contract. The auction wallet page shows previously registered batches and refund credit; settlement histories count confirmed sales. Listings and standing offers use the existing marketplace contract.
+
+For a local end-to-end run, compile the production game contracts in the adjacent `Cosmic-Signature` checkout (`ENABLE_HARDHAT_PREPROCESSOR=false npx hardhat compile`), then run `pnpm test:auction:local` here. Set `COSMIC_CONTRACT_ROOT` for another checkout. It builds a temporary production copy of Axiom Zero, starts its own Hardhat node and website on loopback ports 8559 and 4599, and tests bidding and settlement in Chromium using disposable node accounts. A second real v4 batch verifies that later opening-price changes preserve already registered lots. No signing keys are required.

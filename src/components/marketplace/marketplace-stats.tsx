@@ -41,8 +41,7 @@ export function MarketplaceStatsGrid({
     {
       label: "Platform fee",
       value: "0%",
-      detail:
-        "No cuts — the full amount goes directly between buyer and seller.",
+      detail: "Axiom Zero charges zero commission on sales.",
     },
     {
       label: "Sale listings",
@@ -52,7 +51,10 @@ export function MarketplaceStatsGrid({
     {
       label: "Floor Price",
       value: statLabel(stats.floorOffer?.priceEth),
-      detail: [floorUsd ? `≈ ${floorUsd}` : undefined, "Cheapest NFT listed for sale."]
+      detail: [
+        floorUsd ? `≈ ${floorUsd}` : undefined,
+        "Cheapest NFT listed for sale.",
+      ]
         .filter(Boolean)
         .join(" · "),
       href: tokenHref(stats.floorOffer),

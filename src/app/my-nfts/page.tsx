@@ -38,6 +38,12 @@ export default function MyNftsPage() {
           <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ivory">
             Your listings and bid alerts live here.
           </p>
+          <Link
+            href="/auctions/account"
+            className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-copper underline-offset-4 hover:underline"
+          >
+            My auction bids, refunds and won artworks →
+          </Link>
           <p className="mt-3 text-sm leading-6 text-bone/78">
             New to wallets, gas, or Arbitrum?{" "}
             <Link

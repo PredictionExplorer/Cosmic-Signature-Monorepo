@@ -1,6 +1,8 @@
 import { createPublicClient, formatEther } from "viem";
 import { arbitrum } from "viem/chains";
 
+import { auctionConfigured } from "@/lib/auctions/config";
+import { getPrimarySales } from "./auction-sales";
 import { getArbitrumRpcTransport } from "@/lib/web3/arbitrum-transport";
 
 import { collections, requireCollection } from "@/config/collections";
@@ -56,9 +58,7 @@ export type SalesClient = {
       | { status: "failure"; error: unknown }
     >
   >;
-  getBlock: (args: {
-    blockNumber: bigint;
-  }) => Promise<{ timestamp: bigint }>;
+  getBlock: (args: { blockNumber: bigint }) => Promise<{ timestamp: bigint }>;
 };
 
 type OfferTuple = readonly [
@@ -169,9 +169,7 @@ export async function fetchMarketplaceSales({
   sales.sort((left, right) => right.blockNumber - left.blockNumber);
 
   const recentBlocks = [
-    ...new Set(
-      sales.slice(0, timestampLimit).map((sale) => sale.blockNumber),
-    ),
+    ...new Set(sales.slice(0, timestampLimit).map((sale) => sale.blockNumber)),
   ];
   const timestamps = new Map<number, string>();
 
@@ -258,7 +256,7 @@ function getMarketplaceSalesSnapshot(
  * Completed sales for one collection, newest first. Undefined when the sales
  * scan is unavailable so callers can degrade gracefully.
  */
-export async function getCollectionSales(
+async function getOrderbookSales(
   collectionId: CollectionId,
   client?: SalesClient,
 ): Promise<MarketSale[] | undefined> {
@@ -297,6 +295,49 @@ export async function getCollectionSales(
   return sales?.filter((sale) => sale.collectionId === collectionId);
 }
 
+/** Keep offer IDs and auction logs in separate namespaces, including when the NFT later resells. */
+export function mergeCollectionSales(
+  secondary: MarketSale[],
+  primary: MarketSale[],
+) {
+  const unique = new Map<string, MarketSale>();
+  for (const sale of [...secondary, ...primary]) {
+    const key =
+      sale.source === "auction"
+        ? sale.settlementId
+        : `${sale.collectionId}:offer:${sale.offerId}`;
+    unique.set(key, sale);
+  }
+  return [...unique.values()].sort(
+    (a, b) =>
+      b.blockNumber - a.blockNumber ||
+      (b.source === "auction" ? b.logIndex : 0) -
+        (a.source === "auction" ? a.logIndex : 0),
+  );
+}
+
+export async function getCollectionSales(
+  collectionId: CollectionId,
+  client?: SalesClient,
+): Promise<MarketSale[] | undefined> {
+  if (collectionId !== "cosmic-signature" || !auctionConfigured)
+    return getOrderbookSales(collectionId, client);
+  const [secondary, primary] = await Promise.all([
+    getOrderbookSales(collectionId, client),
+    getPrimarySales().catch(() => {
+      logMarketplaceDegradation(
+        "auction sales unavailable",
+        "verified settlements could not be loaded",
+      );
+      return undefined;
+    }),
+  ]);
+  // Incomplete histories are unknown rather than zero and cannot be used as lifetime totals.
+  return secondary && primary
+    ? mergeCollectionSales(secondary, primary)
+    : undefined;
+}
+
 /** Aggregates a newest-first sales list into headline numbers. */
 export function summarizeSales(sales: readonly MarketSale[]): SalesSummary {
   let volumeEth = 0;
@@ -315,5 +356,6 @@ export function summarizeSales(sales: readonly MarketSale[]): SalesSummary {
     volumeEth,
     lastSale: sales[0],
     topSale,
+    primarySale: sales.find((sale) => sale.source === "auction"),
   };
 }

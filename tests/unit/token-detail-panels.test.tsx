@@ -63,13 +63,41 @@ describe("token detail panels", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the settled primary sale even before any NFT delivery record exists", () => {
+    const work = token({ collectionId: "cosmic-signature" });
+    render(
+      <TokenHistoryPanel
+        token={work}
+        sales={{
+          count: 1,
+          volumeEth: 2,
+          primarySale: {
+            source: "auction",
+            collectionId: work.collectionId,
+            tokenId: work.tokenId,
+            priceEth: 2,
+            seller: "0x1111111111111111111111111111111111111111",
+            buyer: "0x2222222222222222222222222222222222222222",
+            settlementId: "sale",
+            transactionHash: "0xab",
+            logIndex: 0,
+            roundNum: "8",
+            blockNumber: 99,
+          },
+        }}
+      />,
+    );
+    expect(
+      screen.getByRole("link", { name: "Primary auction sale" }),
+    ).toHaveAttribute("href", `/auctions/${work.tokenId}`);
+    expect(screen.getByText(/1 marketplace sale/)).toBeInTheDocument();
+  });
+
   it("shows an empty history state when no records exist", () => {
     render(<TokenHistoryPanel token={token()} />);
 
     expect(screen.getByText(/0 records/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/no public transfer history/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/no public transfer history/i)).toBeInTheDocument();
   });
 
   it("shows listed price with usd approximation in the market panel", () => {
@@ -259,10 +287,7 @@ describe("token detail panels", () => {
 
   it("omits the sales summary when the token has no marketplace sales", () => {
     render(
-      <TokenHistoryPanel
-        token={token()}
-        sales={{ count: 0, volumeEth: 0 }}
-      />,
+      <TokenHistoryPanel token={token()} sales={{ count: 0, volumeEth: 0 }} />,
     );
 
     expect(screen.queryByText(/marketplace sale/i)).toBeNull();
@@ -284,7 +309,12 @@ describe("token detail panels", () => {
             },
           ],
         })}
-        sales={{ count: 1, volumeEth: 0.5, lastSale: undefined, topSale: undefined }}
+        sales={{
+          count: 1,
+          volumeEth: 0.5,
+          lastSale: undefined,
+          topSale: undefined,
+        }}
       />,
     );
 
@@ -315,7 +345,9 @@ describe("token detail panels", () => {
     expect(
       screen.getByRole("button", { name: /copy image link/i }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /copy video link/i })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /copy video link/i }),
+    ).toBeNull();
   });
 
   it("reports unknown anchor status when no anchor data resolved", () => {

@@ -1,7 +1,9 @@
 "use client";
 
+import { createConfig, http } from "wagmi";
+import { isLocalAuctionRpc } from "@/lib/auctions/config";
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
-import { arbitrum, arbitrumSepolia } from "wagmi/chains";
+import { arbitrum, arbitrumSepolia, foundry } from "wagmi/chains";
 
 const WALLETCONNECT_PLACEHOLDER = "00000000000000000000000000000000";
 export const walletConnectProjectId =
@@ -12,9 +14,20 @@ export const walletConfigurationWarning =
 
 const wagmiProjectId = walletConnectProjectId ?? WALLETCONNECT_PLACEHOLDER;
 
-export const wagmiConfig = getDefaultConfig({
-  appName: "Axiom Zero",
-  projectId: wagmiProjectId,
-  chains: [arbitrum, arbitrumSepolia],
-  ssr: true,
-});
+const localRpc = process.env.NEXT_PUBLIC_AUCTION_LOCAL_RPC_URL;
+const localAuction =
+  process.env.NEXT_PUBLIC_AUCTION_CHAIN_ID === "31337" &&
+  isLocalAuctionRpc(localRpc);
+
+export const wagmiConfig = localAuction
+  ? createConfig({
+      chains: [foundry],
+      transports: { [foundry.id]: http(localRpc) },
+      ssr: true,
+    })
+  : getDefaultConfig({
+      appName: "Axiom Zero",
+      projectId: wagmiProjectId,
+      chains: [arbitrum, arbitrumSepolia],
+      ssr: true,
+    });
