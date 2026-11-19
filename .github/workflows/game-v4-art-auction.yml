@@ -88,4 +88,5 @@ jobs:
           LONG_TEST_MODE_CODE: '3'
           ENABLE_HARDHAT_PREPROCESSOR: 'false'
           FUZZ_MAX_SECONDS: '1200'
-      - run: npm run test:auction:fuzz
+      - name: Fuzz the auction with the verified game compiler
+        run: npm run test:auction:fuzz -- --use "$HOME/.solc-select/artifacts/solc-0.8.38/solc-0.8.38" --offline
