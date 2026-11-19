@@ -1,0 +1,124 @@
+"use client";
+
+import { ChevronDown, LogOut, TriangleAlert, Wallet } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useConnection, useDisconnect, useSwitchChain } from "wagmi";
+import { useMounted } from "@/hooks/use-mounted";
+import { appConfig } from "@/lib/config";
+import { shortAddress } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { LazyWalletModal } from "./lazy-wallet-modal";
+
+/**
+ * The single wallet entry point: connect → wrong-network warning → connected
+ * menu with disconnect. Renders a stable placeholder before hydration.
+ */
+export function ConnectButton() {
+  const mounted = useMounted();
+  const connection = useConnection();
+  const switchChain = useSwitchChain();
+  const disconnect = useDisconnect();
+  const [modalOpen, setModalOpen] = useState(false);
+  // Keeps the modal chunk out of first-load JS until the user asks for it.
+  const [modalRequested, setModalRequested] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const accountButton = useRef<HTMLButtonElement>(null);
+
+  // Close the account menu on any outside click. A fixed-position scrim
+  // doesn't work here: the header's backdrop-filter makes it a containing
+  // block, so the scrim would only cover the header strip.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [menuOpen]);
+
+  if (!mounted) {
+    return (
+      <Button variant="outline" disabled>
+        <Wallet className="size-4" aria-hidden />
+        Connect
+      </Button>
+    );
+  }
+
+  if (connection.status !== "connected") {
+    return (
+      <>
+        <Button
+          variant="signal"
+          onClick={() => {
+            setModalRequested(true);
+            setModalOpen(true);
+          }}
+          loading={connection.status === "reconnecting"}
+        >
+          <Wallet className="size-4" aria-hidden />
+          Connect wallet
+        </Button>
+        {modalRequested && <LazyWalletModal open={modalOpen} onClose={() => setModalOpen(false)} />}
+      </>
+    );
+  }
+
+  if (connection.chainId !== appConfig.chain.id) {
+    return (
+      <Button
+        variant="ended"
+        onClick={() => switchChain.mutate({ chainId: appConfig.chain.id })}
+        loading={switchChain.isPending}
+      >
+        <TriangleAlert className="size-4" aria-hidden />
+        Switch to {appConfig.chain.name}
+      </Button>
+    );
+  }
+
+  return (
+    <div
+      className="relative"
+      ref={menuRef}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setMenuOpen(false);
+      }}
+      onKeyDown={(event) => {
+        if (menuOpen && event.key === "Escape") {
+          event.stopPropagation();
+          setMenuOpen(false);
+          accountButton.current?.focus();
+        }
+      }}
+    >
+      <Button
+        ref={accountButton}
+        variant="outline"
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-expanded={menuOpen}
+      >
+        <span className="size-2 rounded-full bg-higher shadow-glow-higher" aria-hidden />
+        <span className="font-mono text-xs">{shortAddress(connection.address ?? "")}</span>
+        <ChevronDown className="size-3.5 text-ink-dim" aria-hidden />
+      </Button>
+      {menuOpen && (
+        <div className="absolute right-0 z-40 mt-2 w-44 overflow-hidden rounded-xl border border-line bg-surface shadow-[0_16px_48px_rgba(2,0,16,0.7)]">
+          <button
+            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-ink-dim transition-colors hover:bg-surface-2 hover:text-ink"
+            onClick={() => {
+              disconnect.mutate({});
+              setMenuOpen(false);
+            }}
+          >
+            <LogOut className="size-4" aria-hidden />
+            Disconnect
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

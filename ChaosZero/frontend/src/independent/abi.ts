@@ -1,0 +1,92 @@
+import { parseAbi } from "viem";
+
+export const independentMarketAbi = parseAbi([
+  "function cst() view returns (address)",
+  "function source() view returns (address)",
+  "function settlementVault() view returns (address)",
+  "function pendingCarry() view returns (uint256)",
+  "function totalActiveCollateral() view returns (uint256)",
+  "function lastFundedRound() view returns (uint256)",
+  "function hasFunded() view returns (bool)",
+  "function roundState(uint256 roundId) view returns ((bool initialized,bool funded,bool settled,bool closed,bool finalized,uint8 knownMask,uint8 values,uint256 activeCollateral) result)",
+  "function questionState(uint256 roundId,uint8 question) view returns ((uint256 activeCollateral,uint256 yesSupply,uint256 noSupply,uint256 escrowRemaining,uint16 initialYesBps,uint16 currentYesBps) result)",
+  "function questionStates(uint256 roundId) view returns ((uint256 activeCollateral,uint256 yesSupply,uint256 noSupply,uint256 escrowRemaining,uint16 initialYesBps,uint16 currentYesBps)[8] result)",
+  "function fundingPreview(uint256 roundId,uint256 newAmount) view returns ((uint256 availableCarry,uint256 carryUsed,uint256 deferredCarry,uint256 totalFunding,uint256 maxNewAmount,uint256[8] allocations,bool needsSettlement,bool canFund,uint256 unallocated) result)",
+  "function previewClaim(uint256 roundId,address user) view returns (bool claimable,uint256 total,uint256[8] amounts)",
+  "function balancesOf(uint256 roundId,address user) view returns (uint256[8] yes,uint256[8] no)",
+  "function fundRound(uint256 roundId,uint256 newAmount)",
+  "function buy(uint256 roundId,uint8 question,bool yes,uint256 cstIn,uint256 tokensOut,uint256 deadline)",
+  "function sell(uint256 roundId,uint8 question,bool yes,uint256 tokensIn,uint256 cstOut,uint256 deadline)",
+  "function settleRound(uint256 roundId) returns (uint256 escrowed,uint256 carried)",
+  "function claimKnown(uint256 roundId) returns (uint256 total)",
+  "function splitPosition(uint256 roundId,uint8 question,uint256 amount)",
+  "function mergePosition(uint256 roundId,uint8 question,uint256 amount) returns (uint256 collateralOut)",
+  "function mergePositions(uint256 roundId,uint256[8] amounts) returns (uint256 collateralOut)",
+  "function positionId(uint256 roundId,uint8 question,bool yes) pure returns (uint256)",
+  "function decodePositionId(uint256 id) pure returns (uint256 roundId,uint8 question,bool yes)",
+  "function balanceOf(address owner,uint256 id) view returns (uint256)",
+  "function balanceOfBatch(address[] accounts,uint256[] ids) view returns (uint256[])",
+  "function safeTransferFrom(address from,address to,uint256 id,uint256 amount,bytes data)",
+  "function safeBatchTransferFrom(address from,address to,uint256[] ids,uint256[] amounts,bytes data)",
+  "function setApprovalForAll(address operator,bool approved)",
+  "function isApprovedForAll(address owner,address operator) view returns (bool)",
+  "function totalSupply(uint256 id) view returns (uint256)",
+  "function uri(uint256 id) view returns (string)",
+  "function supportsInterface(bytes4 interfaceId) view returns (bool)",
+  "event RoundFunded(uint256 indexed roundId,address indexed caller,uint256 donated,uint256 transfersUsed,uint256 carryUsed,uint256[8] allocations)",
+  "error InvalidParameters()",
+  "error InvalidSourceState()",
+  "error NotInitialized()",
+  "error NotFunded()",
+  "error RoundNotOpen()",
+  "error NotFinalized()",
+  "error OutOfOrderRound()",
+  "error FundingCapacity()",
+  "error InsufficientPosition()",
+  "error DeadlineExpired()",
+  "error TransferFailed()",
+  "error ReentrantCall()",
+  "error InvalidProbability()",
+  "error InvalidCollateral()",
+  "error NonPositiveReserve()",
+  "error ProductWouldDecrease()",
+  "error InsufficientAllowance()",
+  "error InsufficientBalance()",
+  "error ERC1155InsufficientBalance(address sender,uint256 balance,uint256 needed,uint256 tokenId)",
+  "error ERC1155InvalidReceiver(address receiver)",
+  "error ERC1155InvalidSender(address sender)",
+  "error ERC1155MissingApprovalForAll(address operator,address owner)",
+  "error ERC1155InvalidArrayLength(uint256 idsLength,uint256 valuesLength)",
+]);
+
+export const independentSourceAbi = parseAbi([
+  "function game() view returns (address)",
+  "function outcomeState(uint256 roundId) view returns (bool open,bool finalized,uint8 knownMask,uint8 values)",
+  "function metrics(uint256 roundId) view returns ((uint256 gestureCount,uint256 ethSpent,uint256 cstBurned,uint256 highestCstPaid,uint256 enduranceDuration,uint256 chronoDuration,bool sameGesture,bool finalized,bool supported) result)",
+]);
+
+export const settlementVaultAbi = parseAbi([
+  "function totalEscrowed() view returns (uint256)",
+  "function remaining(uint256 roundId,uint8 question) view returns (uint256)",
+  "function registered(uint256 roundId) view returns (bool)",
+]);
+
+/** Deployed V3 storage getter; independent of the simulator's differently shaped record. */
+export const cosmicGameV3Abi = parseAbi([
+  "function roundNum() view returns (uint256)",
+  "function token() view returns (address)",
+  "function roundStats(uint256 roundId) view returns ((uint256 numBids,uint256 numCstBids,uint256 totalSpentEthAmount,uint256 totalSpentCstAmount,uint256 maxEthBidPrice,uint256 maxCstBidPrice,uint256 enduranceChampionDuration,uint256 chronoWarriorDuration,uint256 flags) result)",
+]);
+
+/** Additional selectors implemented only by the game-funded successor. */
+export const gameFundedMarketAbi = parseAbi([
+  "function game() view returns (address)",
+  "function syncFunding(uint256 roundId)",
+  "function consumedGameFunding() view returns (uint256)",
+  "event GameFundingSynced(uint256 indexed roundId,uint256 cycleAmount,uint256 accumulatedFunding,uint256 carryUsed,uint256[8] allocations)",
+]);
+
+export const gameFundingAbi = parseAbi([
+  "function chaosZeroMarket() view returns (address)",
+  "function chaosZeroFunding(address market,uint256 roundId) view returns (uint256 amount,uint256 cumulativeAmount)",
+]);
