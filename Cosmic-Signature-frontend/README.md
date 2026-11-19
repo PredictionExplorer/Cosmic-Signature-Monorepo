@@ -17,8 +17,7 @@ The app serves two hosts from one codebase: the marketing site (`cosmicsignature
 
 ## Prerequisites
 
-- Node.js 20+ (see `.nvmrc`)
-- npm 10+ (bundled with Node)
+- Use the monorepo's [pinned Node.js version](../.node-version). The frontend also declares its supported Node.js versions and pinned npm version in [package.json](package.json).
 - A Web3 wallet (e.g. MetaMask) for blockchain features
 
 ## Getting Started
@@ -80,22 +79,25 @@ The app serves two hosts from one codebase: the marketing site (`cosmicsignature
 | `npm run i18n:parity`        | Per-locale catalog report (translated %, values identical to English)    |
 | `npm run i18n:strict`        | CI gate: key parity, ICU syntax, placeholders, plural categories         |
 | `npm run terminology:check`  | Glossary drift gate for every translated locale                          |
-| `npm run i18n:check`         | `i18n:strict` + `terminology:check` + `lexicon:scan` (pre-push runs it)  |
+| `npm run i18n:check`         | Check catalog integrity, locale conventions, terminology and vocabulary  |
 | `npm run white-paper:pdf`    | Regenerate the per-locale white-paper PDFs (pandoc + tectonic)           |
 | `npm run llms:build`         | Regenerate AI-facing docs from current localized site content            |
 
 ## Environment Variables
 
-| Variable                               | Required      | Default             | Description                                           |
-| -------------------------------------- | ------------- | ------------------- | ----------------------------------------------------- |
-| `NEXT_PUBLIC_NETWORK`                  | No            | `sepolia`           | Network: `local`, `sepolia`, or `mainnet`             |
-| `NEXT_PUBLIC_INFURA_KEY`               | Yes (mainnet) | —                   | Infura API key for Arbitrum mainnet RPC               |
-| `NEXT_PUBLIC_RPC_URL`                  | No            | Per-network default | Override the RPC endpoint                             |
-| `NEXT_PUBLIC_API_URL`                  | No            | Per-network default | Backend API URL (must include `/api/cosmicgame`)      |
-| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Yes           | —                   | WalletConnect project ID from cloud.walletconnect.com |
-| `NEXT_PUBLIC_GA4_MEASUREMENT_ID`       | No            | —                   | Google Analytics 4 measurement ID                     |
-| `NEXT_PUBLIC_SENTRY_DSN`               | No            | —                   | Sentry DSN for error reporting                        |
-| `COSMICGAME_API_UPSTREAM`              | No            | —                   | Enables same-origin `/api/cosmicgame/*` proxying      |
+Set these values in the frontend's `.env.local` for development. Next.js embeds `NEXT_PUBLIC_*` values in the browser bundle at build time. Rebuild when moving between networks. Choose an API and RPC for the same network.
+
+| Variable                                        | Required | Purpose                                              |
+| ----------------------------------------------- | -------- | ---------------------------------------------------- |
+| `NEXT_PUBLIC_NETWORK`                           | Yes      | One of `local`, `sepolia`, or `mainnet`              |
+| `NEXT_PUBLIC_RPC_URL` or `NEXT_PUBLIC_RPC_URLS` | Yes      | JSON-RPC endpoint or comma-separated endpoint list   |
+| `NEXT_PUBLIC_API_URL` or `NEXT_PUBLIC_API_URLS` | Yes      | Backend bases including the `/api/cosmicgame` path   |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`          | Yes      | Public Reown project ID for the wallet connection UI |
+| `NEXT_PUBLIC_GA4_MEASUREMENT_ID`                | No       | Google Analytics 4 measurement ID                    |
+| `NEXT_PUBLIC_SENTRY_DSN`                        | No       | Sentry DSN for error reporting                       |
+| `COSMICGAME_API_UPSTREAM`                       | No       | Origin for same-site `/api/cosmicgame/*` proxying    |
+
+A nonempty plural list takes precedence over the corresponding singular URL. Code that needs a single primary endpoint uses the first entry. Rotation-aware requests alternate hourly and can fail over to another listed server. The [environment example](.env.example) shows single-endpoint, redundant and same-origin configurations.
 
 The public build defaults to V3. For a local V4 rehearsal, set `NEXT_PUBLIC_CONTRACT_MECHANICS_VERSION=4` before building. This enables the eight-question Chaos Zero funding description in each locale. At cutover, regenerate the static AI-facing documents with the same variable set when running `npm run llms:build`. The checked-in documents describe the current public deployment.
 
@@ -208,7 +210,7 @@ Every override is a debt with a reason and a retirement condition:
 | Override                         | Why it exists                                                                                                                                                                                                                                                                   | Retire when                                                                                                        |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `@noble/hashes`                  | Dedupes the wallet stack onto one copy; `@base-org/account` and `@walletconnect/relay-auth` pin older 1.x releases that would otherwise nest.                                                                                                                                   | Both consumers declare a range that meets at one version.                                                          |
-| `axios`                          | `@coinbase/cdp-sdk` (via `@base-org/account`) pins `axios@1.16.0` exactly, which carries a high advisory; the app's own axios is already patched.                                                                                                                               | `@coinbase/cdp-sdk` declares a patched axios range.                                                                |
+| `axios`                          | `@coinbase/cdp-sdk@1.49.1` pins `axios@1.13.6`. The `$axios` override applies the app’s direct axios range to transitive copies and follows future manifest updates.                                                                                                            | `@coinbase/cdp-sdk` declares a patched axios range.                                                                |
 | `@coinbase/cdp-sdk`              | Advisory-patched releases (1.56.0+) statically import optional `@x402/*` packages that are not installed, breaking the Turbopack build. 1.49.1 predates both the advisory range (1.49.2–1.55.0) and the x402 imports, and sits inside `@base-org/account`'s declared `^1.48.3`. | Upstream guards its `@x402/*` imports behind resolvable modules, or `@base-org/account` bumps past such a release. |
 | `@rainbow-me/rainbowkit > wagmi` | RainbowKit 2.x declares `wagmi@^2.9.0` as a peer and the app runs wagmi 3; the override repeats the root spec so npm places one wagmi.                                                                                                                                          | RainbowKit publishes a release whose peer range includes wagmi 3.                                                  |
 | `glob@>=9.0.0 <14.0.2`           | GHSA-3g3m-2fjr-6pw4 (AbortSignal cancellation bypass) is patched only in 14.0.2+; `@sentry/bundler-plugins` pins `^13` and jest 30 pins `^10`. The range key leaves the non-vulnerable `glob@7` copy under `test-exclude` untouched.                                            | Sentry and jest declare `glob@>=14.0.2`.                                                                           |
@@ -224,6 +226,8 @@ npm run test:coverage     # unit tests with coverage
 npm run test:e2e          # end-to-end tests (mocked-API projects + harness tier)
 npm run test:e2e:harness  # harness tier only
 ```
+
+The coverage gate measures pages, components, contexts, hooks, services, utilities, network configuration, shared library code, locale routing and the host-routing proxy. Run `npm run test:coverage` and open `coverage/lcov-report/index.html` to inspect missed branches. The thresholds enforced by CI live in [jest.config.ts](jest.config.ts).
 
 ### Local game-state harness (testing mode)
 

@@ -104,10 +104,66 @@ contract GameFundedClaimBackingTest is Test {
             owed += outstanding[q];
             outstanding[q] = 0;
         }
+        _claimAmount(cycle, holder, owed);
+    }
+
+    function _claimAmount(uint256 cycle, address holder, uint256 owed) private {
+        (bool ready, uint256 preview,) = market.previewClaim(cycle, holder);
+        assertTrue(ready);
+        assertEq(preview, owed);
         uint256 before = cst.balanceOf(holder);
         vm.prank(holder);
         assertEq(market.claimKnown(cycle), owed);
         assertEq(cst.balanceOf(holder) - before, owed);
+    }
+
+    function testFuzz_transferringSettledPositionsMovesOnlyTheirRemainingClaimRights(
+        uint8 rawQuestion,
+        uint64 firstTransfer,
+        uint64 secondTransfer
+    ) public {
+        uint8 question = rawQuestion % 8;
+        uint256[2] memory alicePairs = [uint256(9 ether), 11 ether];
+        uint256[] memory ids = new uint256[](2);
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = bound(firstTransfer, 1, alicePairs[0] - 1);
+        amounts[1] = bound(secondTransfer, 1, alicePairs[1] - 1);
+
+        vm.prank(bob);
+        market.splitPosition(1, question, 1 ether);
+        for (uint256 i; i < 2; ++i) {
+            uint256 cycle = i + 1;
+            vm.prank(alice);
+            market.splitPosition(cycle, question, alicePairs[i]);
+            _advance();
+            (,,, uint8 answers) = source.outcomeState(cycle);
+            ids[i] = market.positionId(cycle, question, (answers & (uint8(1) << question)) != 0);
+        }
+        market.syncFunding(3);
+        _claimAmount(1, bob, 1 ether);
+
+        vm.prank(alice);
+        market.safeBatchTransferFrom(alice, bob, ids, amounts, "");
+        assertEq(vault.remaining(1, question), alicePairs[0]);
+        assertEq(vault.remaining(2, question), alicePairs[1]);
+        assertEq(cst.balanceOf(address(vault)), alicePairs[0] + alicePairs[1]);
+
+        // Bob can redeem newly received units even after redeeming his original cycle-1 position.
+        _claimAmount(2, alice, alicePairs[1] - amounts[1]);
+        _claimAmount(1, bob, amounts[0]);
+        uint256 aliceRemaining = alicePairs[0] - amounts[0];
+        assertEq(vault.remaining(1, question), aliceRemaining);
+        assertEq(vault.remaining(2, question), amounts[1]);
+        assertEq(vault.totalEscrowed(), aliceRemaining + amounts[1]);
+        assertEq(cst.balanceOf(address(vault)), aliceRemaining + amounts[1]);
+        _claimAmount(1, alice, aliceRemaining);
+        _claimAmount(2, bob, amounts[1]);
+        _claimAmount(1, bob, 0);
+        assertEq(vault.totalEscrowed(), 0);
+        assertEq(cst.balanceOf(address(vault)), 0);
+        assertEq(market.consumedGameFunding(), 3 * GRANT);
+        assertEq(market.totalActiveCollateral(), 3 * GRANT);
+        assertEq(cst.balanceOf(address(market)), 3 * GRANT);
     }
 
     function test_oneGrantPerCycleWhileTwoOlderCyclesRemainRedeemable() public {

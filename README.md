@@ -16,18 +16,20 @@ The [indexer and API](https://github.com/PredictionExplorer/augur-explorer) are 
 Use a full Git clone with submodules. The two Solidity libraries under `ChaosZero/lib/` are pinned third-party dependencies. Run these commands from the repository root:
 
 ```sh
-git submodule update --init --recursive
 make setup
 make help
 ```
 
 Use Node 22.23.2 and pnpm 10.32.0 for the shared test environment. The game and main site use npm. Chaos Zero and Axiom Zero use pnpm. The game requires the native Solidity 0.8.38 compiler and the market uses Foundry 1.7.1. The package READMEs cover their individual dev servers. Install shared Git hooks explicitly with `make hooks`.
 
+For your first change, use the [contributor guide and test matrix](CONTRIBUTING.md). The [architecture guide](docs/architecture.md) maps each directory to the code it owns and traces a V4 cycle across the four components. Use the [security policy](SECURITY.md) to report a vulnerability privately.
+
 ## Verify V4
 
-With the local test prerequisites installed, run `make test-v4` to exercise both the upgrade sequence and the three-site browser flow.
+With the local test prerequisites installed, run `make test-v4` to exercise the upgrade sequence, the auction lifecycle and the three-site browser flow.
 
 - `make test-game` plays on one proxy through V1, V2, V3 and V4, including the real Chaos Zero market and NFT auction. A failing seed and its profile can be replayed. [Four-version campaign](Cosmic-Signature/docs/v4-art-auction-upgrade.md#four-version-stateful-campaign)
+- `make test-auction` runs a two-wallet auction in Chromium against disposable V4 contracts, including outbidding, refunds, settlement and delivery. Install Chromium once from `axiomzero/` with `pnpm exec playwright install chromium`. [Auction rehearsal](axiomzero/tests/auction-local/)
 - `make test-playground` starts the three websites on a disposable local chain and submits a game gesture, a market trade and an auction bid. For this test, install Chromium from the main site's Playwright lockfile, set up Docker and Go, and provide the external indexer checkout using `RWCG_BACKEND_DIR`. The guide identifies the supported backend revision. [Browser test setup](ChaosZero/verification/playground/README.md)
 - `make test` runs the component validation suites. Individual targets are listed by `make help`. The dedicated gas, bytecode, symbolic, security and browser jobs are in [.github/workflows](.github/workflows/).
 

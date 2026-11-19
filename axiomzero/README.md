@@ -14,8 +14,11 @@ equal access, zero privilege.
 
 ## Local Development
 
+From the monorepo root, use its [pinned Node.js version](../.node-version) and the pnpm version selected by Corepack from `package.json`.
+
 ```bash
-corepack pnpm install
+cd axiomzero
+corepack pnpm install --frozen-lockfile
 corepack pnpm dev
 ```
 
@@ -39,7 +42,7 @@ Go backend JSON API (the same PredictionExplorer "webserv" that powers
 `randomwalknft.com` and `cosmicsignature.com`): Random Walk uses
 `tokens/info` and `tokens/history` on `api.randomwalknft.com:1443`, Cosmic
 Signature uses `cst/info`, `cst/transfers/all`, and `cst/list` under
-`/api/cosmicgame` on `nfts.cosmicsignature.com`. When an API is unreachable,
+`/api/cosmicgame` on the configured Cosmic Signature API hosts. See [env.example](env.example) for the primary and redundant endpoints. When an API is unreachable,
 tokens degrade to static metadata enriched with an on-chain `ownerOf` read so
 ownership never renders as the zero address. Listings, bids, and sales are
 always read from the verified Arbitrum marketplace contract. Wallet actions
@@ -67,8 +70,11 @@ corepack pnpm lint
 corepack pnpm typecheck
 corepack pnpm test:unit
 corepack pnpm build
+corepack pnpm exec playwright install chromium webkit
 corepack pnpm test:e2e
 ```
+
+The unit suite includes fast-check properties. Run `corepack pnpm test:fuzz` for the property tests alone, including exact wei conversion and funded bids by leading and competing wallets. Set `FUZZ_FACTOR=10` to run ten times the default cases per property.
 
 GitHub Actions runs the same gates, including the Playwright end-to-end and
 axe accessibility suites, on relevant pushes and pull requests to `main` or

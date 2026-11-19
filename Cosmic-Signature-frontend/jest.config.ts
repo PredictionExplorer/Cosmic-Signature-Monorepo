@@ -31,8 +31,12 @@ const config: Config = {
   collectCoverageFrom: [
     'app/**/*.{ts,tsx}',
     'components/**/*.{ts,tsx}',
+    'config/**/*.{ts,tsx}',
     'contexts/**/*.{ts,tsx}',
     'hooks/**/*.{ts,tsx}',
+    'i18n/**/*.{ts,tsx}',
+    'lib/**/*.{ts,tsx}',
+    'proxy.ts',
     'utils/**/*.{ts,tsx}',
     'services/**/*.{ts,tsx}',
     '!**/*.d.ts',

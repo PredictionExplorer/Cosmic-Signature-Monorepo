@@ -13,6 +13,8 @@ function setValidEnv() {
     NEXT_PUBLIC_NETWORK: 'mainnet',
     NEXT_PUBLIC_API_URL: 'https://api.example.com/api/cosmicgame/',
     NEXT_PUBLIC_RPC_URL: 'https://arb1.example-rpc.test',
+    NEXT_PUBLIC_API_URLS: '',
+    NEXT_PUBLIC_RPC_URLS: '',
     NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: '054b2b65ef55a96e408a3c1e5d15953e',
   };
 }
@@ -38,6 +40,26 @@ describe('network environment validation', () => {
   it('accepts a complete network and wallet environment', () => {
     expect(getEnvValidation()).toEqual({ valid: true, missing: [] });
   });
+
+  it.each(['with singular fallbacks', 'without singular fallbacks'])(
+    'uses the first configured API and RPC from the plural lists %s',
+    (mode) => {
+      if (mode === 'without singular fallbacks') {
+        delete process.env.NEXT_PUBLIC_API_URL;
+        delete process.env.NEXT_PUBLIC_RPC_URL;
+      }
+      process.env.NEXT_PUBLIC_API_URLS = ' , https://a.example/api/cosmicgame/, https://b.example';
+      process.env.NEXT_PUBLIC_RPC_URLS = ' , https://a.example/rpc, https://b.example/rpc';
+
+      expect(getEnvValidation()).toEqual({ valid: true, missing: [] });
+      jest.isolateModules(() => {
+        const { networkConfig: configured } =
+          jest.requireActual<typeof import('../networks')>('../networks');
+        expect(configured.apiUrl).toBe('https://a.example/api/cosmicgame/');
+        expect(configured.rpcUrl).toBe('https://a.example/rpc');
+      });
+    },
+  );
 
   it('rejects a missing WalletConnect project id', () => {
     process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID = '';

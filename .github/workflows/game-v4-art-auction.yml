@@ -6,6 +6,8 @@ on:
       - Cosmic-Signature/**
       - ChaosZero/**
       - .github/workflows/game-v4-art-auction.yml
+      - scripts/ci/install-game-solc.sh
+      - .node-version
       - .gitmodules
     branches:
       - main
@@ -18,6 +20,8 @@ on:
       - Cosmic-Signature/**
       - ChaosZero/**
       - .github/workflows/game-v4-art-auction.yml
+      - scripts/ci/install-game-solc.sh
+      - .node-version
       - .gitmodules
   schedule:
     - cron: '17 4 * * *'
@@ -45,24 +49,13 @@ jobs:
           submodules: recursive
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
-          node-version: 22
+          node-version-file: .node-version
           cache: npm
           cache-dependency-path: Cosmic-Signature/package-lock.json
       - run: npm ci
-      - name: Install the pinned native Solidity compiler
-        shell: bash
-        run: |
-          main() {
-            local compiler_path="$HOME/.solc-select/artifacts/solc-0.8.38/solc-0.8.38"
-            mkdir -p "$(dirname "$compiler_path")"
-            curl --fail --silent --show-error --location --retry 3 \
-              'https://raw.githubusercontent.com/argotorg/solc-bin/68447de66b15599f2e23af0051ab2080053746e4/linux-amd64/solc-linux-amd64-v0.8.38+commit.1835d247' \
-              --output "$compiler_path"
-            echo "65c3180a336eabb6bdc4bbd49cc405aeb233976964ae6c11fba2a6c8be8f3243  $compiler_path" | sha256sum --check --strict
-            chmod 755 "$compiler_path"
-            "$compiler_path" --version
-          }
-          main
+      - name: Install the native game compiler
+        working-directory: .
+        run: ./scripts/ci/install-game-solc.sh
       - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
           version: v1.7.1
