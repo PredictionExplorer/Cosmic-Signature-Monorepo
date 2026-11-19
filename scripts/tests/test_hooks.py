@@ -27,8 +27,8 @@ class HookTests(unittest.TestCase):
         for component, hook in (
             ("ChaosZero", ".githooks/pre-push"),
             ("ChaosZero", ".githooks/pre-commit"),
-            ("cosmicgame-frontend", ".husky/pre-commit"),
-            ("cosmicgame-frontend", ".husky/commit-msg"),
+            ("Cosmic-Signature-frontend", ".husky/pre-commit"),
+            ("Cosmic-Signature-frontend", ".husky/commit-msg"),
         ):
             path = self.repo / component / hook
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -56,16 +56,16 @@ class HookTests(unittest.TestCase):
         ).strip()
 
     def test_mixed_commit_invokes_only_touched_components(self):
-        for name in ("ChaosZero", "cosmicgame-frontend"):
+        for name in ("ChaosZero", "Cosmic-Signature-frontend"):
             (self.repo / name / "a file").write_text("test\n")
         self.git("add", ".")
         self.git("commit", "-qm", "mixed commit")
         self.assertEqual(
             self.log.read_text().splitlines(),
             [
-                "cosmicgame-frontend/pre-commit",
+                "Cosmic-Signature-frontend/pre-commit",
                 "ChaosZero/pre-commit",
-                "cosmicgame-frontend/commit-msg",
+                "Cosmic-Signature-frontend/commit-msg",
             ],
         )
 

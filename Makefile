@@ -14,7 +14,7 @@ help:
 setup:
 	git submodule update --init --recursive
 	cd Cosmic-Signature && npm ci
-	cd cosmicgame-frontend && npm ci
+	cd Cosmic-Signature-frontend && npm ci
 	cd ChaosZero && pnpm install --frozen-lockfile
 	cd ChaosZero/frontend && pnpm install --frozen-lockfile
 	cd axiomzero && pnpm install --frozen-lockfile
@@ -30,7 +30,7 @@ test-game:
 	cd Cosmic-Signature && TERM=$${TERM:-xterm} npm run hardhat-test-quick
 
 test-site:
-	cd cosmicgame-frontend && npm run i18n:check && npm run lint && npm run type-check && CI=true npm test -- --maxWorkers=2
+	cd Cosmic-Signature-frontend && npm run i18n:check && npm run lint && npm run type-check && CI=true npm test -- --maxWorkers=2
 
 test-chaos:
 	cd ChaosZero && pnpm check

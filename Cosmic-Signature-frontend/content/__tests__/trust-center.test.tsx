@@ -120,7 +120,9 @@ describe('Trust Center template', () => {
       expect(document.querySelector('time')).toHaveAttribute('datetime', date.date);
       expect(screen.getByRole('link', { name: /Revision history/ })).toHaveAttribute(
         'href',
-        expect.stringContaining('/commits/main/content/legal/'),
+        expect.stringContaining(
+          '/Cosmic-Signature-Monorepo/commits/V4/Cosmic-Signature-frontend/content/legal/',
+        ),
       );
     },
   );
@@ -521,12 +523,12 @@ describe('Terms of Service', () => {
 
   it('links the licence, the notices and the contact channels', () => {
     render(PAGES.terms('en'));
-    expect(screen.getByRole('link', { name: /^LICENSE/ }).getAttribute('href')).toMatch(
-      /cosmicgame-frontend\/blob\/main\/LICENSE$/,
+    expect(screen.getByRole('link', { name: /^LICENSE/ }).getAttribute('href')).toBe(
+      'https://github.com/PredictionExplorer/Cosmic-Signature-Monorepo/blob/V4/Cosmic-Signature-frontend/LICENSE',
     );
-    expect(
-      screen.getByRole('link', { name: /THIRD_PARTY_NOTICES\.md/ }).getAttribute('href'),
-    ).toMatch(/THIRD_PARTY_NOTICES\.md$/);
+    expect(screen.getByRole('link', { name: /THIRD_PARTY_NOTICES\.md/ }).getAttribute('href')).toBe(
+      'https://github.com/PredictionExplorer/Cosmic-Signature-Monorepo/blob/V4/Cosmic-Signature-frontend/THIRD_PARTY_NOTICES.md',
+    );
   });
 });
 

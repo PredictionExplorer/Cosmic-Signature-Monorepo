@@ -17,7 +17,7 @@ import { stageFrontend } from "./stage-frontend.mjs";
 test("three-site rehearsal stages the current frontend without other packages or local settings", (t) => {
   const root = mkdtempSync(join(tmpdir(), "stage-cosmic-frontend-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
-  const site = join(root, "cosmicgame-frontend");
+  const site = join(root, "Cosmic-Signature-frontend");
   const staged = join(root, "staged");
   mkdirSync(site);
   execFileSync("git", ["init", "-q", root]);
@@ -40,7 +40,7 @@ test("three-site rehearsal stages the current frontend without other packages or
   for (const file of [
     ".env.local",
     "other-package.txt",
-    "cosmicgame-frontend",
+    "Cosmic-Signature-frontend",
     "deleted.js",
     "scratch",
   ]) {

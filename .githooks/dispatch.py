@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-COSMIC_WEB = "cosmicgame-frontend"
+COSMIC_WEB = "Cosmic-Signature-frontend"
 CHAOS = "ChaosZero"
 
 
