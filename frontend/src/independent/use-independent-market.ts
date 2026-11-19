@@ -47,6 +47,9 @@ export function useIndependentMarket(market: Address, override: bigint | null, p
         throw new Error("The RPC is not Arbitrum One.");
       const block = await client.getBlock();
       const blockNumber = block.number;
+      // A loopback node can host either the standalone simulator or the real game.
+      const simulator =
+        appConfig.chain.id === 31337 && process.env.NEXT_PUBLIC_LOCAL_SIMULATOR !== "0";
       const [token, source, vault, poolCustody, pendingCarry] = await Promise.all([
         client.readContract({
           address: market,
@@ -176,7 +179,7 @@ export function useIndependentMarket(market: Address, override: bigint | null, p
               }),
             ])
           : null,
-        appConfig.chain.id === 31337
+        simulator
           ? Promise.all([
               client.readContract({
                 address: game,
@@ -214,7 +217,7 @@ export function useIndependentMarket(market: Address, override: bigint | null, p
                 : null,
             ])
           : null,
-        appConfig.chain.id === 42161
+        !simulator
           ? Promise.all([
               client.readContract({
                 address: source,

@@ -1,0 +1,116 @@
+name: V4 cross-project browser test
+
+on:
+  pull_request:
+    branches: [V4]
+  push:
+    branches: [V4]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    name: Gesture, trade and bid on one V4 deployment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out the candidate market and test
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          path: ChaosZero
+          submodules: recursive
+          persist-credentials: false
+      - name: Check out the V4 game contracts
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: PredictionExplorer/Cosmic-Signature
+          ref: 7e4f483d67f2ba5d8a99cd03a9da2491c0e5c545
+          path: Cosmic-Signature
+          persist-credentials: false
+      - name: Check out the Cosmic Signature site and harness
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: PredictionExplorer/cosmicgame-frontend
+          ref: 939823399093399d324a0ab283967f38c4289832
+          path: cosmicgame-frontend
+          persist-credentials: false
+      - name: Check out the Axiom Zero auction site
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: PredictionExplorer/axiomzero
+          ref: 054c47d804267a3bd73436037e619a92a6fddaa3
+          path: axiomzero
+          persist-credentials: false
+      - name: Check out the game indexer and API
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: PredictionExplorer/augur-explorer
+          ref: 5bbc83eb31c88de36c25a83dc1b5fe9bea36a464
+          path: augur-explorer
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          package_json_file: ChaosZero/package.json
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: ChaosZero/.node-version
+          cache: pnpm
+          cache-dependency-path: |
+            ChaosZero/pnpm-lock.yaml
+            ChaosZero/frontend/pnpm-lock.yaml
+            axiomzero/pnpm-lock.yaml
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: augur-explorer/go.mod
+          cache-dependency-path: augur-explorer/go.sum
+      - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
+        with:
+          version: v1.7.1
+      - name: Install the game's native Solidity compiler
+        run: |
+          compiler="$HOME/.solc-select/artifacts/solc-0.8.38/solc-0.8.38"
+          mkdir -p "$(dirname "$compiler")"
+          curl -fsSL --retry 3 'https://raw.githubusercontent.com/argotorg/solc-bin/68447de66b15599f2e23af0051ab2080053746e4/linux-amd64/solc-linux-amd64-v0.8.38+commit.1835d247' -o "$compiler"
+          echo "65c3180a336eabb6bdc4bbd49cc405aeb233976964ae6c11fba2a6c8be8f3243  $compiler" | sha256sum --check --strict
+          chmod +x "$compiler"
+      - name: Install the backend's pinned PostgreSQL migration CLI
+        run: |
+          mkdir -p "$RUNNER_TEMP/goose-bin"
+          curl -fsSL --retry 3 'https://github.com/pressly/goose/releases/download/v3.27.2/goose_linux_x86_64' -o "$RUNNER_TEMP/goose-bin/goose"
+          echo "29abceca027ee0da2cf28ca6c64c76d08e52a28acd4cf1919b832c77dd4bec4b  $RUNNER_TEMP/goose-bin/goose" | sha256sum --check --strict
+          chmod +x "$RUNNER_TEMP/goose-bin/goose"
+          echo "$RUNNER_TEMP/goose-bin" >> "$GITHUB_PATH"
+      - name: Install locked contracts and site dependencies
+        env:
+          HUSKY: "0"
+        run: |
+          npm --prefix Cosmic-Signature ci
+          npm --prefix cosmicgame-frontend ci
+          pnpm --dir ChaosZero install --frozen-lockfile
+          pnpm --dir ChaosZero/frontend install --frozen-lockfile
+          pnpm --dir axiomzero install --frozen-lockfile
+      - name: Install the Chromium runtime from the browser runner's lockfile
+        working-directory: cosmicgame-frontend
+        run: ./node_modules/.bin/playwright install --with-deps chromium
+      - name: Run the shared-chain browser scenario
+        working-directory: ChaosZero
+        env:
+          TMPDIR: ${{ runner.temp }}
+        run: pnpm test:v4:browser
+      - name: Upload failure logs and browser traces
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: v4-cross-project-browser
+          path: |
+            ${{ runner.temp }}/cosmic-v4-browser.*/.harness/logs/*.log
+            ${{ runner.temp }}/cosmic-v4-browser.*/test-results/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
