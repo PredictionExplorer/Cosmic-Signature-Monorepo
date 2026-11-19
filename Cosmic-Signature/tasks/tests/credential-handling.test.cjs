@@ -147,7 +147,7 @@ async function main() {
 		await assert.rejects(withNewReport(file_, () => assert.fail("existing report ignored")), /already exists/);
 		assert.deepEqual(JSON.parse(await fs.promises.readFile(file_, "utf8")), { complete: true });
 	});
-	await test("report reservations release on failure and a concurrent file is never overwritten", async (t_) => {
+	await test("pre-publication failure releases the reservation and a competing final file preserves the recovery report", async (t_) => {
 		const directory_ = await fs.promises.mkdtemp(path.join(os.tmpdir(), "cs-report-"));
 		t_.after(() => fs.promises.rm(directory_, { recursive: true, force: true }));
 		const file_ = path.join(directory_, "report.json");
@@ -157,7 +157,21 @@ async function main() {
 			await save_({ complete: true });
 		}), { code: "EEXIST" });
 		assert.equal(await fs.promises.readFile(file_, "utf8"), "another writer");
-		assert.deepEqual(await fs.promises.readdir(directory_), ["report.json"]);
+		assert.deepEqual(JSON.parse(await fs.promises.readFile(path.join(file_ + ".pending", "report.json"), "utf8")), { complete: true });
+		await assert.rejects(withNewReport(file_, () => assert.fail("retry started before reconciliation")), /already pending/);
+	});
+	await test("a draft write failure keeps its reservation before another chain operation can start", async (t_) => {
+		const directory_ = await fs.promises.mkdtemp(path.join(os.tmpdir(), "cs-report-"));
+		t_.after(() => fs.promises.rm(directory_, { recursive: true, force: true }));
+		const file_ = path.join(directory_, "report.json");
+		const failedWrite_ = t_.mock.method(fs.promises, "writeFile", async () => {
+			throw Object.assign(new Error("simulated storage failure"), { code: "ENOSPC" });
+		});
+		await assert.rejects(withNewReport(file_, save_ => save_({ complete: true })), { code: "ENOSPC" });
+		failedWrite_.mock.restore();
+		assert.deepEqual(await fs.promises.readdir(file_ + ".pending"), []);
+		await assert.rejects(fs.promises.lstat(file_), { code: "ENOENT" });
+		await assert.rejects(withNewReport(file_, () => assert.fail("retry started before reconciliation")), /already pending/);
 	});
 	const rpcSecret_ = "test-only-rpc-key-sentinel";
 	const rpcUrl_ = `https://user:${rpcSecret_}@rpc.invalid/${rpcSecret_}?apiKey=${rpcSecret_}`;

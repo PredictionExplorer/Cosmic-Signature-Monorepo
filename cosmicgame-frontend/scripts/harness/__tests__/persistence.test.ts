@@ -1,5 +1,7 @@
 import fs, {
   mkdtempSync,
+  openSync,
+  closeSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -12,7 +14,8 @@ import { join } from 'node:path';
 import { readOwnership } from '../../../e2e/harness/support/stack';
 import { withPreservedNextEnv } from '../orchestrator/frontend';
 import { loopbackOrigin } from '../ports';
-import { readStateFile } from '../processes';
+import { resolveHarnessConfig } from '../config';
+import { emptyState, readStateFile, writeState } from '../processes';
 
 describe('harness persistence boundaries', () => {
   let dir: string;
@@ -27,6 +30,22 @@ describe('harness persistence boundaries', () => {
     expect(readStateFile(path)).toBeNull();
     writeFileSync(path, JSON.stringify({ ...ports, apiPort: 18777, processes: [] }));
     expect(loopbackOrigin(readStateFile(path)?.apiPort)).toEqual('http://127.0.0.1:18777');
+  });
+
+  it('keeps an open reader on a complete snapshot while publishing the next one', () => {
+    const config = { ...resolveHarnessConfig({}, dir), runDir: dir };
+    const file = join(dir, 'state.json');
+    const initial = emptyState(config);
+    writeState(config, initial);
+    const reader = openSync(file, 'r');
+    try {
+      const updated = { ...initial, webPort: 3210 };
+      writeState(config, updated);
+      expect(JSON.parse(readFileSync(reader, 'utf8'))).toEqual(initial);
+      expect(readStateFile(file)).toEqual(updated);
+    } finally {
+      closeSync(reader);
+    }
   });
 
   it.each(['86/86', '8e3', 2.5, 0, 65536, null])(

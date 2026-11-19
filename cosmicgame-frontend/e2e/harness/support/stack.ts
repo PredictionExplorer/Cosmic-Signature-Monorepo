@@ -5,10 +5,11 @@
  */
 
 import { execFile } from 'node:child_process';
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 
+import { publishGeneratedFile } from '../../../scripts/publish-generated-file';
 import { readStateFile } from '../../../scripts/harness/processes';
 import { loopbackOrigin } from '../../../scripts/harness/ports';
 import { SCENARIOS } from '../../../scripts/harness/scenarios';
@@ -124,7 +125,7 @@ interface Ownership {
 }
 
 function writeOwnership(ownership: Ownership): void {
-  writeFileSync(OWNERSHIP_FILE, JSON.stringify(ownership));
+  publishGeneratedFile(OWNERSHIP_FILE, JSON.stringify(ownership));
 }
 
 export function readOwnership(): Ownership | null {

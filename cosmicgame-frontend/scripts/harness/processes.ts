@@ -18,9 +18,10 @@ import {
   constants,
   watchFile,
   unwatchFile,
-  writeFileSync,
 } from 'node:fs';
 import { dirname, join } from 'node:path';
+
+import { publishGeneratedFile } from '../publish-generated-file';
 
 import { harnessPort } from './ports';
 import { openOptionalHarnessFile } from './files';
@@ -219,8 +220,7 @@ export function readState(config: HarnessConfig): HarnessState | null {
 
 export function writeState(config: HarnessConfig, state: HarnessState): void {
   const { stateFile } = harnessPaths(config);
-  mkdirSync(dirname(stateFile), { recursive: true });
-  writeFileSync(stateFile, JSON.stringify(state, null, 2));
+  publishGeneratedFile(stateFile, JSON.stringify(state, null, 2));
 }
 
 export function emptyState(config: HarnessConfig): HarnessState {

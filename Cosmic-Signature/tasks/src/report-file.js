@@ -8,6 +8,8 @@ async function withNewReport(reportPath_, operation_) {
 	const directory_ = path.dirname(reportPath_);
 	const pending_ = reportPath_ + ".pending";
 	const draft_ = path.join(pending_, "report.json");
+	const partial_ = draft_ + ".partial";
+	let keepReservation_ = false;
 	await fs.mkdir(directory_, { recursive: true });
 	try {
 		await fs.mkdir(pending_, { mode: 0o700 });
@@ -23,19 +25,29 @@ async function withNewReport(reportPath_, operation_) {
 			if (error_.code !== "ENOENT") throw error_;
 		}
 		return await operation_(async (report_) => {
-			const json_ = JSON.stringify(report_, null, 3);
+			let json_;
 			try {
-				await fs.writeFile(draft_, json_, { flag: "wx", mode: 0o600 });
+				json_ = JSON.stringify(report_, null, 3);
+				await fs.writeFile(partial_, json_, { flag: "wx", mode: 0o600 });
+				await fs.rename(partial_, draft_);
 				await fs.link(draft_, reportPath_);
 			} catch (error_) {
-				console.info("Report:");
-				console.info("%s", json_);
+				// The chain operation produced a report. Keep its reservation and any evidence
+				// so a failed filesystem operation cannot allow an automatic second deployment.
+				keepReservation_ = true;
+				console.error('Report publication failed. Reconcile "%s" with the transaction receipts before retrying.', pending_);
+				if (json_ !== undefined) {
+					console.info("Report:");
+					console.info("%s", json_);
+				}
 				throw error_;
 			}
 		});
 	} finally {
-		await fs.rm(draft_, { force: true });
-		await fs.rmdir(pending_);
+		if ( ! keepReservation_ ) {
+			await fs.rm(draft_, { force: true });
+			await fs.rmdir(pending_);
+		}
 	}
 }
 
