@@ -1,5 +1,7 @@
+import { chaosZeroParagraphs, v4CycleIssuanceNote } from '@/content/chaos-zero/text.en';
 import { ethDistributionFacts, nftAllocationFacts, protocolFacts } from '@/content/protocol-facts';
 
+import { CHAOS_ZERO_PREDICTIONS_URL } from '@/config/predictions';
 import { formatCount } from '@/utils/format/numbers';
 
 import type { FAQText } from './structure';
@@ -89,7 +91,7 @@ export const faqTextEn = {
       },
       'how-many-nfts-minted': {
         question: 'How many Cosmic Signature NFTs are imprinted each cycle?',
-        answer: `With every track present, a cycle imprints ${nftAllocationFacts.typicalNftsPerCycle} Cosmic Signature NFTs: ${nftAllocationFacts.mainPrizeNftsWord.en} for the Signature Allocation, one each for the Final CST Gesture, Endurance Champion and Chrono-Warrior, ${protocolFacts.nftStellarSelectionRecipients} for participant selection and ${protocolFacts.anchoredRwlkNftSelectionRecipients} for anchored Random Walk NFT selection. The main allocation receives ${cst} CST once for all its NFTs; each other NFT allocation receives ${cst} CST. A cycle without CST gestures or active Random Walk anchors has the corresponding track skipped for that cycle.`,
+        answer: `With every allocation track present, recipients receive ${nftAllocationFacts.typicalNftsPerCycle} Cosmic Signature NFTs: ${nftAllocationFacts.mainPrizeNftsWord.en} for the Signature Allocation, one each for the Final CST Gesture, Endurance Champion and Chrono-Warrior, ${protocolFacts.nftStellarSelectionRecipients} for participant selection and ${protocolFacts.anchoredRwlkNftSelectionRecipients} for anchored Random Walk NFT selection. The main allocation receives ${cst} CST once for all its NFTs; each other NFT allocation receives ${cst} CST. A cycle without CST gestures or active Random Walk anchors has the corresponding track skipped for that cycle.${v4CycleIssuanceNote}`,
       },
       'what-happens-to-remaining-eth': {
         question: 'What happens to the remaining ETH in the Cycle Reserve?',
@@ -231,8 +233,7 @@ export const faqTextEn = {
       },
       'cosmic-signature-prediction-market': {
         question: 'Is there a prediction market for Cosmic Signature?',
-        answer:
-          'Yes. Chaos Zero (https://chaoszero.com) is a prediction market built specifically for Cosmic Signature. Each Performance Cycle it opens one question: will this cycle finalize with more gestures than the previous one? Positions are denominated in CST and fully collateralized by construction, and markets resolve from the public on-chain gesture count with no owner or admin keys.',
+        answer: `${chaosZeroParagraphs.join(' ')} ${CHAOS_ZERO_PREDICTIONS_URL}`,
       },
       'participate-dao-without-bidding': {
         question: 'Can I participate in the Cosmic Council without making a gesture?',

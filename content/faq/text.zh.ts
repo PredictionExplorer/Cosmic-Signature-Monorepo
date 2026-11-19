@@ -1,6 +1,8 @@
+import { chaosZeroParagraphs, v4CycleIssuanceNote } from '@/content/chaos-zero/text.zh';
 import { nftAllocationFacts } from '@/content/protocol-facts';
 import { cstRewardFacts, ethDistributionFacts, protocolFacts } from '@/content/protocol-facts';
 
+import { CHAOS_ZERO_PREDICTIONS_URL } from '@/config/predictions';
 import { formatCount } from '@/utils/format/numbers';
 
 import type { FAQText } from './structure';
@@ -103,7 +105,7 @@ export const faqTextZh = {
       },
       'how-many-nfts-minted': {
         question: '每个周期会铭刻多少枚 Cosmic Signature NFT？',
-        answer: `各轨道均满足条件时，收官会铭刻 ${protocolFacts.typicalNftsPerCycle} 枚 Cosmic Signature NFT：签名分配 ${protocolFacts.mainPrizeNftsPerCycle} 枚，时之勇士、坚守冠军与 CST 收官之笔各 1 枚，参与者星选 ${protocolFacts.nftStellarSelectionRecipients} 枚，Random Walk NFT 锚定星选 ${protocolFacts.anchoredRwlkNftSelectionRecipients} 枚。签名分配的 CST 合计仅为 ${cst}，不按其中的 NFT 枚数重复计算。没有 CST 落笔或没有已锚定 Random Walk NFT 时，相关轨道会跳过。`,
+        answer: `各分配轨道均满足条件时，获配者共获得 ${protocolFacts.typicalNftsPerCycle} 枚 Cosmic Signature NFT：签名分配 ${protocolFacts.mainPrizeNftsPerCycle} 枚，时之勇士、坚守冠军与 CST 收官之笔各 1 枚，参与者星选 ${protocolFacts.nftStellarSelectionRecipients} 枚，Random Walk NFT 锚定星选 ${protocolFacts.anchoredRwlkNftSelectionRecipients} 枚。签名分配的 CST 合计仅为 ${cst}，不按其中的 NFT 枚数重复计算。没有 CST 落笔或没有已锚定 Random Walk NFT 时，相关轨道会跳过。${v4CycleIssuanceNote}`,
       },
       'what-happens-to-remaining-eth': {
         question: '周期储备中剩余的 ETH 会怎样处理？',
@@ -246,8 +248,7 @@ export const faqTextZh = {
       },
       'cosmic-signature-prediction-market': {
         question: 'Cosmic Signature 有预测市场吗？',
-        answer:
-          '有。Chaos Zero（https://chaoszero.com）是专为 Cosmic Signature 构建的预测市场。每个演绎周期都会提出一个问题：本周期收官时的落笔次数是否会超过上一周期？所有头寸以 CST 计价，并按机制完全抵押；市场依据公开的链上落笔次数结算，不设所有者或管理密钥。',
+        answer: `${chaosZeroParagraphs.join('')} ${CHAOS_ZERO_PREDICTIONS_URL}`,
       },
       'participate-dao-without-bidding': {
         question: '不落笔也能参与宇宙议会吗？',

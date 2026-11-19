@@ -223,7 +223,7 @@
     },
     "chaosZero": {
       "label": "Chaos Zero",
-      "description": "독립적인 예측 시장"
+      "description": "사이클 예측 시장"
     },
     "geckoTerminal": {
       "label": "GeckoTerminal",

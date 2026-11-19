@@ -289,7 +289,7 @@ export const basicQuestionsTextKo = {
       d: 'CST 제스처만 가능하고 ETH 제스처는 남길 수 없습니다.',
     },
     explanation:
-      '컨트랙트를 둘러싼 생태계, 곧 앱, Axiom Zero, Uniswap 유동성, Chaos Zero는 편의일 뿐 의존 대상이 아닙니다. 어느 것도 필수가 아닙니다. 제스처, 마감, 앵커링, 회수는 모두 검증된 컨트랙트를 직접 호출해 실행할 수 있습니다.',
+      '웹사이트가 중단되어도 컨트랙트를 직접 호출해 제스처, 마감, NFT 앵커링, 배분 회수를 진행할 수 있습니다.',
     referenceLabel: '백서 §2 — 프로토콜 개요',
   },
   'what-it-is-not': {

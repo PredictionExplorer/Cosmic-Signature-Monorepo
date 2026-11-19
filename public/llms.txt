@@ -10,7 +10,7 @@ The checked Arbitrum One deployment uses V3 at 0xc1b97E1b0baC86248653B18706dbC5c
 
 The Signature Allocation receives 20% of the ETH reserve, 1,000 CST in total and 3 sequential NFTs. Chrono-Warrior receives 15%; participant ETH Stellar Selection shares 5%; Anchor Distribution receives 5%; Public Goods receives 5%. Approximately half remains, with rounding and omitted-transfer exceptions.
 
-With every track present, finalization creates 26 Cosmic Signature NFTs and 27,000 fixed CST, including 3,000 CST for the Outreach Reserve. The Final CST Gesture and anchored Random Walk tracks are conditional. Three main NFTs do not create three separate CST allocations.
+With every allocation track present, participants and the Outreach Reserve receive 26 Cosmic Signature NFTs and 27,000 fixed CST, including 3,000 CST for the Outreach Reserve. The Final CST Gesture and anchored Random Walk tracks are conditional. The three main NFTs share a single CST allocation.
 
 Participation CST is linear and credited to the previous participant when the next gesture executes. The first gesture creates no dynamic CST; finalization does not settle the last participant’s pending amount. Both participant ETH and NFT selections use the concurrent undiscounted, premium-free ETH base cost as weight, including CST gestures. Repeated recipients are possible.
 
@@ -28,7 +28,9 @@ Artwork reproduction requires its seed, renderer revision, configuration and com
 
 [Axiom Zero](https://www.axiomzero.market/cosmic-signature) is the zero-fee NFT marketplace for Cosmic Signature and Random Walk NFTs.
 
-[Chaos Zero](https://chaoszero.com) is the prediction market about whether a cycle has more gestures than the previous one.
+[Chaos Zero](https://chaoszero.com) opens eight prediction markets every Performance Cycle. One asks whether this cycle will finalize with more gestures than the previous one. Positions are denominated in CST.
+
+Trading stays open until Cosmic Signature finalizes the cycle. All eight answers then follow from the on-chain cycle statistics. A matching YES and NO pair for the same question can be exchanged for one CST.
 
 [CST on Uniswap](https://app.uniswap.org/swap?chain=arbitrum&inputCurrency=NATIVE&outputCurrency=0xAD91843e6A58Ba560F577E676986AFb1dba6FBA0)
 
@@ -145,7 +147,7 @@ You can receive CST tokens (ERC-20) for helping promote the protocol. The Outrea
 
 #### How many Cosmic Signature NFTs are imprinted each cycle?
 
-With every track present, a cycle imprints 26 Cosmic Signature NFTs: three for the Signature Allocation, one each for the Final CST Gesture, Endurance Champion and Chrono-Warrior, 10 for participant selection and 10 for anchored Random Walk NFT selection. The main allocation receives 1,000 CST once for all its NFTs; each other NFT allocation receives 1,000 CST. A cycle without CST gestures or active Random Walk anchors has the corresponding track skipped for that cycle.
+With every allocation track present, recipients receive 26 Cosmic Signature NFTs: three for the Signature Allocation, one each for the Final CST Gesture, Endurance Champion and Chrono-Warrior, 10 for participant selection and 10 for anchored Random Walk NFT selection. The main allocation receives 1,000 CST once for all its NFTs; each other NFT allocation receives 1,000 CST. A cycle without CST gestures or active Random Walk anchors has the corresponding track skipped for that cycle.
 
 #### What happens to the remaining ETH in the Cycle Reserve?
 
@@ -326,7 +328,7 @@ Random Walk NFT 也可以锚定，但只用于取得锚定 NFT 星选资格—�
 
 #### 每个周期会铭刻多少枚 Cosmic Signature NFT？
 
-各轨道均满足条件时，收官会铭刻 26 枚 Cosmic Signature NFT：签名分配 3 枚，时之勇士、坚守冠军与 CST 收官之笔各 1 枚，参与者星选 10 枚，Random Walk NFT 锚定星选 10 枚。签名分配的 CST 合计仅为 1,000，不按其中的 NFT 枚数重复计算。没有 CST 落笔或没有已锚定 Random Walk NFT 时，相关轨道会跳过。
+各分配轨道均满足条件时，获配者共获得 26 枚 Cosmic Signature NFT：签名分配 3 枚，时之勇士、坚守冠军与 CST 收官之笔各 1 枚，参与者星选 10 枚，Random Walk NFT 锚定星选 10 枚。签名分配的 CST 合计仅为 1,000，不按其中的 NFT 枚数重复计算。没有 CST 落笔或没有已锚定 Random Walk NFT 时，相关轨道会跳过。
 
 #### 周期储备中剩余的 ETH 会怎样处理？
 
@@ -507,7 +509,7 @@ Random Walk NFT 也可以錨定，但只用於取得錨定 NFT 星選資格—�
 
 #### 每個週期會銘刻多少枚 Cosmic Signature NFT？
 
-各軌道條件都成立時，收官會銘刻 26 枚 Cosmic Signature NFT：簽名分配 3 枚，時之勇士、堅守冠軍與 CST 收官之筆各 1 枚，參與者星選 10 枚，Random Walk NFT 錨定星選 10 枚。簽名分配的 CST 合計只有 1,000，不會按其中的 NFT 枚數重複計算。沒有 CST 落筆或已錨定 Random Walk NFT 時，相關軌道會跳過。
+各分配軌道條件都成立時，獲配者共獲得 26 枚 Cosmic Signature NFT：簽名分配 3 枚，時之勇士、堅守冠軍與 CST 收官之筆各 1 枚，參與者星選 10 枚，Random Walk NFT 錨定星選 10 枚。簽名分配的 CST 合計只有 1,000，不會按其中的 NFT 枚數重複計算。沒有 CST 落筆或已錨定 Random Walk NFT 時，相關軌道會跳過。
 
 #### 週期儲備中剩餘的 ETH 會怎樣處理？
 
@@ -688,7 +690,7 @@ Random Walk NFT 也可以錨定，但只用於取得錨定 NFT 星選資格—�
 
 #### 每個週期會銘刻多少枚 Cosmic Signature NFT？
 
-各軌道條件均成立時，收官會銘刻 26 枚 Cosmic Signature NFT：簽名分配 3 枚，時之勇士、堅守冠軍與 CST 收官之筆各 1 枚，參與者星選 10 枚，Random Walk NFT 錨定星選 10 枚。簽名分配的 CST 合共只有 1,000，不會按其中的 NFT 枚數重複計算。沒有 CST 落筆或已錨定 Random Walk NFT 時，相關軌道會略過。
+各分配軌道條件均成立時，獲配者合共獲得 26 枚 Cosmic Signature NFT：簽名分配 3 枚，時之勇士、堅守冠軍與 CST 收官之筆各 1 枚，參與者星選 10 枚，Random Walk NFT 錨定星選 10 枚。簽名分配的 CST 合共只有 1,000，不會按其中的 NFT 枚數重複計算。沒有 CST 落筆或已錨定 Random Walk NFT 時，相關軌道會略過。
 
 #### 週期儲備中剩餘的 ETH 會怎樣處理？
 
@@ -869,7 +871,7 @@ Random Walk NFT також можна закріпити, але лише для
 
 #### Скільки Cosmic Signature NFT закарбовується за цикл?
 
-За наявності всіх напрямів цикл створює 26 Cosmic Signature NFT і 27 000 CST у фіксованих розподілах. Розподіл Сигнатури містить 3 NFT і лише один загальний розподіл 1 000 CST. Воїн часу, Чемпіон витривалості та завершальний CST-жест отримують по одному NFT і відповідний CST; два NFT-відбори додають свої записи. Без CST-жесту або закріплених Random Walk NFT відповідні напрями пропускаються. CST участі нараховуються окремо.
+За наявності всіх напрямів отримувачам розподіляють 26 Cosmic Signature NFT і 27 000 CST у фіксованих розподілах. Розподіл Сигнатури містить 3 NFT і лише один загальний розподіл 1 000 CST. Воїн часу, Чемпіон витривалості та завершальний CST-жест отримують по одному NFT і відповідний CST; два NFT-відбори додають свої записи. Без CST-жесту або закріплених Random Walk NFT відповідні напрями пропускаються. CST участі нараховуються окремо.
 
 #### Що відбувається з рештою ETH у резерві циклу?
 
@@ -1050,7 +1052,7 @@ Random Walk NFT도 앵커링할 수 있지만, 이는 앵커링 NFT 별빛 선�
 
 #### 사이클마다 Cosmic Signature NFT가 몇 개 각인되나요?
 
-모든 경로가 있으면 한 사이클에서 Cosmic Signature NFT 26개와 고정 배분 CST 27,000개가 각인됩니다. 시그니처 배분은 NFT 3개에 대해 CST 1,000개를 합계로 한 번 받습니다. 시간의 전사, 수호 챔피언, 최종 CST 제스처는 각각 NFT 1개와 해당 CST를 받으며, 두 NFT 선정 경로가 나머지를 더합니다. CST 제스처나 앵커링된 Random Walk NFT가 없으면 해당 경로는 생략합니다. 참여 CST는 별도입니다.
+모든 배분 경로가 활성화되면 수령자에게 Cosmic Signature NFT 26개와 고정 배분 CST 27,000개가 배분됩니다. 시그니처 배분은 NFT 3개에 대해 CST 1,000개를 합계로 한 번 받습니다. 시간의 전사, 수호 챔피언, 최종 CST 제스처는 각각 NFT 1개와 해당 CST를 받으며, 두 NFT 선정 경로가 나머지를 더합니다. CST 제스처나 앵커링된 Random Walk NFT가 없으면 해당 경로는 생략합니다. 참여 CST는 별도입니다.
 
 #### 사이클 준비금에 남은 ETH는 어떻게 되나요?
 
@@ -1231,7 +1233,7 @@ Random Walk NFTも係留できますが、係留NFT星選の対象になるた�
 
 #### 各サイクルで刻印されるCosmic Signature NFTはいくつですか？
 
-すべてのトラックがある場合、サイクルは26枚のCosmic Signature NFTと固定配分の27,000 CSTを刻印します。シグネチャー配分はNFT3点に対して、合計1,000 CSTを一度だけ受け取ります。時の戦士、持久チャンピオン、最後のCST一筆には各1点と対応するCSTがあり、二つのNFT星選が残りを加えます。CST一筆や係留中のRandom Walk NFTがなければ該当トラックは省略されます。参加CSTは別です。
+すべての配分トラックが適用される場合、受領者は合わせて26枚のCosmic Signature NFTと固定配分の27,000 CSTを受け取ります。シグネチャー配分はNFT3点に対して、合計1,000 CSTを一度だけ受け取ります。時の戦士、持久チャンピオン、最後のCST一筆には各1点と対応するCSTがあり、二つのNFT星選が残りを加えます。CST一筆や係留中のRandom Walk NFTがなければ該当トラックは省略されます。参加CSTは別です。
 
 #### サイクル準備金に残ったETHはどうなりますか？
 
@@ -1412,7 +1414,7 @@ Bạn có thể nhận token CST (ERC-20) khi giúp giới thiệu giao thức. 
 
 #### Mỗi chu kỳ có bao nhiêu Cosmic Signature NFT được khắc?
 
-Khi có đủ các luồng, một chu kỳ khắc 26 Cosmic Signature NFT và 27.000 CST trong các phân bổ cố định. Phân bổ Signature gồm 3 NFT nhưng chỉ một khoản tổng cộng 1.000 CST. Chiến binh Thời gian, Quán quân Bền bỉ và nét bút CST cuối cùng mỗi luồng có một NFT cùng CST tương ứng; hai luồng NFT Tinh tuyển bổ sung phần còn lại. Nếu không có nét bút CST hoặc Random Walk NFT neo giữ thì luồng tương ứng bị bỏ qua. CST tham gia được tính riêng.
+Khi có đủ các luồng, người nhận được phân bổ tổng cộng 26 Cosmic Signature NFT và 27.000 CST trong các phân bổ cố định. Phân bổ Signature gồm 3 NFT nhưng chỉ một khoản tổng cộng 1.000 CST. Chiến binh Thời gian, Quán quân Bền bỉ và nét bút CST cuối cùng mỗi luồng có một NFT cùng CST tương ứng; hai luồng NFT Tinh tuyển bổ sung phần còn lại. Nếu không có nét bút CST hoặc Random Walk NFT neo giữ thì luồng tương ứng bị bỏ qua. CST tham gia được tính riêng.
 
 #### ETH còn lại trong Dự trữ chu kỳ sẽ đi đâu?
 

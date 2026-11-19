@@ -1,10 +1,17 @@
 import {
+  chaosZeroCstPerQuestion,
+  chaosZeroGrantCst,
+  chaosZeroQuestionCount,
   contractMechanicsVersion,
   cstRewardFacts,
   historicalV2ProtocolFacts,
   isV3Mechanics,
   nftAllocationFacts,
   protocolFacts,
+  isV4Mechanics,
+  v4ArtNftsPerCycle,
+  v4TypicalNftsPerCycle,
+  v4TypicalFixedCstPerCycle,
 } from '@/content/protocol-facts';
 
 /**
@@ -81,6 +88,18 @@ describe('protocolFacts', () => {
       nftAllocationFacts.nftBearingAllocations * protocolFacts.specialAllocationCst +
         protocolFacts.outreachReserveCst,
     );
+  });
+
+  it('accounts for the distinct V4 funding and art imprints', () => {
+    expect(isV4Mechanics).toBe(process.env.NEXT_PUBLIC_CONTRACT_MECHANICS_VERSION === '4');
+    expect(chaosZeroGrantCst).toBe(8_000);
+    expect(chaosZeroQuestionCount).toBe(8);
+    expect(chaosZeroCstPerQuestion).toBe(1_000);
+    expect(chaosZeroQuestionCount * chaosZeroCstPerQuestion).toBe(chaosZeroGrantCst);
+    expect(v4ArtNftsPerCycle).toBe(8);
+    expect(v4TypicalNftsPerCycle).toBe(34);
+    expect(v4TypicalFixedCstPerCycle).toBe(35_000);
+    expect(protocolFacts.typicalCstImprintsPerCycle).toBe(27_000);
   });
 
   it('exposes NFT counts that follow the configured mechanics version', () => {
@@ -198,7 +217,7 @@ describe('protocolFacts', () => {
 
   it('cstRewardFacts follows the configured contract mechanics version', () => {
     // V3 is the default; an explicit V2 test environment uses the historical snapshot.
-    if (contractMechanicsVersion === 3) {
+    if (isV3Mechanics) {
       expect(cstRewardFacts.curve).toBe('linear');
       expect(cstRewardFacts.formula).toBe(protocolFacts.v3.dynamicCstRewardFormula);
       expect(cstRewardFacts.examples).toBe(protocolFacts.v3.dynamicCstRewardExamples);

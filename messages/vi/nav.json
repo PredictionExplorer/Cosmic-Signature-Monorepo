@@ -223,7 +223,7 @@
     },
     "chaosZero": {
       "label": "Chaos Zero",
-      "description": "Thị trường dự đoán độc lập"
+      "description": "Thị trường dự đoán theo chu kỳ"
     },
     "geckoTerminal": {
       "label": "GeckoTerminal",

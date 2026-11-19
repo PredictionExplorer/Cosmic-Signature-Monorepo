@@ -1,3 +1,4 @@
+import { chaosZeroParagraphs } from '@/content/chaos-zero/text.ko';
 import { AUDIT_FINDINGS_TOTAL, HACKEN_AUDIT } from '@/content/legal/audit';
 import { protocolFacts } from '@/content/protocol-facts';
 
@@ -418,10 +419,7 @@ export const learnTextKo = {
         },
         {
           heading: 'Chaos Zero 예측 시장',
-          body: [
-            'Chaos Zero는 Cosmic Signature를 위해 특별히 만들어진 예측 시장입니다. 퍼포먼스 사이클마다 한 가지 질문을 엽니다: “이번 사이클은 이전 사이클보다 더 많은 제스처로 마감될 것인가?” 포지션은 CST로 표시되며 구조상 완전히 담보됩니다. CST 1개는 언제나 YES 토큰 1개와 NO 토큰 1개로 바뀌고, 짝을 이룬 한 쌍은 언제나 CST 1개로 되돌릴 수 있습니다.',
-            '시장은 공개된 온체인 제스처 수로 결정됩니다. 제스처 수가 이전 사이클의 합계를 넘는 순간 결과가 확정되고, 같은 블록에서 거래가 멈추며, 시장은 회수만 가능한 상태가 됩니다. Chaos Zero에는 소유자도, 관리자 키도, 업그레이드 경로도 없습니다.',
-          ],
+          body: chaosZeroParagraphs,
         },
         {
           heading: '앵커링 상태와 수집가 맥락',
@@ -434,7 +432,7 @@ export const learnTextKo = {
           heading: '거래 장소와 주소를 확인하는 방법',
           body: [
             '거래 전에 앱의 컨트랙트 페이지에서 공식 컨트랙트 주소를 확인하고, 마켓플레이스나 거래소에서 보고 있는 컬렉션 또는 토큰 페어와 비교합니다. Cosmic Signature는 생태계 거래 장소인 Axiom Zero, Chaos Zero, Uniswap으로 가는 링크를 앱 헤더, 푸터, 사이트맵에 두어, 올바른 목적지로 가는 공식 경로가 항상 존재하도록 합니다.',
-            '같은 주의는 CST 교환과 예측 포지션에도 적용됩니다. 토큰 주소가 공개된 CST 컨트랙트와 일치하는지 확인하고, Chaos Zero 포지션은 프로토콜이 기록한 공개 제스처 수로 결정되므로 시장의 모든 입력값을 Arbitrum에서 독립적으로 살펴볼 수 있다는 점을 기억해 주세요.',
+            'CST 주소가 공개된 토큰 컨트랙트 주소와 일치하는지 확인하세요. 결과를 정하는 컨트랙트는 Arbitrum의 Cosmic Signature에서 사이클 통계를 직접 읽습니다.',
           ],
         },
       ],

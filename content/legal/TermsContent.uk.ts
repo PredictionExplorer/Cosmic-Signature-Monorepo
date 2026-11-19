@@ -1,3 +1,4 @@
+import { v4CycleIssuanceNote } from '@/content/chaos-zero/text.uk';
 import { ethDistributionFacts, protocolFacts } from '@/content/protocol-facts';
 
 import { formatCount } from '@/utils/format/numbers';
@@ -87,7 +88,7 @@ export const termsCopyUk = {
         {
           id: 'distribution',
           subtitle: 'Виконання розподілів',
-          text: `За наявності всіх напрямів цикл створює ${protocolFacts.typicalNftsPerCycle} Cosmic Signature NFT і ${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'uk')} CST у фіксованих розподілах. Розподіл Сигнатури містить ${protocolFacts.mainPrizeNftsPerCycle} NFT і лише один загальний розподіл ${formatCount(protocolFacts.specialAllocationCst, 'uk')} CST. Воїн часу, Чемпіон витривалості та завершальний CST-жест отримують по одному NFT і відповідний CST; два NFT-відбори додають свої записи. Без CST-жесту або закріплених Random Walk NFT відповідні напрями пропускаються. CST участі нараховуються окремо.`,
+          text: `За наявності всіх напрямів отримувачам розподіляють ${protocolFacts.typicalNftsPerCycle} Cosmic Signature NFT і ${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'uk')} CST у фіксованих розподілах. Розподіл Сигнатури містить ${protocolFacts.mainPrizeNftsPerCycle} NFT і лише один загальний розподіл ${formatCount(protocolFacts.specialAllocationCst, 'uk')} CST. Воїн часу, Чемпіон витривалості та завершальний CST-жест отримують по одному NFT і відповідний CST; два NFT-відбори додають свої записи. Без CST-жесту або закріплених Random Walk NFT відповідні напрями пропускаються. CST участі нараховуються окремо.${v4CycleIssuanceNote}`,
         },
         {
           id: 'signature',

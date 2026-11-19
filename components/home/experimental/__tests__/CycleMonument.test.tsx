@@ -105,14 +105,14 @@ describe('CycleMonument', () => {
     expect(visibleText(reserve)).toContain('8.0735 ETH');
     // Nothing is attached this cycle, so the line names none.
     expect(screen.getByTestId('monument-reserve-extras')).toHaveTextContent(
-      /^home\.deck\.monument\.extras\.base$/,
+      'home.deck.monument.extras.base(cscNftCount=3)',
     );
   });
 
   it('names the attached assets only when the cycle holds some', () => {
     const { rerender } = renderMonument({ attachedNFTCount: 2 });
     expect(screen.getByTestId('monument-reserve-extras')).toHaveTextContent(
-      'home.deck.monument.extras.withNft(nftCount=2)',
+      'home.deck.monument.extras.withNft(cscNftCount=3,nftCount=2)',
     );
 
     rerender(
@@ -128,7 +128,7 @@ describe('CycleMonument', () => {
       />,
     );
     expect(screen.getByTestId('monument-reserve-extras')).toHaveTextContent(
-      'home.deck.monument.extras.withBoth(nftCount=1,erc20Count=3)',
+      'home.deck.monument.extras.withBoth(cscNftCount=3,nftCount=1,erc20Count=3)',
     );
   });
 

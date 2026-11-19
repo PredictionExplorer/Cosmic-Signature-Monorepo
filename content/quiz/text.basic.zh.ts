@@ -277,8 +277,7 @@ export const basicQuestionsTextZh = {
       c: '只能取回分配，不能落笔。',
       d: '只能用 CST 落笔，不能用 ETH。',
     },
-    explanation:
-      '合约之外的生态——应用、Axiom Zero、Uniswap 流动性、Chaos Zero——是便利，不是依赖。它们都不是必需的：落笔、收官、锚定与取回，都可以直接调用已验证的合约完成。',
+    explanation: '即使网站离线，也可以直接调用合约来落笔、收官、锚定 NFT 和取回分配。',
     referenceLabel: '白皮书 §2 · 协议概览',
   },
   'what-it-is-not': {

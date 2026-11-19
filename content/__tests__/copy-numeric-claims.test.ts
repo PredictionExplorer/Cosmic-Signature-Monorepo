@@ -13,7 +13,13 @@ import {
   getSecurityCopy,
   getTermsCopy,
 } from '@/content/legal';
-import { historicalV2ProtocolFacts, protocolFacts } from '@/content/protocol-facts';
+import {
+  chaosZeroCstPerQuestion,
+  chaosZeroGrantCst,
+  historicalV2ProtocolFacts,
+  protocolFacts,
+  v4TypicalFixedCstPerCycle,
+} from '@/content/protocol-facts';
 import { getQuizContent } from '@/content/quiz';
 import { getWhitePaperContent } from '@/content/white-paper';
 import { whitePaperV13Facts } from '@/content/protocol-facts';
@@ -163,6 +169,9 @@ const allowedDayFigures = new Set<number>([
 ]);
 
 const allowedCstAmounts = new Set<number>([
+  chaosZeroGrantCst,
+  chaosZeroCstPerQuestion,
+  v4TypicalFixedCstPerCycle,
   protocolFacts.specialAllocationCst,
   protocolFacts.outreachReserveCst,
   protocolFacts.typicalCstImprintsPerCycle,

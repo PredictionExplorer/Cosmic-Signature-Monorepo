@@ -1,5 +1,7 @@
+import { chaosZeroParagraphs, v4CycleIssuanceNote } from '@/content/chaos-zero/text.ja';
 import { protocolFacts } from '@/content/protocol-facts';
 
+import { CHAOS_ZERO_PREDICTIONS_URL } from '@/config/predictions';
 import { formatCount } from '@/utils/format/numbers';
 
 import type { FAQText } from './structure';
@@ -91,7 +93,7 @@ export const faqTextJa = {
       },
       'how-many-nfts-minted': {
         question: '各サイクルで刻印されるCosmic Signature NFTはいくつですか？',
-        answer: `すべてのトラックがある場合、サイクルは${protocolFacts.typicalNftsPerCycle}枚のCosmic Signature NFTと固定配分の${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'ja')} CSTを刻印します。シグネチャー配分はNFT${protocolFacts.mainPrizeNftsPerCycle}点に対して、合計${formatCount(protocolFacts.specialAllocationCst, 'ja')} CSTを一度だけ受け取ります。時の戦士、持久チャンピオン、最後のCST一筆には各1点と対応するCSTがあり、二つのNFT星選が残りを加えます。CST一筆や係留中のRandom Walk NFTがなければ該当トラックは省略されます。参加CSTは別です。`,
+        answer: `すべての配分トラックが適用される場合、受領者は合わせて${protocolFacts.typicalNftsPerCycle}枚のCosmic Signature NFTと固定配分の${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'ja')} CSTを受け取ります。シグネチャー配分はNFT${protocolFacts.mainPrizeNftsPerCycle}点に対して、合計${formatCount(protocolFacts.specialAllocationCst, 'ja')} CSTを一度だけ受け取ります。時の戦士、持久チャンピオン、最後のCST一筆には各1点と対応するCSTがあり、二つのNFT星選が残りを加えます。CST一筆や係留中のRandom Walk NFTがなければ該当トラックは省略されます。参加CSTは別です。${v4CycleIssuanceNote}`,
       },
       'what-happens-to-remaining-eth': {
         question: 'サイクル準備金に残ったETHはどうなりますか？',
@@ -238,8 +240,7 @@ export const faqTextJa = {
       },
       'cosmic-signature-prediction-market': {
         question: 'Cosmic Signatureの予測市場はありますか？',
-        answer:
-          'はい。Chaos Zero（https://chaoszero.com）はCosmic Signatureのために作られた予測市場です。パフォーマンス・サイクルごとに一つの問いを開きます：このサイクルは前のサイクルより多い筆数で確定するか？ ポジションはCST建てで、構造上完全に担保されており、市場は所有者や管理者の鍵なしに、公開のオンチェーンの筆数から決着します。',
+        answer: `${chaosZeroParagraphs.join('')} ${CHAOS_ZERO_PREDICTIONS_URL}`,
       },
       'participate-dao-without-bidding': {
         question: '一筆を入れずに宇宙評議会に参加できますか？',

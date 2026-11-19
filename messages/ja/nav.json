@@ -223,7 +223,7 @@
     },
     "chaosZero": {
       "label": "Chaos Zero",
-      "description": "独立した予測市場"
+      "description": "サイクルの予測市場"
     },
     "geckoTerminal": {
       "label": "GeckoTerminal",

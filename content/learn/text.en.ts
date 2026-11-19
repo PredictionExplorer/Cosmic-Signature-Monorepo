@@ -1,3 +1,4 @@
+import { chaosZeroParagraphs } from '@/content/chaos-zero/text.en';
 import { AUDIT_FINDINGS_TOTAL, HACKEN_AUDIT } from '@/content/legal/audit';
 
 import type { LearnText } from './structure';
@@ -420,10 +421,7 @@ export const learnTextEn = {
         },
         {
           heading: 'The Chaos Zero prediction market',
-          body: [
-            'Chaos Zero is a prediction market built specifically for Cosmic Signature. Every Performance Cycle it opens a single question: will this cycle finalize with more gestures than the previous one? Positions are denominated in CST and are fully collateralized by construction \u2014 one CST always converts into one YES plus one NO token, and a matching pair always redeems for one CST.',
-            'Markets resolve from the public on-chain gesture count. The moment the count crosses the previous cycle\u2019s total, the outcome is certain, trading halts in the same block, and the market becomes withdraw-only. Chaos Zero has no owner, no admin keys, and no upgrade path.',
-          ],
+          body: chaosZeroParagraphs,
         },
         {
           heading: 'Anchor status and collector context',
@@ -436,7 +434,7 @@ export const learnTextEn = {
           heading: 'How to verify venues and addresses',
           body: [
             'Before trading, confirm the official contract addresses on the contracts page in the app and compare them with the collection or token pair you are viewing on a marketplace or exchange. Cosmic Signature links its ecosystem venues \u2014 Axiom Zero, Chaos Zero, and Uniswap \u2014 from the app header, footer, and site map so there is always an official navigation path to the correct destination.',
-            'The same caution applies to CST swaps and prediction positions: check that the token address matches the published CST contract, and remember that Chaos Zero positions resolve from public gesture counts recorded by the protocol, so every input to the market can be independently inspected on Arbitrum.',
+            'Check that the CST address matches the published token contract. The outcome source reads the cycle statistics directly from Cosmic Signature on Arbitrum.',
           ],
         },
       ],

@@ -1,3 +1,4 @@
+import { chaosZeroParagraphs } from '@/content/chaos-zero/text.ja';
 import { AUDIT_FINDINGS_TOTAL, HACKEN_AUDIT } from '@/content/legal/audit';
 import { protocolFacts } from '@/content/protocol-facts';
 
@@ -418,10 +419,7 @@ export const learnTextJa = {
         },
         {
           heading: 'Chaos Zero予測市場',
-          body: [
-            'Chaos ZeroはCosmic Signatureのために作られた予測市場です。パフォーマンス・サイクルごとに一つの問いを開きます：このサイクルは前のサイクルより多い筆数で確定するか？ ポジションはCST建てで、構造上完全に担保されています。CST一つは常にYESトークン一つとNOトークン一つに変わり、対になった一組は常にCST一つに戻せます。',
-            '市場は公開のオンチェーンの筆数から決着します。筆数が前のサイクルの合計を超えた瞬間に結果は確定し、同じブロックで取引は停止し、市場は引き上げのみが可能になります。Chaos Zeroには所有者も、管理者の鍵も、アップグレードの経路もありません。',
-          ],
+          body: chaosZeroParagraphs,
         },
         {
           heading: '係留の状態とコレクターの文脈',
@@ -434,7 +432,7 @@ export const learnTextJa = {
           heading: '取引の場とアドレスを検証する方法',
           body: [
             '取引の前に、アプリのコントラクトページで公式のコントラクトアドレスを確認し、マーケットプレイスや取引所で見ているコレクションやトークンペアと比較してください。Cosmic Signatureは、エコシステムの取引の場——Axiom Zero、Chaos Zero、Uniswap——をアプリのヘッダー、フッター、サイトマップからリンクしているので、正しい行き先への公式の導線が常にあります。',
-            '同じ注意はCSTのスワップと予測のポジションにも当てはまります。トークンアドレスが公開されたCSTコントラクトと一致することを確認し、Chaos Zeroのポジションはプロトコルが記録する公開の筆数から決着するので、市場へのすべての入力はArbitrum上で独立に調べられることを覚えておいてください。',
+            'CSTのアドレスが公表されたトークンコントラクトのアドレスと一致するか確認してください。結果を決めるコントラクトはArbitrum上のCosmic Signatureからサイクル統計を直接読み取ります。',
           ],
         },
       ],
