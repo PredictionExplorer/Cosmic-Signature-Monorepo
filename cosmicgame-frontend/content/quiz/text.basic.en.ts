@@ -1,0 +1,317 @@
+import { protocolFacts } from '@/content/protocol-facts';
+
+import type { QuizTierQuestionsText } from './structure';
+
+/**
+ * Basic tier: the shape of the protocol. Scenario-first where possible;
+ * every distractor is a misconception someone actually holds. Facts and
+ * numbers interpolate from protocolFacts and match the white paper.
+ */
+export const basicQuestionsTextEn = {
+  'what-is-cosmic-signature': {
+    prompt: 'A friend asks you what Cosmic Signature actually is. Which answer is right?',
+    options: {
+      a: 'A procedural on-chain art protocol on Arbitrum that runs as a sequence of timed Performance Cycles.',
+      b: 'An AI image service that turns text prompts into space pictures.',
+      c: 'A database of cancer mutation signatures used by biologists.',
+      d: 'A price-prediction service for NFT collections.',
+    },
+    explanation:
+      'Cosmic Signature is a procedural art protocol: timed Performance Cycles fill with gestures, and finalization imprints deterministic three-body artwork. No AI is involved anywhere in the pipeline — the art is physics computed from a seed, which is the opposite of a text-prompt image service.',
+    funFact:
+      'The name collides with COSMIC, a well-known cancer mutation database. The protocol has nothing to do with it — a disambiguation the docs state outright.',
+    referenceLabel: 'Learn: What is Cosmic Signature?',
+  },
+  'what-is-a-gesture': {
+    prompt: 'In protocol terms, what is a gesture?',
+    options: {
+      a: 'A small on-chain act carrying ETH or CST that extends the cycle countdown and records a Stellar Selection entry.',
+      b: 'An off-chain signature collected for a community petition.',
+      c: 'A brushstroke you draw by hand that gets added to the artwork.',
+      d: 'A message posted in the community channels.',
+    },
+    explanation:
+      'Gestures drive the active cycle. Each one carries ETH or CST, extends the Cycle Finalization Time, records one entry in the cycle’s Stellar Selections, and can imprint Participation CST. The artwork is computed from a seed recorded at finalization; participants do not draw it by hand.',
+    referenceLabel: 'White paper \u00a74 \u2014 Gestures',
+  },
+  'two-currencies': {
+    prompt: 'Which currencies can a gesture carry?',
+    options: {
+      a: 'ETH or CST, the protocol\u2019s own ERC-20 token.',
+      b: 'Only ETH.',
+      c: 'Only CST.',
+      d: 'Any ERC-20, including stablecoins.',
+    },
+    explanation:
+      'There are exactly two ways in: ETH gestures and CST gestures. Other ERC-20 tokens can be attached to a gesture as a carried asset, but they never pay for the gesture itself — the Gesture Cost is settled in ETH or CST only.',
+    referenceLabel: 'White paper \u00a74 \u2014 Gestures',
+  },
+  'countdown-extension': {
+    prompt:
+      'Nova makes a gesture while the cycle countdown shows plenty of time left. What does her gesture do to the clock?',
+    options: {
+      a: 'It adds the current time increment to the stored Cycle Finalization Time.',
+      b: `It resets the countdown to a fresh ${protocolFacts.initialCycleFinalizationHoursAtLaunch} hours.`,
+      c: 'It shortens the countdown, pushing the cycle toward finalization.',
+      d: 'Nothing \u2014 only ETH gestures move the clock.',
+    },
+    explanation: `Every gesture, whether ETH or CST, adds the current time increment to the stored finalization time. Nothing ever resets the clock to a fixed window \u2014 the ${protocolFacts.initialCycleFinalizationHoursAtLaunch}-hour figure is only the initial countdown after a cycle\u2019s opening gesture at launch parameters.`,
+    referenceLabel: 'White paper \u00a73.2 \u2014 The countdown',
+  },
+  'final-gesture-role': {
+    prompt: 'The countdown has just expired. Who is eligible to finalize the cycle first?',
+    options: {
+      a: 'The participant whose gesture stands last \u2014 the Final Gesture.',
+      b: 'The participant who made the most gestures during the cycle.',
+      c: 'The protocol owner.',
+      d: 'The participant who made the cycle\u2019s opening gesture.',
+    },
+    explanation:
+      'When the Cycle Finalization Time expires, the Final Gesture participant becomes eligible to finalize, exclusively at first. Volume never matters here: a single well-timed gesture that stands last outranks a hundred earlier ones.',
+    referenceLabel: 'White paper \u00a73.3 \u2014 Finalization',
+  },
+  'sleepy-beneficiary': {
+    prompt:
+      'The countdown expired two days ago and the Final Gesture participant has gone silent. You call finalize from your own wallet. What happens?',
+    options: {
+      a: 'The cycle finalizes and you become its beneficiary \u2014 the ETH share, the CST, and the NFT are yours.',
+      b: 'The transaction reverts; only the Final Gesture participant can ever finalize.',
+      c: 'The cycle finalizes, but the Final Gesture participant still receives everything.',
+      d: 'Nothing happens until the Cosmic Council votes to intervene.',
+    },
+    explanation: `The Final Gesture participant has the exclusive right to finalize for ${protocolFacts.finalGestureExclusivityHours} hours. After that, the Open-Finalization Window begins: anyone may finalize and become the cycle’s beneficiary, receiving the allocations assigned to that role. This lets the protocol continue if the Final Gesture participant does not return.`,
+    funFact:
+      'Nothing in the protocol waits forever on an absent participant. Every deadline eventually opens to the first caller.',
+    referenceLabel: 'White paper \u00a73.3 \u2014 Finalization',
+  },
+  'signature-allocation-share': {
+    prompt: 'What share of the Cycle Reserve does the Signature Allocation carry at finalization?',
+    options: {
+      a: `${protocolFacts.mainEthPercentage}%`,
+      b: `${protocolFacts.chronoWarriorEthPercentage}%`,
+      c: `${protocolFacts.compoundingReservePercentage}%`,
+      d: `${protocolFacts.publicGoodsPercentage}%`,
+    },
+    explanation: `The Signature Allocation is ${protocolFacts.mainEthPercentage}% of the protocol\u2019s ETH balance, read once at the moment of finalization. The ${protocolFacts.compoundingReservePercentage}% figure is the share that is not distributed at all \u2014 it rolls forward as the Compounding Cycle Reserve.`,
+    referenceLabel: 'White paper \u00a75.1 \u2014 Distribution at finalization',
+  },
+  'compounding-reserve': {
+    prompt: 'How does part of the Cycle Reserve carry over into the next Performance Cycle?',
+    options: {
+      a: `About ${protocolFacts.compoundingReservePercentage}% of every cycle\u2019s reserve is never distributed \u2014 it rolls forward into the next cycle.`,
+      b: 'The team tops the reserve up between cycles.',
+      c: 'The protocol imprints new ETH each cycle.',
+      d: 'The Cosmic Council votes fresh ETH into the reserve.',
+    },
+    explanation:
+      'The five distributed ETH tracks account for about half of the reserve. The remainder carries forward into the next cycle. This does not guarantee a larger reserve each time: its size also depends on the ETH added during the cycle.',
+    referenceLabel: 'White paper \u00a75.1 \u2014 Distribution at finalization',
+  },
+  'art-engine': {
+    prompt: 'What actually generates a Cosmic Signature artwork?',
+    options: {
+      a: 'A deterministic physics simulation of the gravitational three-body problem, seeded from on-chain data.',
+      b: 'A diffusion model fine-tuned on space photography.',
+      c: 'An artist who paints each piece and uploads it.',
+      d: 'A random pixel generator with a space color palette.',
+    },
+    explanation:
+      'Three bodies of comparable mass orbit under Newtonian gravity; the seed decides the starting conditions and physics does the rest. No generative model is involved at any stage \u2014 no training data, no sampling, no prompt. Chaos theory, not randomness, is what makes every Signature unique.',
+    funFact:
+      'The three-body problem has no general closed-form solution. An imperceptible change in starting conditions produces a completely different dance.',
+    referenceLabel: 'White paper \u00a76 \u2014 The art',
+  },
+  'same-seed': {
+    prompt: 'What is needed to reproduce the published artwork for token #42?',
+    options: {
+      a: 'Its on-chain seed, the matching renderer revision and configuration, and a compatible toolchain.',
+      b: 'Only the seed, regardless of renderer version or configuration.',
+      c: 'Only the current owner’s address.',
+      d: 'Only a low-resolution preview; the full art needs the project servers.',
+    },
+    explanation:
+      'The seed is a public input, but renderer revisions and options can change the output. Reference-image checks are available to run manually; current CI does not compare generated frame hashes. Arbitrary machines or future versions are not promised identical pixels.',
+    referenceLabel: 'White paper \u00a76.2 \u2014 Reproducibility and license',
+  },
+  'cst-supply-origin': {
+    prompt: 'Where does CST come from?',
+    options: {
+      a: 'Supply starts at zero, and only the protocol contract can imprint CST through its defined mechanisms.',
+      b: 'A large allocation was created for the team at launch.',
+      c: 'It was distributed for free to early wallets before launch.',
+      d: 'Anyone can imprint CST by calling the token contract.',
+    },
+    explanation:
+      'CST supply started at zero, and the token contract accepts imprint and burn instructions only from the protocol contract. New CST comes from the protocol’s defined mechanisms, including Participation CST, cycle allocations, and the Outreach Reserve. There is no hard supply cap.',
+    referenceLabel: 'White paper \u00a77 \u2014 The CST token',
+  },
+  'cst-on-spend': {
+    prompt: 'Rio spends a handful of CST on a gesture. Where does that CST go?',
+    options: {
+      a: 'It is burned \u2014 permanently removed from supply.',
+      b: 'It goes to the team\u2019s treasury.',
+      c: 'It joins the Cycle Reserve and is redistributed at finalization.',
+      d: 'It is returned to Rio when the cycle finalizes.',
+    },
+    explanation:
+      'The full cost of every CST gesture is burned, permanently removing those tokens from supply. The CST spent on a gesture is not transferred to a treasury or added to the Cycle Reserve.',
+    referenceLabel: 'White paper \u00a77.2 \u2014 Burning and supply dynamics',
+  },
+  'public-goods-beneficiary': {
+    prompt: `Every cycle forwards ${protocolFacts.publicGoodsPercentage}% of the reserve as the Public Goods Allocation. Who receives it today?`,
+    options: {
+      a: 'Protocol Guild \u2014 the funding mechanism for more than 170 Ethereum core contributors.',
+      b: 'The protocol team\u2019s operations wallet.',
+      c: 'Arbitrum validators.',
+      d: 'A randomly selected NFT holder.',
+    },
+    explanation:
+      'The Public Goods Vault forwards its share to Protocol Guild, and the forwarding is enforced on-chain as part of finalization \u2014 no one decides each cycle whether to honor it. The reasoning: a protocol that lives on public infrastructure should fund it mechanically, on a schedule, in public.',
+    referenceLabel: 'White paper \u00a710 \u2014 Public Goods',
+  },
+  'anchoring-basic': {
+    prompt:
+      'Mira anchors her Cosmic Signature NFT to the protocol. What does anchoring do for her?',
+    options: {
+      a: `While anchored, the NFT accrues a proportional share of each cycle\u2019s ${protocolFacts.anchorDistributionPercentage}% Anchor Distribution, retrieved when the anchor is released.`,
+      b: 'It lists the NFT for sale on the marketplace.',
+      c: 'It converts the NFT into CST.',
+      d: 'It re-renders the artwork with a new seed.',
+    },
+    explanation:
+      'Anchoring is the protocol\u2019s form of long-term alignment: anchored Cosmic Signature NFTs share the Anchor Distribution pro rata, and the accrued ETH is retrieved at release. The NFT itself never changes \u2014 its seed and artwork are permanent.',
+    referenceLabel: 'White paper \u00a78 \u2014 Anchoring',
+  },
+  'anchor-once-ever': {
+    prompt: 'Mira releases an anchored NFT. Can she anchor that NFT again next month?',
+    options: {
+      a: 'No \u2014 each NFT can be anchored only once, ever. Releasing is permanent.',
+      b: 'Yes, after a short cooldown.',
+      c: 'Yes, by paying an extra cost.',
+      d: 'Yes, but only during the same cycle.',
+    },
+    explanation:
+      'The once-ever rule replaces the usual lock-up schedule with a single irreversible choice, giving the anchored set a real cost of exit. Whether to keep an NFT anchored is a live decision every cycle; whether to release it is a permanent one.',
+    referenceLabel: 'White paper \u00a78 \u2014 Anchoring',
+  },
+  'random-walk-perk': {
+    prompt: 'Sol owns a Random Walk NFT and attaches it to an ETH gesture. What happens?',
+    options: {
+      a: `That gesture\u2019s cost drops by ${protocolFacts.randomWalkDiscountPercentage}%; the NFT stays in Sol\u2019s wallet but is marked used, once ever.`,
+      b: 'The NFT is transferred to the protocol in exchange for the reduction.',
+      c: 'The gesture becomes free.',
+      d: 'The NFT doubles the Participation CST the gesture imprints.',
+    },
+    explanation: `Attaching a Random Walk NFT reduces one ETH gesture\u2019s cost by ${protocolFacts.randomWalkDiscountPercentage}%. The NFT is not transferred \u2014 the contract simply marks it used. Each Random Walk NFT can be attached exactly once across all cycles, which makes the reduction a consumable resource.`,
+    referenceLabel: 'White paper \u00a74.2 \u2014 Random Walk NFT attachment',
+  },
+  'first-gesture-currency': {
+    prompt: 'A new cycle has just activated. Which gesture can open it?',
+    options: {
+      a: 'An ETH gesture \u2014 CST gestures become available from the second gesture onward.',
+      b: 'A CST gesture, since CST is the protocol\u2019s own token.',
+      c: 'Either currency works for the opening gesture.',
+      d: 'Only the protocol owner can open a cycle.',
+    },
+    explanation:
+      'Every cycle must open with an ETH gesture, priced by the ETH Calibration Window. Once the cycle is under way, CST offers a second way in. No privileged account opens cycles \u2014 whoever makes the opening gesture does.',
+    referenceLabel: 'White paper \u00a74.3 \u2014 CST gestures',
+  },
+  'message-on-gesture': {
+    prompt: 'Besides value, what can a gesture carry?',
+    options: {
+      a: `A message of up to ${protocolFacts.gestureMessageMaxLength} bytes recorded on-chain, plus attached ERC-20 tokens or an ERC-721 NFT.`,
+      b: 'Nothing \u2014 gestures are value transfers only.',
+      c: 'An image file stored in the contract.',
+      d: 'Unlimited text, stored off-chain.',
+    },
+    explanation: `A gesture may carry a message of up to ${protocolFacts.gestureMessageMaxLength} bytes, recorded on-chain alongside it, and may attach tokens or an NFT. Attached assets are held by the Allocations Wallet, where the cycle\u2019s beneficiary has priority to retrieve them after finalization.`,
+    funFact:
+      'Every message ever attached to a gesture is permanently readable on Arbitrum \u2014 a public guest book woven through the cycles.',
+    referenceLabel: 'White paper \u00a74.4 \u2014 Messages and attached assets',
+  },
+  'who-runs-cycles': {
+    prompt: 'Who decides how each cycle\u2019s ETH is distributed?',
+    options: {
+      a: 'The protocol contracts execute the allocation rules at finalization.',
+      b: 'The team reviews each cycle and signs the distribution.',
+      c: 'An oracle service computes the split.',
+      d: 'The app\u2019s backend servers issue the transfers.',
+    },
+    explanation:
+      'Contracts execute configured allocation rules. Administrative powers remain under their documented restrictions; the app and indexer display records and do not authorize the on-chain transfers.',
+    referenceLabel: 'White paper \u00a71 \u2014 Introduction',
+  },
+  'nft-count-typical': {
+    prompt: 'How many Cosmic Signature NFTs does a typical cycle imprint?',
+    options: {
+      a: `${protocolFacts.typicalNftsPerCycle}`,
+      b: '1',
+      c: `${protocolFacts.nftStellarSelectionRecipients}`,
+      d: '100',
+    },
+    explanation: `A full-track cycle creates ${protocolFacts.typicalNftsPerCycle} NFTs: ${protocolFacts.mainPrizeNftsPerCycle} for the main allocation, one each for Chrono-Warrior, Endurance Champion and Final CST Gesture, and ${protocolFacts.nftStellarSelectionRecipients} participant plus ${protocolFacts.anchoredRwlkNftSelectionRecipients} anchored Random Walk selections. Missing CST or active anchors omit the relevant track.`,
+    referenceLabel: 'White paper \u00a75.1 \u2014 Distribution at finalization',
+  },
+  'chrono-endurance-exist': {
+    prompt: 'What do the Endurance Champion and Chrono-Warrior tracks measure?',
+    options: {
+      a: 'Persistence over time \u2014 not who gestured last or most.',
+      b: 'Who spent the most ETH during the cycle.',
+      c: 'Who made the largest number of gestures.',
+      d: 'Who gestured first when the cycle opened.',
+    },
+    explanation:
+      'Both tracks measure persistence rather than position: the Endurance Champion held the most-recent-gesture spot for the longest unbroken interval, and the Chrono-Warrior held the Endurance Champion title itself the longest. Spending more or gesturing more does not directly decide either.',
+    referenceLabel: 'White paper \u00a75.2 \u2014 Endurance Champion and Chrono-Warrior',
+  },
+  'stellar-selection-what': {
+    prompt: 'What are Stellar Selections?',
+    options: {
+      a: 'Weighted participant entries recorded during the cycle, used to select allocations at finalization.',
+      b: 'A leaderboard ranking participants by activity.',
+      c: 'Rarity tiers assigned to the NFT artwork.',
+      d: 'A scheme for naming constellations in the art.',
+    },
+    explanation:
+      'Both participant ETH and NFT selections use the undiscounted, premium-free ETH base cost at each gesture as weight. CST gestures use the concurrent ETH base cost. Selections allow repeats, and no participant is guaranteed an allocation.',
+    referenceLabel: 'White paper \u00a75.3 \u2014 Stellar Selections',
+  },
+  'ecosystem-optionality': {
+    prompt:
+      'The app, the marketplace, and the prediction venue all go offline for a day. What can you still do?',
+    options: {
+      a: 'Everything \u2014 every mechanic can be exercised directly against the contracts.',
+      b: 'Nothing until the app returns.',
+      c: 'Only retrieve allocations, not gesture.',
+      d: 'Only gesture with CST, not ETH.',
+    },
+    explanation:
+      'Gestures, finalization, anchoring and retrieval remain available through the contracts when the websites are offline.',
+    referenceLabel: 'White paper \u00a72 \u2014 Protocol overview',
+  },
+  'what-it-is-not': {
+    prompt: 'Which statement matches how the white paper describes the protocol\u2019s nature?',
+    options: {
+      a: 'Participation does not guarantee an allocation, token value, liquidity or future removal of owner powers.',
+      b: 'Acquiring CST is a reliable path to financial gain from the efforts of others.',
+      c: 'An operator keeps a percentage of every cycle for itself.',
+      d: 'The protocol promises that NFT values will rise over time.',
+    },
+    explanation:
+      'The current ETH split has no separate operator percentage. An appointed treasurer distributes the Outreach Reserve’s CST. Participation and holding assets do not guarantee financial outcomes, and owner powers remain separately disclosed.',
+    referenceLabel: 'White paper \u00a714.1 \u2014 What Cosmic Signature is not',
+  },
+  'where-recorded': {
+    prompt: 'Where do gestures, seeds, and cycle history actually live?',
+    options: {
+      a: 'On-chain, on Arbitrum One \u2014 an Ethereum Layer 2 network.',
+      b: 'In the project\u2019s private database.',
+      c: 'Only in IPFS files pinned by the team.',
+      d: 'They are not recorded; only totals are kept.',
+    },
+    explanation:
+      'The protocol runs on Arbitrum One, and the important records \u2014 every gesture, every seed, every allocation \u2014 are on-chain. That is what makes the art reproducible and the distribution auditable by anyone, without trusting any server.',
+    referenceLabel: 'Learn: Cosmic Signature on Arbitrum',
+  },
+} as const satisfies QuizTierQuestionsText<'basic'>;

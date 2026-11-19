@@ -1,0 +1,423 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+import {
+  artProtocolJsonLd,
+  breadcrumbJsonLd,
+  collectionPageJsonLd,
+  faqPageJsonLd,
+  liveCycleJsonLd,
+  nftProductJsonLd,
+  organizationJsonLd,
+  visualArtworkJsonLd,
+  webApplicationJsonLd,
+  websiteJsonLd,
+} from '@/utils/jsonLd';
+
+const BANNED_TERMS = [
+  /\bbid(?:der|ding|s)?\b/i,
+  /\bprize(?:s|d)?\b/i,
+  /\braffle(?:s)?\b/i,
+  /\bwinner(?:s)?\b/i,
+  /\bgambling\b/i,
+  /\blottery\b/i,
+  /\bstak(?:e|er|ers|ing)\b/i,
+  /\bcharit(?:y|able)\b/i,
+  /\byield\b/i,
+  /\binvest(?:or|ors|ment|ments)\b/i,
+];
+
+function assertNoBannedTerms(text: unknown) {
+  if (typeof text !== 'string') return;
+  for (const pattern of BANNED_TERMS) {
+    expect(text).not.toMatch(pattern);
+  }
+}
+
+describe('JSON-LD generators', () => {
+  it('accepts localized copy, URLs, and language metadata', () => {
+    const website = websiteJsonLd({
+      description: '中文协议说明',
+      inLanguage: 'zh-Hans',
+      url: 'https://cosmicsignature.com/zh',
+    });
+    const organization = organizationJsonLd({
+      description: '中文组织说明',
+      url: 'https://cosmicsignature.com/zh',
+    });
+    const artwork = artProtocolJsonLd({
+      description: '中文艺术说明',
+      inLanguage: 'zh-Hans',
+      genre: '生成艺术',
+      keywords: ['链上艺术', '三体问题'],
+    });
+    const webApplication = webApplicationJsonLd({
+      browserRequirements: '需要 Web3 钱包',
+      description: '中文应用说明',
+      inLanguage: 'zh-Hans',
+      url: 'https://app.cosmicsignature.com/zh',
+    });
+    const collection = collectionPageJsonLd({
+      name: 'Cosmic Signature 画廊',
+      description: '中文系列说明',
+      inLanguage: 'zh-Hans',
+      url: 'https://app.cosmicsignature.com/zh/gallery',
+    });
+    const product = nftProductJsonLd({
+      tokenId: 7,
+      name: 'Cosmic Signature NFT #7',
+      description: '中文作品说明',
+      imageUrl: 'https://example.com/7.png',
+      url: 'https://app.cosmicsignature.com/zh/detail/7',
+      category: '数字藏品',
+    });
+    const faq = faqPageJsonLd([{ question: '这是什么？', answer: '链上艺术协议。' }], 'zh-Hans');
+    const breadcrumbs = breadcrumbJsonLd(
+      [{ name: '学习', path: '/learn' }],
+      'https://cosmicsignature.com/zh',
+    );
+
+    expect(website).toEqual(
+      expect.objectContaining({
+        description: '中文协议说明',
+        inLanguage: 'zh-Hans',
+        url: 'https://cosmicsignature.com/zh',
+      }),
+    );
+    expect(organization).toEqual(expect.objectContaining({ description: '中文组织说明' }));
+    expect(organization).not.toHaveProperty('inLanguage');
+    expect(artwork).toEqual(
+      expect.objectContaining({
+        description: '中文艺术说明',
+        genre: '生成艺术',
+        inLanguage: 'zh-Hans',
+      }),
+    );
+    expect(webApplication).toEqual(
+      expect.objectContaining({
+        browserRequirements: '需要 Web3 钱包',
+        description: '中文应用说明',
+        inLanguage: 'zh-Hans',
+        url: 'https://app.cosmicsignature.com/zh',
+      }),
+    );
+    expect(collection).toEqual(
+      expect.objectContaining({
+        name: 'Cosmic Signature 画廊',
+        inLanguage: 'zh-Hans',
+        url: 'https://app.cosmicsignature.com/zh/gallery',
+      }),
+    );
+    expect(product).toEqual(
+      expect.objectContaining({
+        category: '数字藏品',
+        url: 'https://app.cosmicsignature.com/zh/detail/7',
+      }),
+    );
+    expect(product).not.toHaveProperty('inLanguage');
+    expect(faq.inLanguage).toBe('zh-Hans');
+    expect(breadcrumbs).not.toHaveProperty('inLanguage');
+    expect(breadcrumbs.itemListElement[0]!.item).toBe('https://cosmicsignature.com/zh/learn');
+  });
+
+  describe('websiteJsonLd', () => {
+    const result = websiteJsonLd();
+
+    it('returns WebSite schema type', () => {
+      expect(result['@context']).toBe('https://schema.org');
+      expect(result['@type']).toBe('WebSite');
+    });
+
+    it('includes site name and URL', () => {
+      expect(result.name).toBe('Cosmic Signature');
+      expect(result.url).toBe('https://cosmicsignature.com/');
+      expect(result['@id']).toBe('https://cosmicsignature.com/#website');
+    });
+
+    it('does not advertise a nonfunctional SearchAction', () => {
+      expect(result).not.toHaveProperty('potentialAction');
+    });
+
+    it('has lexicon-safe description', () => {
+      assertNoBannedTerms(result.description);
+    });
+  });
+
+  describe('organizationJsonLd', () => {
+    const result = organizationJsonLd();
+
+    it('returns Organization schema type', () => {
+      expect(result['@context']).toBe('https://schema.org');
+      expect(result['@type']).toBe('Organization');
+    });
+
+    it('includes name, URL, and logo', () => {
+      expect(result.name).toBe('Cosmic Signature');
+      expect(result.url).toBe('https://cosmicsignature.com/');
+      expect(result.logo).toBe('https://cosmicsignature.com/images/brand/logo-512.png');
+      expect(existsSync(join(process.cwd(), 'public', 'images', 'brand', 'logo-512.png'))).toBe(
+        true,
+      );
+      expect(result['@id']).toBe('https://cosmicsignature.com/#organization');
+    });
+
+    it('includes social media profiles', () => {
+      expect(result.sameAs).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('x.com'),
+          expect.stringContaining('discord.gg'),
+          expect.stringContaining('github.com/PredictionExplorer'),
+        ]),
+      );
+    });
+
+    it('has lexicon-safe description', () => {
+      assertNoBannedTerms(result.description);
+    });
+  });
+
+  describe('webApplicationJsonLd', () => {
+    const result = webApplicationJsonLd();
+
+    it('returns WebApplication schema type', () => {
+      expect(result['@context']).toBe('https://schema.org');
+      expect(result['@type']).toBe('WebApplication');
+    });
+
+    it('has EntertainmentApplication category (not GameApplication after lexicon migration)', () => {
+      expect(result.applicationCategory).toBe('EntertainmentApplication');
+    });
+
+    it('does not claim free participation with an Offer price', () => {
+      expect(result).not.toHaveProperty('offers');
+    });
+
+    it('has lexicon-safe description', () => {
+      assertNoBannedTerms(result.description);
+    });
+  });
+
+  describe('artProtocolJsonLd', () => {
+    const result = artProtocolJsonLd();
+
+    it('returns CreativeWork schema type', () => {
+      expect(result['@context']).toBe('https://schema.org');
+      expect(result['@type']).toBe('CreativeWork');
+    });
+
+    it('includes CC0 license URL', () => {
+      expect(result.license).toBe('https://creativecommons.org/publicdomain/zero/1.0/');
+    });
+
+    it('includes procedural-art keywords', () => {
+      expect(result.keywords).toEqual(
+        expect.arrayContaining(['procedural art', 'on-chain art', 'three-body problem', 'CC0']),
+      );
+    });
+
+    it('includes genre Generative Art', () => {
+      expect(result.genre).toBe('Generative Art');
+    });
+
+    // F294: the art protocol was pictured by the 2023 "© Cosmic" wordmark.
+    it('pictures a real Signature bundled with the site', () => {
+      expect(result.image).toEqual(
+        expect.objectContaining({
+          '@type': 'ImageObject',
+          url: 'https://cosmicsignature.com/images/landing/signature-23.webp',
+          width: 960,
+          height: 621,
+        }),
+      );
+      expect(existsSync(join(process.cwd(), 'public', new URL(result.image.url).pathname))).toBe(
+        true,
+      );
+    });
+
+    it('has lexicon-safe description', () => {
+      assertNoBannedTerms(result.description);
+    });
+  });
+
+  describe('faqPageJsonLd', () => {
+    const items = [
+      { id: '1', question: 'What is this?', answer: 'A procedural art protocol.' },
+      { id: '2', question: 'How do I participate?', answer: 'Make a gesture.' },
+    ];
+    const result = faqPageJsonLd(items);
+
+    it('returns FAQPage schema type', () => {
+      expect(result['@context']).toBe('https://schema.org');
+      expect(result['@type']).toBe('FAQPage');
+    });
+
+    it('includes all Q&A pairs as mainEntity', () => {
+      expect(result.mainEntity).toHaveLength(2);
+    });
+
+    it('formats each item as Question with Answer', () => {
+      const first = result.mainEntity[0]!;
+      expect(first['@type']).toBe('Question');
+      expect(first.name).toBe('What is this?');
+      expect(first.acceptedAnswer['@type']).toBe('Answer');
+      expect(first.acceptedAnswer.text).toBe('A procedural art protocol.');
+    });
+
+    it('accepts items with only question and answer (no id required)', () => {
+      const simpleItems = [{ question: 'Q1?', answer: 'A1.' }];
+      const r = faqPageJsonLd(simpleItems);
+      expect(r.mainEntity).toHaveLength(1);
+      expect(r.mainEntity[0]!.name).toBe('Q1?');
+    });
+
+    it('returns empty mainEntity for empty input', () => {
+      const r = faqPageJsonLd([]);
+      expect(r.mainEntity).toEqual([]);
+    });
+  });
+
+  describe('breadcrumbJsonLd', () => {
+    const segments = [
+      { name: 'Home', path: '/' },
+      { name: 'Gallery', path: '/gallery' },
+      { name: 'Token #42', path: '/detail/42' },
+    ];
+    const result = breadcrumbJsonLd(segments);
+
+    it('returns BreadcrumbList schema type', () => {
+      expect(result['@context']).toBe('https://schema.org');
+      expect(result['@type']).toBe('BreadcrumbList');
+    });
+
+    it('includes correct number of items', () => {
+      expect(result.itemListElement).toHaveLength(3);
+    });
+
+    it('uses 1-based position numbering', () => {
+      expect(result.itemListElement[0]!.position).toBe(1);
+      expect(result.itemListElement[2]!.position).toBe(3);
+    });
+
+    it('builds full URLs from paths', () => {
+      expect(result.itemListElement[0]!.item).toBe('https://app.cosmicsignature.com/');
+      expect(result.itemListElement[1]!.item).toBe('https://app.cosmicsignature.com/gallery');
+    });
+
+    it('can build landing-host breadcrumb URLs', () => {
+      const landingResult = breadcrumbJsonLd(
+        [
+          { name: 'Home', path: '/' },
+          { name: 'Learn', path: '/learn' },
+        ],
+        'https://cosmicsignature.com',
+      );
+
+      expect(landingResult.itemListElement[0]!.item).toBe('https://cosmicsignature.com/');
+      expect(landingResult.itemListElement[1]!.item).toBe('https://cosmicsignature.com/learn');
+    });
+
+    it('preserves segment names verbatim', () => {
+      expect(result.itemListElement[2]!.name).toBe('Token #42');
+    });
+  });
+
+  describe('nftProductJsonLd', () => {
+    const result = nftProductJsonLd({
+      tokenId: 42,
+      name: 'Cosmic Signature NFT #42',
+      description: 'A unique NFT',
+      imageUrl: 'https://example.com/42.png',
+    });
+
+    it('returns a dual Product + VisualArtwork schema type', () => {
+      expect(result['@context']).toBe('https://schema.org');
+      // Product keeps collectible rich-result eligibility; VisualArtwork
+      // tells search and AI engines the token is, first, art.
+      expect(result['@type']).toEqual(['Product', 'VisualArtwork']);
+      expect(result.artform).toBe('Digital Art');
+      expect(result.license).toContain('creativecommons.org/publicdomain/zero');
+    });
+
+    it('includes token details with licensable image metadata', () => {
+      expect(result.name).toBe('Cosmic Signature NFT #42');
+      expect(result.description).toBe('A unique NFT');
+      expect(result.image['@type']).toBe('ImageObject');
+      expect(result.image.contentUrl).toBe('https://example.com/42.png');
+      expect(result.image.license).toContain('creativecommons.org/publicdomain/zero');
+      expect(result.image.acquireLicensePage).toBe(result.url);
+    });
+
+    it('points URLs at the app subdomain (not the landing host)', () => {
+      expect(result.url).toBe('https://app.cosmicsignature.com/detail/42');
+    });
+
+    it('includes brand organization', () => {
+      expect(result.brand['@type']).toBe('Organization');
+      expect(result.brand.name).toBe('Cosmic Signature');
+    });
+
+    it('includes Digital Collectible category', () => {
+      expect(result.category).toBe('Digital Collectible');
+    });
+
+    it('does not claim the NFT is available for a zero-price offer', () => {
+      expect(result).not.toHaveProperty('offers');
+    });
+  });
+
+  describe('visualArtworkJsonLd', () => {
+    const result = visualArtworkJsonLd({
+      tokenId: 7,
+      name: 'Cosmic Signature #000007',
+      description: 'Deterministic three-body artwork',
+      imageUrl: 'https://example.com/7.png',
+      inLanguage: 'en',
+    });
+
+    it('describes the featured artwork as a licensed VisualArtwork', () => {
+      expect(result['@type']).toBe('VisualArtwork');
+      expect(result.url).toBe('https://app.cosmicsignature.com/detail/7');
+      expect(result.artMedium).toMatch(/three-body/i);
+      expect(result.license).toContain('creativecommons.org/publicdomain/zero');
+      expect(result.image['@type']).toBe('ImageObject');
+      expect(result.image.contentUrl).toBe('https://example.com/7.png');
+      expect(result.image.acquireLicensePage).toBe('https://app.cosmicsignature.com/detail/7');
+      expect(result.inLanguage).toBe('en');
+    });
+
+    it('links the artwork into the protocol entity graph', () => {
+      expect(result.creator).toEqual({ '@id': 'https://cosmicsignature.com/#organization' });
+      expect(result.isPartOf).toEqual({ '@id': 'https://cosmicsignature.com/#art-protocol' });
+    });
+  });
+
+  describe('liveCycleJsonLd', () => {
+    const result = liveCycleJsonLd({
+      cycleNumber: 3,
+      startTsSeconds: 1_700_000_000,
+      inLanguage: 'en',
+    });
+
+    it('describes the running cycle as a dated virtual Event', () => {
+      expect(result['@context']).toBe('https://schema.org');
+      expect(result['@type']).toBe('Event');
+      expect(result.name).toBe('Cosmic Signature Performance Cycle 3');
+      expect(result.startDate).toBe('2023-11-14T22:13:20.000Z');
+      expect(result.eventAttendanceMode).toBe('https://schema.org/OnlineEventAttendanceMode');
+      expect(result.location).toEqual({
+        '@type': 'VirtualLocation',
+        url: 'https://app.cosmicsignature.com/',
+      });
+      expect(result.inLanguage).toBe('en');
+    });
+
+    it('points at the app host and the shared organization node', () => {
+      expect(result.url).toBe('https://app.cosmicsignature.com/');
+      expect(result.organizer).toEqual({ '@id': 'https://cosmicsignature.com/#organization' });
+    });
+
+    it('does not present participation as free', () => {
+      expect(result.isAccessibleForFree).toBe(false);
+    });
+  });
+});

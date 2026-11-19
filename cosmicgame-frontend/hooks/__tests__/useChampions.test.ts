@@ -1,0 +1,621 @@
+import { renderHook } from '@testing-library/react';
+
+import { deriveChampionsState, useChampions } from '@/hooks/useChampions';
+import type { SpecialAllocationSnapshot } from '@/hooks/useSpecialAllocationSnapshot';
+import type { SpecialRecipients } from '@/services/api/types';
+
+import { useSpecialAllocationSnapshot } from '../useSpecialAllocationSnapshot';
+import { useNow } from '../useNow';
+
+jest.mock('../useSpecialAllocationSnapshot', () => ({
+  useSpecialAllocationSnapshot: jest.fn(),
+}));
+
+jest.mock('../useNow', () => ({
+  useNow: jest.fn(),
+}));
+
+const mockUseSpecialAllocationSnapshot = useSpecialAllocationSnapshot as jest.MockedFunction<
+  typeof useSpecialAllocationSnapshot
+>;
+const mockUseNow = useNow as jest.MockedFunction<typeof useNow>;
+
+const baseSnapshot: SpecialRecipients = {
+  EnduranceChampionAddress: '0x1111111111111111111111111111111111111111',
+  EnduranceChampionDuration: 100,
+  ChronoWarriorAddress: '0x1111111111111111111111111111111111111111',
+  ChronoWarriorDuration: 50,
+  LastBidderAddress: '0x1111111111111111111111111111111111111111',
+  LastBidderLastBidTime: 900,
+  LastCstBidderAddress: '0x2222222222222222222222222222222222222222',
+};
+
+function snapshot(data: SpecialRecipients, overrides: Partial<SpecialAllocationSnapshot> = {}) {
+  return {
+    ...data,
+    source: 'api-v1',
+    receivedAtMs: 1_095_000,
+    hasChronoSegmentData: false,
+    hasFinalCstTime: false,
+    ...overrides,
+  } as SpecialAllocationSnapshot;
+}
+
+function mockChampionQuery(data: SpecialAllocationSnapshot | null | undefined) {
+  mockUseSpecialAllocationSnapshot.mockReturnValue({
+    snapshot: data ?? null,
+    isLoading: false,
+    raw: data,
+  } as ReturnType<typeof useSpecialAllocationSnapshot>);
+}
+
+describe('deriveChampionsState', () => {
+  it('returns safe defaults when data is missing', () => {
+    const state = deriveChampionsState({ data: undefined, nowMs: 1_100_000 });
+
+    expect(state.hasData).toBe(false);
+    expect(state.endurance.address).toBeNull();
+    expect(state.endurance.duration).toBe(0);
+    expect(state.chrono.address).toBeNull();
+    expect(state.chronoChallenge.address).toBeNull();
+    expect(state.chronoChallenge.recordToBeat).toBe(0);
+    expect(state.chronoChallenge.hasDetails).toBe(false);
+    expect(state.lastCst.address).toBeNull();
+    expect(state.latestGesture.durationToBeat).toBe(0);
+    expect(state.latestGesture.secondsUntilEnduranceChampion).toBe(0);
+    expect(state.latestGesture.progressToEnduranceChampion).toBe(0);
+  });
+
+  it('grows endurance only when the latest hold exceeds the stored record', () => {
+    const liveState = deriveChampionsState({ data: baseSnapshot, nowMs: 1_100_000 });
+    expect(liveState.endurance.isLive).toBe(true);
+    expect(liveState.endurance.duration).toBe(200);
+
+    const lockedState = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        LastBidderAddress: '0x3333333333333333333333333333333333333333',
+      },
+      nowMs: 1_100_000,
+    });
+    expect(lockedState.endurance.address).toBe('0x3333333333333333333333333333333333333333');
+    expect(lockedState.endurance.isLive).toBe(true);
+    expect(lockedState.endurance.duration).toBe(200);
+  });
+
+  it('reconciles a stale special-recipient snapshot with fresher latest evidence', () => {
+    const freshAddress = '0x3333333333333333333333333333333333333333';
+    const state = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        LastBidderAddress: '0x4444444444444444444444444444444444444444',
+        LastBidderLastBidTime: 900,
+      },
+      latestParticipantEvidence: {
+        address: freshAddress,
+        timestamp: 1_040,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(state.latestGesture.address).toBe(freshAddress);
+    expect(state.latestGesture.holdDuration).toBe(60);
+    expect(state.latestGesture.secondsUntilEnduranceChampion).toBe(41);
+    expect(state.latestGesture.progressToEnduranceChampion).toBeCloseTo(59.4, 1);
+  });
+
+  it('keeps known identity but an unknown hold while transaction timing is indexing', () => {
+    const freshAddress = '0x3333333333333333333333333333333333333333';
+    const state = deriveChampionsState({
+      data: baseSnapshot,
+      latestParticipantEvidence: {
+        address: freshAddress,
+        timestamp: null,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(state.latestGesture.address).toBe(freshAddress);
+    expect(state.latestGesture.latestGestureTime).toBeNull();
+    // Regression: the ledger printed a confident "0s" and a live "record
+    // forming" caption above "details are syncing". Unknown time is pending.
+    expect(state.latestGesture.isTimeKnown).toBe(false);
+    expect(state.latestGesture.holdDuration).toBe(0);
+    expect(state.latestGesture.progressToEnduranceChampion).toBe(0);
+  });
+
+  it("uses the snapshot's time while indexing when it names the same participant", () => {
+    const state = deriveChampionsState({
+      data: baseSnapshot,
+      latestParticipantEvidence: {
+        address: baseSnapshot.LastBidderAddress ?? '',
+        timestamp: null,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(state.latestGesture.isTimeKnown).toBe(true);
+    expect(state.latestGesture.latestGestureTime).toBe(900);
+    expect(state.latestGesture.holdDuration).toBe(200);
+  });
+
+  it('knows the time before any gesture: nothing to measure yet', () => {
+    const state = deriveChampionsState({ data: null, nowMs: 1_100_000 });
+
+    expect(state.latestGesture.address).toBeNull();
+    expect(state.latestGesture.isTimeKnown).toBe(true);
+  });
+
+  it('uses fresh evidence when determining a new live Endurance Champion', () => {
+    const freshAddress = '0x3333333333333333333333333333333333333333';
+    const state = deriveChampionsState({
+      data: baseSnapshot,
+      latestParticipantEvidence: {
+        address: freshAddress,
+        timestamp: 998,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(state.endurance.address).toBe(freshAddress);
+    expect(state.endurance.duration).toBe(102);
+    expect(state.endurance.isLive).toBe(true);
+    expect(state.latestGesture.isExtendingEnduranceRecord).toBe(true);
+  });
+
+  it('computes latest participant progress toward the endurance record', () => {
+    const state = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        LastBidderAddress: '0x3333333333333333333333333333333333333333',
+        LastBidderLastBidTime: 1_040,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(state.latestGesture.isCurrentEnduranceChampion).toBe(false);
+    expect(state.latestGesture.holdDuration).toBe(60);
+    expect(state.latestGesture.durationToBeat).toBe(101);
+    expect(state.latestGesture.secondsUntilEnduranceChampion).toBe(41);
+    expect(state.latestGesture.progressToEnduranceChampion).toBeCloseTo(59.4, 1);
+  });
+
+  it('models the strict endurance threshold as current record plus one second for challengers', () => {
+    const tiedState = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        LastBidderAddress: '0x3333333333333333333333333333333333333333',
+        LastBidderLastBidTime: 1_000,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(tiedState.latestGesture.holdDuration).toBe(100);
+    expect(tiedState.latestGesture.durationToBeat).toBe(101);
+    expect(tiedState.latestGesture.secondsUntilEnduranceChampion).toBe(1);
+    expect(tiedState.latestGesture.progressToEnduranceChampion).toBeLessThan(100);
+
+    const thresholdState = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        LastBidderAddress: '0x3333333333333333333333333333333333333333',
+        LastBidderLastBidTime: 999,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(thresholdState.latestGesture.holdDuration).toBe(101);
+    expect(thresholdState.latestGesture.secondsUntilEnduranceChampion).toBe(0);
+    expect(thresholdState.latestGesture.progressToEnduranceChampion).toBe(100);
+  });
+
+  it('does not mark a matching latest participant as live below or at the stored record', () => {
+    const belowState = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        EnduranceChampionDuration: 500,
+        LastBidderLastBidTime: 900,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(belowState.endurance.isLive).toBe(false);
+    expect(belowState.endurance.duration).toBe(500);
+    expect(belowState.latestGesture.isCurrentEnduranceChampion).toBe(true);
+    expect(belowState.latestGesture.isExtendingEnduranceRecord).toBe(false);
+    expect(belowState.latestGesture.durationToBeat).toBe(501);
+    expect(belowState.latestGesture.secondsUntilEnduranceChampion).toBe(301);
+    expect(belowState.latestGesture.progressToEnduranceChampion).toBeCloseTo(39.9, 1);
+
+    const equalState = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        EnduranceChampionDuration: 200,
+        LastBidderLastBidTime: 900,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(equalState.endurance.isLive).toBe(false);
+    expect(equalState.endurance.duration).toBe(200);
+    expect(equalState.latestGesture.secondsUntilEnduranceChampion).toBe(1);
+    expect(equalState.latestGesture.progressToEnduranceChampion).toBeLessThan(100);
+  });
+
+  it('marks a matching latest participant as extending the record above threshold', () => {
+    const state = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        EnduranceChampionDuration: 199,
+        LastBidderLastBidTime: 900,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(state.endurance.isLive).toBe(true);
+    expect(state.endurance.duration).toBe(200);
+    expect(state.latestGesture.isCurrentEnduranceChampion).toBe(true);
+    expect(state.latestGesture.isExtendingEnduranceRecord).toBe(true);
+    expect(state.latestGesture.secondsUntilEnduranceChampion).toBe(0);
+    expect(state.latestGesture.progressToEnduranceChampion).toBe(100);
+  });
+
+  it('promotes a different latest participant to live endurance at the strict threshold', () => {
+    const challenger = '0x3333333333333333333333333333333333333333';
+    const tiedState = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        LastBidderAddress: challenger,
+        LastBidderLastBidTime: 1_000,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(tiedState.endurance.address).toBe(baseSnapshot.EnduranceChampionAddress);
+    expect(tiedState.endurance.isLive).toBe(false);
+
+    const winningState = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        LastBidderAddress: challenger,
+        LastBidderLastBidTime: 999,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(winningState.endurance.address).toBe(challenger);
+    expect(winningState.endurance.duration).toBe(101);
+    expect(winningState.endurance.isLive).toBe(true);
+    expect(winningState.latestGesture.isCurrentEnduranceChampion).toBe(true);
+  });
+
+  it('does not grow chrono from address equality without segment data', () => {
+    const state = deriveChampionsState({
+      data: baseSnapshot,
+      nowMs: 1_100_000,
+    });
+
+    expect(state.chrono.isLive).toBe(false);
+    expect(state.chrono.duration).toBe(50);
+    expect(state.chrono.statusText).toBe('Record standing');
+    expect(state.chrono.startsGrowingIn).toBeUndefined();
+    expect(state.chronoChallenge.address).toBe(baseSnapshot.EnduranceChampionAddress);
+    expect(state.chronoChallenge.hasDetails).toBe(false);
+    expect(state.chronoChallenge.startsGrowingIn).toBeUndefined();
+  });
+
+  it('marks chrono live only when source-backed segment duration beats the record', () => {
+    const liveState = deriveChampionsState({
+      data: snapshot(
+        {
+          ...baseSnapshot,
+          ChronoWarriorDuration: 100,
+        },
+        {
+          source: 'api-v1+chain',
+          receivedAtMs: 1_095_000,
+          hasChronoSegmentData: true,
+          EnduranceChampionStartTimeStamp: 800,
+          PrevEnduranceChampionDuration: 100,
+          SourceBlockTimeStamp: 1_000,
+          StoredChronoWarriorDuration: 50,
+        },
+      ),
+      nowMs: 1_100_000,
+    });
+
+    expect(liveState.chrono.isLive).toBe(true);
+    expect(liveState.chrono.duration).toBe(105);
+    expect(liveState.chrono.currentSegmentDuration).toBe(105);
+    expect(liveState.chrono.sourceText).toBe('Chain verified');
+    expect(liveState.chronoChallenge.address).toBe(baseSnapshot.EnduranceChampionAddress);
+    expect(liveState.chronoChallenge.isLive).toBe(true);
+    expect(liveState.chronoChallenge.isRecordHolder).toBe(true);
+    expect(liveState.chronoChallenge.duration).toBe(105);
+    expect(liveState.chronoChallenge.startsGrowingIn).toBeUndefined();
+  });
+
+  it('keeps the returned chrono owner when storage segment fields describe an outgoing champion', () => {
+    const liveEndurance = '0xe7eD7F31cd76CeD85861ec5bD37879cBA053e887';
+    const returnedChrono = '0x7406B34d25A9B7841CAC133E3173919e0af6Bc6c';
+
+    const state = deriveChampionsState({
+      data: snapshot(
+        {
+          EnduranceChampionAddress: liveEndurance,
+          EnduranceChampionDuration: 3979,
+          ChronoWarriorAddress: returnedChrono,
+          ChronoWarriorDuration: 6942,
+          LastBidderAddress: liveEndurance,
+          LastBidderLastBidTime: 1_782_277_324,
+          LastCstBidderAddress: baseSnapshot.LastCstBidderAddress,
+        },
+        {
+          source: 'api-v2',
+          receivedAtMs: 1_782_281_303_000,
+          hasChronoSegmentData: true,
+          EnduranceChampionStartTimeStamp: 1_782_271_323,
+          PrevEnduranceChampionDuration: 1990,
+          SourceBlockTimeStamp: 1_782_281_303,
+          ChronoWarriorIsLive: true,
+        },
+      ),
+      nowMs: 1_782_281_303_000,
+    });
+
+    expect(state.endurance.address).toBe(liveEndurance);
+    expect(state.chrono.address).toBe(returnedChrono);
+    expect(state.chrono.duration).toBe(6942);
+    expect(state.chrono.isLive).toBe(false);
+    expect(state.chrono.currentSegmentDuration).toBeUndefined();
+    expect(state.chrono.hasLiveDetails).toBe(false);
+    expect(state.chrono.startsGrowingIn).toBeUndefined();
+    expect(state.chronoChallenge.address).toBe(liveEndurance);
+    expect(state.chronoChallenge.isRecordHolder).toBe(false);
+    expect(state.chronoChallenge.isLive).toBe(false);
+    expect(state.chronoChallenge.duration).toBe(7990);
+    expect(state.chronoChallenge.startsGrowingIn).toBeUndefined();
+  });
+
+  it('keeps chrono ownership on the authoritative returned recipient when the segment wins', () => {
+    const challenger = '0x3333333333333333333333333333333333333333';
+    const state = deriveChampionsState({
+      data: snapshot(
+        {
+          ...baseSnapshot,
+          EnduranceChampionDuration: 100,
+          ChronoWarriorDuration: 200,
+          ChronoWarriorAddress: challenger,
+          LastBidderAddress: challenger,
+          LastBidderLastBidTime: 900,
+        },
+        {
+          source: 'api-v1+chain',
+          receivedAtMs: 1_000_000,
+          hasChronoSegmentData: true,
+          EnduranceChampionStartTimeStamp: 700,
+          PrevEnduranceChampionDuration: 100,
+          SourceBlockTimeStamp: 1_000,
+          StoredChronoWarriorDuration: 50,
+        },
+      ),
+      nowMs: 1_100_000,
+    });
+
+    expect(state.endurance.address).toBe(challenger);
+    expect(state.chrono.address).toBe(challenger);
+    expect(state.chrono.isLive).toBe(true);
+    expect(state.chrono.currentSegmentDuration).toBe(300);
+    expect(state.chronoChallenge.address).toBe(challenger);
+    expect(state.chronoChallenge.isRecordHolder).toBe(true);
+    expect(state.chronoChallenge.isLive).toBe(true);
+    expect(state.chronoChallenge.duration).toBe(300);
+  });
+
+  it('shows when chrono starts growing if the source-backed segment is below record', () => {
+    const state = deriveChampionsState({
+      data: snapshot(baseSnapshot, {
+        source: 'api-v2',
+        receivedAtMs: 1_000_000,
+        hasChronoSegmentData: true,
+        EnduranceChampionStartTimeStamp: 800,
+        PrevEnduranceChampionDuration: 100,
+        SourceBlockTimeStamp: 940,
+        ChronoWarriorIsLive: false,
+      }),
+      nowMs: 1_000_000,
+    });
+
+    expect(state.chrono.isLive).toBe(false);
+    expect(state.chrono.duration).toBe(50);
+    expect(state.chrono.currentSegmentDuration).toBeUndefined();
+    expect(state.chrono.startsGrowingIn).toBeUndefined();
+    expect(state.chronoChallenge.duration).toBe(40);
+    expect(state.chronoChallenge.startsGrowingIn).toBe(11);
+    expect(state.chronoChallenge.isLive).toBe(false);
+  });
+
+  it('compares addresses case-insensitively', () => {
+    const state = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        EnduranceChampionAddress: '0xABCDEF0000000000000000000000000000000000',
+        LastBidderAddress: '0xabcdef0000000000000000000000000000000000',
+        ChronoWarriorAddress: '0xabcdef0000000000000000000000000000000000',
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(state.endurance.isLive).toBe(true);
+    expect(state.chrono.isLive).toBe(false);
+  });
+
+  it('normalizes zero addresses to empty UI state', () => {
+    const state = deriveChampionsState({
+      data: {
+        EnduranceChampionAddress: '0x0000000000000000000000000000000000000000',
+        EnduranceChampionDuration: 100,
+        ChronoWarriorAddress: '0x0000000000000000000000000000000000000000',
+        ChronoWarriorDuration: 200,
+        LastBidderAddress: '0x0000000000000000000000000000000000000000',
+        LastBidderLastBidTime: 900,
+        LastCstBidderAddress: '0x0000000000000000000000000000000000000000',
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(state.endurance.address).toBeNull();
+    expect(state.endurance.isLive).toBe(false);
+    expect(state.chrono.address).toBeNull();
+    expect(state.chrono.isLive).toBe(false);
+    expect(state.chronoChallenge.address).toBeNull();
+    expect(state.chronoChallenge.hasDetails).toBe(false);
+    expect(state.latestGesture.address).toBeNull();
+    expect(state.latestGesture.durationToBeat).toBe(0);
+    expect(state.latestGesture.secondsUntilEnduranceChampion).toBe(0);
+    expect(state.latestGesture.progressToEnduranceChampion).toBe(0);
+    expect(state.lastCst.address).toBeNull();
+  });
+
+  it('keeps endurance at the stored duration until the current hold exceeds it', () => {
+    const state = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        EnduranceChampionDuration: 500,
+        LastBidderLastBidTime: 900,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(state.endurance.isLive).toBe(false);
+    expect(state.latestGesture.holdDuration).toBe(200);
+    expect(state.endurance.duration).toBe(500);
+    expect(state.latestGesture.isCurrentEnduranceChampion).toBe(true);
+    expect(state.latestGesture.isExtendingEnduranceRecord).toBe(false);
+    expect(state.latestGesture.secondsUntilEnduranceChampion).toBe(301);
+    expect(state.latestGesture.progressToEnduranceChampion).toBeCloseTo(39.9, 1);
+  });
+
+  it('does not create negative hold durations when the backend timestamp is ahead of the client', () => {
+    const state = deriveChampionsState({
+      data: {
+        ...baseSnapshot,
+        LastBidderAddress: '0x3333333333333333333333333333333333333333',
+        LastBidderLastBidTime: 1_200,
+      },
+      nowMs: 1_100_000,
+    });
+
+    expect(state.latestGesture.holdDuration).toBe(0);
+    expect(state.endurance.duration).toBe(baseSnapshot.EnduranceChampionDuration);
+    expect(state.latestGesture.secondsUntilEnduranceChampion).toBe(101);
+    expect(state.latestGesture.progressToEnduranceChampion).toBe(0);
+  });
+
+  it('does not extend chrono when source receive time is in the future', () => {
+    const state = deriveChampionsState({
+      data: snapshot(
+        {
+          ...baseSnapshot,
+          ChronoWarriorDuration: 100,
+        },
+        {
+          source: 'api-v1+chain',
+          receivedAtMs: 1_200_000,
+          hasChronoSegmentData: true,
+          EnduranceChampionStartTimeStamp: 800,
+          PrevEnduranceChampionDuration: 100,
+          SourceBlockTimeStamp: 1_000,
+          StoredChronoWarriorDuration: 50,
+        },
+      ),
+      nowMs: 1_100_000,
+    });
+
+    expect(state.chrono.isLive).toBe(true);
+    expect(state.chrono.duration).toBe(100);
+  });
+});
+
+describe('useChampions', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseNow.mockReturnValue(1_100_000);
+  });
+
+  it('derives state from useSpecialAllocationSnapshot and useNow', () => {
+    mockChampionQuery(snapshot(baseSnapshot));
+
+    const { result } = renderHook(() => useChampions());
+
+    expect(result.current.endurance.duration).toBe(200);
+    expect(result.current.chrono.duration).toBe(50);
+    expect(result.current.lastCst.address).toBe(baseSnapshot.LastCstBidderAddress);
+    expect(result.current.latestGesture.isCurrentEnduranceChampion).toBe(true);
+    expect(result.current.latestGesture.isExtendingEnduranceRecord).toBe(true);
+  });
+
+  it('forwards an ISR role seed into the snapshot hook', () => {
+    mockChampionQuery(snapshot(baseSnapshot));
+
+    renderHook(() => useChampions(baseSnapshot));
+
+    expect(mockUseSpecialAllocationSnapshot).toHaveBeenCalledWith(baseSnapshot, true);
+  });
+
+  it('forwards a disabled state for cycles without a current Gesture', () => {
+    mockChampionQuery(null);
+
+    renderHook(() => useChampions(undefined, undefined, false));
+
+    expect(mockUseSpecialAllocationSnapshot).toHaveBeenCalledWith(undefined, false);
+  });
+
+  it('forwards latest evidence into the shared derivation', () => {
+    mockChampionQuery(snapshot(baseSnapshot));
+    const evidence = {
+      address: '0x3333333333333333333333333333333333333333',
+      timestamp: 1_040,
+    };
+
+    const { result } = renderHook(() => useChampions(baseSnapshot, evidence));
+
+    expect(result.current.latestGesture.address).toBe(evidence.address);
+    expect(result.current.latestGesture.holdDuration).toBe(60);
+  });
+
+  it('measures holds against the page clock before the ticker runs', () => {
+    // Regression (F007): the shared ticker reads 0 during server rendering and
+    // hydration, which painted a confident "0s" hold and 0% Endurance progress.
+    mockChampionQuery(snapshot(baseSnapshot));
+    mockUseNow.mockReturnValue(0);
+
+    const seeded = renderHook(() => useChampions(baseSnapshot, undefined, true, 1_100_000));
+    expect(seeded.result.current.latestGesture.isTimeKnown).toBe(true);
+    expect(seeded.result.current.latestGesture.holdDuration).toBe(200);
+
+    const unseeded = renderHook(() => useChampions(baseSnapshot));
+    expect(unseeded.result.current.latestGesture.isTimeKnown).toBe(false);
+  });
+
+  it('lets the live ticker take over from the page clock', () => {
+    mockChampionQuery(snapshot(baseSnapshot));
+    mockUseNow.mockReturnValue(1_200_000);
+
+    const { result } = renderHook(() => useChampions(baseSnapshot, undefined, true, 1_100_000));
+    expect(result.current.latestGesture.holdDuration).toBe(300);
+  });
+
+  it('passes loading state through when data is unavailable', () => {
+    mockUseSpecialAllocationSnapshot.mockReturnValue({
+      snapshot: null,
+      isLoading: true,
+      raw: undefined,
+    } as ReturnType<typeof useSpecialAllocationSnapshot>);
+
+    const { result } = renderHook(() => useChampions());
+
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.hasData).toBe(false);
+  });
+});

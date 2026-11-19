@@ -1,0 +1,92 @@
+import { renderHook } from '@testing-library/react';
+import { act } from 'react';
+
+import {
+  resetAttentionPreferencesForTest,
+  updateAttentionPreferences,
+} from '../useAttentionPreferences';
+import { useTabTitleCountdown } from '../useTabTitleCountdown';
+
+describe('useTabTitleCountdown', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    document.title = 'Cosmic Signature';
+    window.localStorage.clear();
+    resetAttentionPreferencesForTest();
+    // Opt-in per viewer; these cases cover the countdown once it is on.
+    updateAttentionPreferences({ tabTitle: true });
+  });
+
+  it('leaves the title alone until the viewer turns the countdown on', () => {
+    updateAttentionPreferences({ tabTitle: false });
+    renderHook(() => useTabTitleCountdown({ enabled: true, targetMs: Date.now() + 60_000 }));
+    expect(document.title).toBe('Cosmic Signature');
+  });
+
+  it('restores the title when the viewer turns the countdown off', () => {
+    renderHook(() => useTabTitleCountdown({ enabled: true, targetMs: Date.now() + 60_000 }));
+    expect(document.title).toBe('01:00 \u00b7 Cosmic Signature');
+
+    act(() => {
+      updateAttentionPreferences({ tabTitle: false });
+    });
+    expect(document.title).toBe('Cosmic Signature');
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('leaves the title alone while disabled', () => {
+    renderHook(() => useTabTitleCountdown({ enabled: false, targetMs: Date.now() + 60_000 }));
+    expect(document.title).toBe('Cosmic Signature');
+  });
+
+  it('ticks the remaining time into the title and restores it on disable', () => {
+    const targetMs = Date.now() + 90_000;
+    const { rerender } = renderHook(
+      ({ enabled }: { enabled: boolean }) => useTabTitleCountdown({ enabled, targetMs }),
+      { initialProps: { enabled: true } },
+    );
+
+    expect(document.title).toBe('01:30 \u00b7 Cosmic Signature');
+
+    act(() => {
+      jest.advanceTimersByTime(30_000);
+    });
+    expect(document.title).toBe('01:00 \u00b7 Cosmic Signature');
+
+    rerender({ enabled: false });
+    expect(document.title).toBe('Cosmic Signature');
+  });
+
+  it('keeps the original base title when the target moves (a gesture extends the clock)', () => {
+    const start = Date.now();
+    const { rerender } = renderHook(
+      ({ targetMs }: { targetMs: number }) => useTabTitleCountdown({ enabled: true, targetMs }),
+      { initialProps: { targetMs: start + 60_000 } },
+    );
+
+    expect(document.title).toBe('01:00 \u00b7 Cosmic Signature');
+
+    rerender({ targetMs: start + 120_000 });
+    expect(document.title).toBe('02:00 \u00b7 Cosmic Signature');
+  });
+
+  it('shows an ellipsis instead of counting toward a stale deadline', () => {
+    const targetMs = Date.now() + 90_000;
+    const { rerender } = renderHook(
+      ({ stale }: { stale: boolean }) => useTabTitleCountdown({ enabled: true, targetMs, stale }),
+      { initialProps: { stale: true } },
+    );
+    expect(document.title).toBe('\u2026 \u00b7 Cosmic Signature');
+
+    rerender({ stale: false });
+    expect(document.title).toBe('01:30 \u00b7 Cosmic Signature');
+  });
+
+  it('clamps at zero instead of going negative', () => {
+    renderHook(() => useTabTitleCountdown({ enabled: true, targetMs: Date.now() - 5_000 }));
+    expect(document.title).toBe('00:00 \u00b7 Cosmic Signature');
+  });
+});

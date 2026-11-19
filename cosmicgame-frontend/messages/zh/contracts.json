@@ -1,0 +1,198 @@
+{
+  "breadcrumbs": {
+    "home": "首页",
+    "contracts": "合约"
+  },
+  "page": {
+    "title": "合约地址",
+    "subtitle": "查看 Cosmic Signature 协议的链上地址、配置、源代码链接与验证背景。"
+  },
+  "network": {
+    "chain": "链 ID {chainId}"
+  },
+  "entries": {
+    "protocol": {
+      "name": "Cosmic Signature 协议",
+      "description": "管理周期、落笔与分配发放的主协议代理合约"
+    },
+    "implementation": {
+      "name": "实现合约",
+      "description": "Cosmic Signature 协议代理当前指向的实现合约"
+    },
+    "cst": {
+      "name": "Cosmic Signature CST 代币",
+      "description": "每笔落笔都可能铭刻的 ERC-20 代币（CST），用于表达宇宙议会中的协调权重"
+    },
+    "nft": {
+      "name": "Cosmic Signature NFT",
+      "description": "作为周期分配铭刻给获配者的 ERC-721 NFT 系列"
+    },
+    "randomWalk": {
+      "name": "Random Walk NFT",
+      "description": "Random Walk NFT 系列，可附加至 ETH 落笔以获得一次价格减免，也可锚定以取得锚定 NFT 星选资格"
+    },
+    "council": {
+      "name": "宇宙议会",
+      "description": "用于提交协调提案的链上协议协调合约"
+    },
+    "publicGoods": {
+      "name": "公共物品金库",
+      "description": "接收每个周期从周期储备划出的公共物品分配"
+    },
+    "outreach": {
+      "name": "推广储备",
+      "description": "用于推广派发与生态贡献者的资金"
+    },
+    "allocations": {
+      "name": "分配钱包",
+      "description": "托管待取回分配的合约"
+    },
+    "cosmicAnchor": {
+      "name": "Cosmic Signature NFT 锚定钱包",
+      "description": "Cosmic Signature NFT 的锚定合约"
+    },
+    "rwalkAnchor": {
+      "name": "RWLK 锚定钱包",
+      "description": "Random Walk NFT 的锚定合约"
+    }
+  },
+  "categories": {
+    "core": "核心合约",
+    "wallet": "钱包",
+    "anchoring": "锚定"
+  },
+  "addresses": {
+    "title": "合约地址",
+    "description": "Cosmic Signature 在 Arbitrum One 上的全部合约。可复制地址，或在 Arbiscan 上核对地址、在 Sourcify 上核对源代码。",
+    "verified": "配套合约与历史 V2 实现的公开匹配记录已于 {date} 核对。当前 V3 实现尚未在 Sourcify 验证，请查询其自身的记录。",
+    "markets": "市场",
+    "reported": "索引服务报告的地址为 {address}，该地址尚未验证。"
+  },
+  "funds": {
+    "title": "分配轨道",
+    "description": "周期储备会沿签名分配、时之勇士、星选、锚定派发与公共物品等轨道流转，其余作为滚动储备结转至下一周期。",
+    "chartAria": "分配轨道条形图",
+    "segments": {
+      "signature": {
+        "label": "签名分配",
+        "tooltip": "实际收官者取回的 ETH 份额，另含合计 1,000 CST 与三枚编号连续的 Cosmic Signature NFT。"
+      },
+      "chrono": {
+        "label": "时之勇士",
+        "tooltip": "发放给时之勇士的 ETH；同时还会获得 1,000 CST 与 1 枚 Cosmic Signature NFT。"
+      },
+      "stellar": {
+        "label": "星选",
+        "tooltip": "V3 按每笔未减免、未含溢价的 ETH 基础价格加权；CST 落笔也采用同一时刻的 ETH 基础价格。"
+      },
+      "anchor": {
+        "label": "锚定派发",
+        "tooltip": "按已锚定 NFT 数量比例，向 Cosmic Signature NFT 锚定者派发 ETH。"
+      },
+      "publicGoods": {
+        "label": "公共物品",
+        "tooltip": "先分配至公共物品金库，再经单独的无需许可交易转给配置的受益方。"
+      },
+      "next": {
+        "label": "滚动储备",
+        "tooltip": "各项分配完成后，剩余的周期储备会作为滚动储备滚入下一周期。"
+      }
+    }
+  },
+  "configuration": {
+    "title": "协议配置",
+    "description": "协议合约当前读取的实时参数。",
+    "cards": {
+      "ethStep": {
+        "label": "ETH 落笔价格增幅",
+        "tooltip": "ETH 落笔价格采用此阶梯增幅参数；CST 落笔价格则依据实时 CST 校准窗口变化。"
+      },
+      "timeIncrement": {
+        "label": "每笔落笔增加的时间",
+        "tooltip": "每笔落笔向周期收官倒计时增加的时长。每个周期收官后，增量增长 {percent}%。"
+      },
+      "cstPreview": {
+        "label": "当前参与 CST 预览",
+        "tooltip": "V3 中，下一笔向上一笔参与者铭刻的预估数量。公式为 {formula}，结果以 CST 最小单位计。首笔不发放，收官也不另行结算。"
+      },
+      "finalization": {
+        "label": "专属收官期限",
+        "tooltip": "收官之笔参与者完成周期收官的专属时间；期限结束后，公开收官窗口将向所有人开放。"
+      },
+      "initial": {
+        "label": "初始周期时长",
+        "tooltip": "首笔落笔后加入周期收官倒计时的初始时长。"
+      },
+      "message": {
+        "label": "消息长度上限",
+        "tooltip": "落笔消息允许的 UTF-8 字节长度上限。"
+      },
+      "v3CstDecline": {
+        "label": "CST 价格下降速率",
+        "value": "{amount} CST/分钟",
+        "tooltip": "实时 CST 基础价格下降速率。ETH 落笔可在检查通过后加快速率；CST 落笔减慢速率并重设上限。参与 CST 铭刻量另行计算。"
+      },
+      "v3SignatureNfts": {
+        "label": "签名配额 NFT 数量",
+        "tooltip": "周期收官时为签名配额获配者铭刻的 Cosmic Signature NFT 数量（连续编号）。"
+      },
+      "v3LateWindow": {
+        "label": "临近收官落笔窗口",
+        "tooltip": "周期收官倒计时结束前的一段时间，期间落笔价格附加以指数加速的溢价（最高约 5 倍）。"
+      }
+    },
+    "groups": {
+      "gestures": "落笔",
+      "timing": "时间",
+      "selection": "星选"
+    }
+  },
+  "parameters": {
+    "windowsTitle": "校准窗口",
+    "windowsDescription": "每个窗口都会随时间降低落笔价格。CST 窗口在每次 CST 落笔后重新开始；ETH 窗口在每个周期开始时打开，并在首次落笔时关闭。",
+    "cstTitle": "CST 校准窗口",
+    "ethTitle": "ETH 校准窗口",
+    "duration": "总时长",
+    "elapsed": "已过时长",
+    "remaining": "剩余",
+    "progress": "已完成 {percent}",
+    "state": {
+      "running": "进行中",
+      "complete": "已完成",
+      "closed": "已关闭",
+      "notStarted": "未开始"
+    },
+    "ceiling": "起始价格",
+    "cstDurationTooltip": "CST 校准窗口当前存储在链上的时长。每笔 CST 落笔会使其延长约 {increase}%，每笔 ETH 落笔会使其缩短约 {decrease}%。",
+    "cstCeilingTooltip": "当前窗口的起始基础价格，按链上速率下降；临近收官溢价另行计算。",
+    "publicGoodsAddress": "公共物品受益方",
+    "publicGoodsAddressTooltip": "当前从公共物品金库合约接收公共物品分配的链上地址。",
+    "selection": {
+      "ethLabel": "ETH 星选获配者",
+      "ethTooltip": "每个周期通过程序化随机方式获得 ETH 分配的参与者数量。",
+      "nftLabel": "NFT 星选（参与者）",
+      "nftTooltip": "每个周期通过程序化随机方式获得 Cosmic Signature NFT 的参与者数量。",
+      "anchorLabel": "NFT 星选（已锚定 RWLK）",
+      "anchorTooltip": "每个周期通过程序化随机方式获得 Cosmic Signature NFT 的 Random Walk NFT 锚定者数量。"
+    },
+    "cstComplete": "窗口已走完全程，CST 落笔价格将停留在最低点，直到下一次 CST 落笔重新开始窗口。",
+    "ethClosed": "本周期的首次落笔已关闭该窗口；此后 ETH 落笔价格随每次落笔递增。",
+    "ethComplete": "窗口已走完全程，ETH 落笔价格将停留在最低点，直到本周期的首次落笔。",
+    "cstDurationTooltipV3": "V3 窗口时长由当前上限与价格下降速率推算。落笔调整速率，CST 落笔还会重设上限，不再使用旧版的存储时长百分比规则。"
+  },
+  "vault": {
+    "title": "公共物品",
+    "description": "每个周期都会把公共物品份额存入金库，再由金库转拨给公共物品受益方。",
+    "tooltip": "调用公共物品金库的 send() 函数，将金库中的 ETH 余额转拨给已配置的受益方 Protocol Guild。",
+    "vaultAddress": "金库",
+    "share": "每个周期的份额",
+    "balance": "金库当前余额",
+    "empty": "金库目前为空，暂无可转拨的资金。",
+    "balanceUnavailable": "暂时无法读取金库余额，因此目前不提供转拨操作。",
+    "note": "任何人都可以把金库余额转拨给受益方，只需支付 Gas 费。"
+  },
+  "seo": {
+    "heading": "Cosmic Signature 合约",
+    "partialFallback": "实时数据暂不可用，下方列出此前核对的地址。"
+  }
+}

@@ -1,0 +1,413 @@
+{
+  "publicData": {
+    "common": {
+      "none": "None yet",
+      "relatedPagesAria": "{heading} related pages"
+    },
+    "routes": {
+      "allocation": {
+        "heading": "Allocation recipients",
+        "description": "Browse public Cosmic Signature allocation history across finalized Performance Cycles, including Signature Allocations, Stellar Selection, Anchor Distributions, and public-goods flows.",
+        "links": {
+          "statistics": "View protocol statistics",
+          "learn": "Learn how cycles finalize",
+          "contracts": "Review contract addresses"
+        },
+        "cards": {
+          "finalizedCycles": {
+            "label": "Finalized cycles"
+          },
+          "recipients": {
+            "label": "Signature Allocation recipients",
+            "tooltip": "Distinct wallets that received the Signature Allocation by making the Final Gesture."
+          },
+          "totalEth": {
+            "label": "Total Signature Allocation ETH",
+            "tooltip": "The sum of Signature Allocation ETH across finalized cycles, based on cycle records."
+          },
+          "totalGestures": {
+            "label": "Total gestures"
+          }
+        }
+      },
+      "anchoring": {
+        "heading": "Anchor Distributions",
+        "description": "Every ETH Anchor Distribution and every Anchored-NFT Stellar Selection imprint, as recorded on-chain, and how anchoring works.",
+        "links": {
+          "statistics": "View anchoring statistics",
+          "learn": "Learn about anchoring",
+          "gallery": "Explore Cosmic Signature NFTs"
+        },
+        "cards": {
+          "actions": {
+            "label": "Anchor / release actions",
+            "tooltip": "Every anchor and release of a Cosmic Signature or Random Walk NFT since anchoring opened."
+          },
+          "ethDeposits": {
+            "label": "ETH Anchor Distribution deposits",
+            "tooltip": "ETH deposits into the Anchor Distribution for anchored Cosmic Signature NFTs. Each deposit is shared among the NFTs anchored when it is made."
+          },
+          "stellarImprints": {
+            "label": "Anchored-NFT Stellar Selection imprints",
+            "tooltip": "Cosmic Signature NFTs imprinted for anchored Random Walk NFTs through Anchored-NFT Stellar Selection."
+          }
+        }
+      },
+      "marketing": {
+        "heading": "Outreach allocations",
+        "description": "CST sent from the Outreach Reserve to people who help others discover Cosmic Signature, each allocation with its transaction.",
+        "links": {
+          "faq": "How the Outreach Reserve works",
+          "statistics": "View protocol statistics"
+        },
+        "cards": {
+          "records": {
+            "label": "Allocations"
+          },
+          "allocatedCst": {
+            "label": "CST allocated"
+          },
+          "contributors": {
+            "label": "Contributors"
+          }
+        }
+      },
+      "imprint": {
+        "heading": "Imprint Random Walk NFT",
+        "description": "A Random Walk NFT takes 50% off the cost of one ETH gesture. Imprint one here, then attach it to the gesture you choose.",
+        "links": {
+          "cycle": "Open the active Performance Cycle",
+          "learn": "Learn how gestures work",
+          "used": "View used Random Walk NFTs"
+        },
+        "cards": {
+          "imprinted": {
+            "label": "Random Walk NFTs imprinted"
+          },
+          "used": {
+            "label": "Random Walk NFTs used"
+          }
+        }
+      },
+      "eth-contribution": {
+        "heading": "Direct ETH contributions",
+        "description": "ETH sent straight to the Cycle Reserve, by cycle and contributor. A contribution made with a note has its own record page.",
+        "links": {
+          "reserve": "How the Cycle Reserve is split",
+          "protocol": "Where the Public Goods share goes",
+          "risk": "Read risk disclosures"
+        },
+        "cards": {
+          "records": {
+            "label": "Contributions"
+          },
+          "totalEth": {
+            "label": "ETH contributed"
+          },
+          "contributors": {
+            "label": "Contributors"
+          }
+        }
+      },
+      "attached-nfts": {
+        "heading": "Attached NFT contributions",
+        "description": "Browse NFTs attached to Cosmic Signature gestures. Attached ERC-721 tokens forward to the participant who receives the Signature Allocation when a cycle finalizes.",
+        "links": {
+          "gallery": "Explore Cosmic Signature gallery",
+          "cycle": "View the current Performance Cycle",
+          "learn": "Learn how attachments fit the cycle"
+        },
+        "cards": {
+          "records": {
+            "label": "Attached NFT records"
+          },
+          "contracts": {
+            "label": "Unique NFT contracts"
+          },
+          "contributors": {
+            "label": "Contributor wallets"
+          }
+        }
+      },
+      "allocation-finalized": {
+        "heading": "Finalized allocations",
+        "description": "What each finalized cycle allocated, from its Signature Allocation to every Stellar Selection and Anchor Distribution record.",
+        "links": {
+          "myAllocations": "Retrieve your allocations",
+          "statistics": "View aggregate statistics",
+          "contracts": "Review verified contracts"
+        },
+        "cards": {
+          "records": {
+            "label": "Allocation records",
+            "tooltip": "Every allocation record across finalized cycles, including ETH, CST and NFT allocations."
+          },
+          "eth": {
+            "label": "ETH allocated",
+            "tooltip": "The sum of Signature Allocation, Chrono-Warrior, Stellar Selection and Anchor Distribution ETH across finalized cycles. CST and NFT allocations are not included."
+          },
+          "recipients": {
+            "label": "Recipient wallets"
+          }
+        }
+      },
+      "named-nfts": {
+        "heading": "Named Cosmic Signature NFTs",
+        "description": "Owners can give their Signature a name on-chain. These are the ones that carry a name, most recently named first.",
+        "links": {
+          "gallery": "Explore the full gallery",
+          "learn": "Learn about the art",
+          "code": "Review rendering source code"
+        },
+        "cards": {
+          "named": {
+            "label": "Named NFTs"
+          },
+          "owners": {
+            "label": "Current owners"
+          }
+        }
+      },
+      "used-rwlk-nfts": {
+        "heading": "Used Random Walk NFTs",
+        "description": "Review Random Walk NFTs that have already been attached to ETH gestures for their one-time Gesture Cost reduction.",
+        "links": {
+          "imprint": "Imprint Random Walk NFTs",
+          "learn": "Learn how gestures work",
+          "cycle": "View current cycle data"
+        },
+        "cards": {
+          "used": {
+            "label": "NFTs used"
+          },
+          "wallets": {
+            "label": "Participant wallets"
+          },
+          "discount": {
+            "label": "One-time discount"
+          }
+        }
+      },
+      "coordination-changes": {
+        "heading": "Coordination changes",
+        "description": "Changes the contract owner has made to protocol parameters, each with its transaction. Until ownership is renounced, the owner can make more.",
+        "links": {
+          "security": "Read the security overview",
+          "audits": "Review audits and verification",
+          "learn": "Learn about CST and coordination"
+        },
+        "cards": {
+          "records": {
+            "label": "Changes"
+          },
+          "latest": {
+            "label": "Latest change"
+          },
+          "owner": {
+            "label": "Contract owner",
+            "tooltip": "Only this address can change these parameters. Once ownership is renounced, the owner is the zero address and nothing can change them again.",
+            "renounced": "Renounced",
+            "active": "Can change parameters"
+          }
+        }
+      },
+      "public-goods-contributions-cg": {
+        "heading": "Protocol Public Goods contributions",
+        "description": "5% of the reserve is allocated to the Public Goods Vault. Anyone can separately forward its balance to the current beneficiary, Protocol Guild.",
+        "links": {
+          "learn": "Learn about Public Goods",
+          "contracts": "Review the vault contract"
+        },
+        "cards": {
+          "records": {
+            "label": "Contributions"
+          },
+          "share": {
+            "label": "Share per cycle",
+            "tooltip": "The share of each finalized Cycle Reserve that the protocol forwards to the Public Goods Vault."
+          },
+          "totalEth": {
+            "label": "ETH contributed"
+          }
+        }
+      },
+      "public-goods-contributions-voluntary": {
+        "heading": "Voluntary Public Goods contributions",
+        "description": "ETH that anyone sends straight to the Public Goods Vault, for its beneficiary, currently Protocol Guild.",
+        "links": {
+          "direct": "View direct ETH contributions",
+          "learn": "Learn about Public Goods",
+          "risk": "Read risk disclosures"
+        },
+        "cards": {
+          "records": {
+            "label": "Contributions"
+          },
+          "totalEth": {
+            "label": "ETH contributed"
+          },
+          "contributors": {
+            "label": "Contributors"
+          }
+        }
+      },
+      "public-goods-retrievals": {
+        "heading": "Public Goods retrievals",
+        "description": "Every transfer from the Public Goods Vault to its beneficiary, currently Protocol Guild. Anyone can start one, and the ETH only ever goes to the beneficiary.",
+        "links": {
+          "learn": "Learn about Public Goods",
+          "protocolGuild": "Visit Protocol Guild",
+          "contracts": "Review the vault contract"
+        },
+        "cards": {
+          "records": {
+            "label": "Retrievals"
+          },
+          "totalEth": {
+            "label": "ETH retrieved"
+          },
+          "latest": {
+            "label": "Latest"
+          },
+          "beneficiary": {
+            "label": "Beneficiary",
+            "tooltip": "The address that received the most recent retrieval from the Public Goods Vault. The configured beneficiary is currently Protocol Guild."
+          }
+        }
+      }
+    }
+  },
+  "gallerySummary": {
+    "heading": "Cosmic Signature Gallery",
+    "description": "Every Signature, drawn by three-body physics from an on-chain seed.",
+    "cards": {
+      "imprinted": "Imprinted NFTs",
+      "anchored": "Anchored NFTs",
+      "named": "Named NFTs",
+      "cycles": "Finalized cycles"
+    },
+    "cardsShort": {
+      "imprinted": "Imprinted",
+      "anchored": "Anchored",
+      "named": "Named"
+    },
+    "relatedAria": "Gallery related pages",
+    "links": {
+      "learn": "Learn how Cosmic Signature works",
+      "code": "Review the rendering source code",
+      "statistics": "View protocol statistics"
+    }
+  },
+  "currentCycleSummary": {
+    "heading": "Current Performance Cycle",
+    "description": "The clock, standings, allocations and every gesture of the cycle in progress, updated live.",
+    "cards": {
+      "gestures": "Total gestures",
+      "opened": "Opened"
+    },
+    "relatedAria": "Current cycle related pages",
+    "links": {
+      "learn": "Learn how Performance Cycles work",
+      "statistics": "View protocol statistics",
+      "contracts": "Review verified contracts"
+    }
+  },
+  "jsonLd": {
+    "app": {
+      "protocolDescription": "Cosmic Signature is a procedural on-chain art protocol on Arbitrum. Every gesture shapes the cycle’s final Signature, and the protocol distributes its reserves across a fixed set of allocation tracks — including Protocol Guild.",
+      "webApplicationDescription": "A procedural on-chain art protocol on Arbitrum. Participants make gestures during a Performance Cycle; the protocol distributes allocations across a fixed set of tracks when the cycle finalizes.",
+      "browserRequirements": "Requires a Web3-compatible browser or wallet extension"
+    },
+    "artProtocol": {
+      "creditText": "Cosmic Signature Protocol",
+      "genre": "Generative Art"
+    },
+    "product": {
+      "category": "Digital Collectible"
+    }
+  },
+  "og": {
+    "shared": {
+      "cycle": "Cycle {cycle}",
+      "plateCaption": "{name} · {cycle}"
+    },
+    "default": {
+      "alt": "Cosmic Signature — Every Gesture Shapes the Signature.",
+      "title": "Every Gesture Shapes the Signature.",
+      "subhead": "A procedural on-chain art protocol on Arbitrum.",
+      "fact": "CC0 · Open source · 5% Public Goods allocation"
+    },
+    "gallery": {
+      "alt": "Cosmic Signature — Gallery",
+      "eyebrow": "Gallery",
+      "title": "Three-body trajectories, seeded on-chain.",
+      "subhead": "Every Signature is a deterministic three-body simulation, rendered spectrally. Same seed, identical pixels.",
+      "fact": "CC0 · Deterministic · Reproducible"
+    },
+    "currentCycle": {
+      "alt": "Cosmic Signature — The Performance Cycle, live.",
+      "eyebrow": "Current cycle",
+      "title": "The Performance Cycle, live.",
+      "subhead": "Gesture history, leaderboards, attached contributions, and allocation distribution — in real time.",
+      "fact": "Live on Arbitrum One"
+    },
+    "anchoring": {
+      "alt": "Cosmic Signature — Anchoring",
+      "eyebrow": "Anchoring",
+      "title": "Anchor a Signature to every cycle.",
+      "subhead": "Anchored Cosmic Signature NFTs take part in each cycle’s Anchor Distribution, pro rata. Release any time.",
+      "fact": "CC0 · Release any time · Anchor Distribution"
+    },
+    "faq": {
+      "alt": "Cosmic Signature — FAQ",
+      "eyebrow": "FAQ",
+      "title": "Questions worth answering plainly.",
+      "subhead": "Performance Cycles, gestures, allocations, anchoring, Protocol Coordination.",
+      "fact": "CC0 · Open source · 5% Public Goods allocation"
+    },
+    "howItWorks": {
+      "alt": "Cosmic Signature — How it works",
+      "eyebrow": "How it works",
+      "title": "From Calibration to Allocation, in four stages.",
+      "subhead": "Open the cycle. Make a gesture. Finalize. The protocol distributes the reserve.",
+      "fact": "Calibration · Gestures · Allocations"
+    },
+    "gesture": {
+      "alt": "Cosmic Signature — Gesture",
+      "altWithValue": "Cosmic Signature — Gesture #{position} in Cycle {cycle}",
+      "eyebrow": "Gesture",
+      "title": "An imprint on the Signature.",
+      "titleWithValue": "Gesture #{position} · Cycle {cycle}",
+      "subhead": "Each gesture extends the cycle, shapes its Signature, and can imprint Participation CST.",
+      "methods": {
+        "eth": "ETH gesture",
+        "ethRandomWalk": "ETH + Random Walk gesture",
+        "cst": "CST gesture"
+      }
+    },
+    "allocation": {
+      "alt": "Cosmic Signature — Allocation Distribution",
+      "altWithValue": "Cosmic Signature — Cycle {cycle} allocations",
+      "eyebrow": "Allocation",
+      "title": "Allocation Distribution",
+      "titleWithValue": "Cycle {cycle} allocations",
+      "subhead": "How the Cycle Reserve was distributed across a fixed set of allocation tracks."
+    },
+    "participant": {
+      "alt": "Cosmic Signature — Participant",
+      "altWithValue": "Cosmic Signature — Participant {address}",
+      "eyebrow": "Participant",
+      "title": "Participant",
+      "subhead": "Gestures, allocations, anchors, and contributions across every Performance Cycle."
+    },
+    "token": {
+      "alt": "{subject}, a deterministic three-body artwork",
+      "altWithTraits": "{subject}: {structure} structure, {palette} palette",
+      "altSubject": "Cosmic Signature #{id}",
+      "altSubjectNamed": "“{name}”, Cosmic Signature #{id}",
+      "altInCycle": "{subject} from Cycle {cycle}",
+      "title": "Signature {number}",
+      "subhead": "A deterministic three-body simulation, seeded on-chain and rendered by the open-source renderer."
+    }
+  }
+}

@@ -1,0 +1,116 @@
+import type { QuizText } from './structure';
+import { basicQuestionsTextZhTw } from './text.basic.zh-TW';
+import { hardQuestionsTextZhTw } from './text.hard.zh-TW';
+import { mediumQuestionsTextZhTw } from './text.medium.zh-TW';
+
+/** 中文測驗文案，以 structure.ts 中的骨架為鍵。 */
+export const quizTextZhTw = {
+  hub: {
+    eyebrow: '知識測驗',
+    h1: '你對 Cosmic Signature 了解多少？',
+    intro:
+      '一百道題，三個層級，全部出自白皮書：週期、落筆、分配、渲染管線，以及只有細心讀者才會注意到的邊界情形。每道題都附有講解，並指向講清這條規則的原文章節——答題本身，就是一種閱讀。',
+    breadcrumbs: {
+      ariaLabel: '麵包屑導覽',
+      homeLabel: '首頁',
+      quizLabel: '知識測驗',
+    },
+    questionCountTemplate: '{count} 道題',
+    durationTemplate: '約 {minutes} 分鐘',
+    difficultyTemplate: '難度 {level}/{max}',
+    bestTemplate: '最佳成績 {correct}/{total}',
+    inProgressTemplate: '進行中：第 {current} 題，共 {total} 題',
+    startLabel: '開始',
+    resumeLabel: '繼續作答',
+  },
+  ui: {
+    intro: {
+      keyboardHint: '提示：按 1–4 作答，按 Enter 繼續。',
+      beginLabel: '開始作答',
+      resumeLabel: '繼續作答',
+      startOverLabel: '重新開始',
+      ranksHeading: '理解程度',
+      rankFromTemplate: '{percent} 起',
+      rankBelowTemplate: '低於 {percent}',
+    },
+    progressTemplate: '第 {current} 題，共 {total} 題',
+    correctFeedback: [
+      '答對了。',
+      '正確，來看這條規則的依據。',
+      '回答正確。',
+      '沒錯，下面是完整說明。',
+    ],
+    incorrectFeedback: [
+      '這題答錯了，看看下面的說明。',
+      '還不完全正確，可以對照規則再想一想。',
+      '答案不同，關鍵在下面這條規則。',
+      '這次未答對，下面附有白皮書說明。',
+    ],
+    correctAnswerTemplate: '正確答案是 {letter}。',
+    yourAnswerLabel: '你的答案',
+    correctAnswerLabel: '正確答案',
+    newTabNote: '（在新分頁中開啟）',
+    streakTemplate: '連對 {count} 題',
+    explanationHeading: '為什麼',
+    funFactHeading: '你知道嗎？',
+    referenceTemplate: '深入閱讀：{section}',
+    nextLabel: '下一題',
+    finishLabel: '檢視結果',
+    summary: {
+      eyebrow: '作答完成',
+      scoreTemplate: '答對 {correct} 題，共 {total} 題',
+      rankLabel: '理解程度',
+      rankTemplate: '理解程度：{rank}',
+      ranks: {
+        reader: {
+          name: '讀者',
+          line: '可以從白皮書的協議概覽開始，再逐步了解各項機制。',
+        },
+        student: {
+          name: '學生',
+          line: '已掌握不少基礎概念，接下來可以多留意特殊情況。',
+        },
+        scholar: {
+          name: '學者',
+          line: '對協議機制已有扎實理解，可透過參考章節補齊細節。',
+        },
+        cartographer: {
+          name: '製圖師',
+          line: '對協議已有全面理解，也可以再讀參考章節，核對細節。',
+        },
+      },
+      studyHeading: '需要複習的題目',
+      studyIntro: '你的答案、正確答案，以及講清這條規則的原文章節。',
+      noMissesNote: '全部答對了。',
+      restartLabel: '重新排列題目再答一次',
+      hubLabel: '全部層級',
+      nextTierTemplate: '繼續挑戰{tier}',
+    },
+  },
+  tiers: {
+    basic: {
+      title: '基礎',
+      heading: '基礎：核心概念',
+      tagline: '協議的輪廓：週期、落筆、分配與藝術。',
+      description:
+        '二十五道基礎題——什麼是落筆、週期如何落幕、ETH 流向哪裡、作品為何是確定性的。初來乍到，從這裡開始。',
+      questions: basicQuestionsTextZhTw,
+    },
+    medium: {
+      title: '進階',
+      heading: '進階：運轉中的機制',
+      tagline: '運轉中的機制：校準窗口、堅守軌道、議會規則。',
+      description:
+        '二十五道進階題——價格曲線、CST 回饋迴路、堅守冠軍與時之勇士之辨、星選算術與議會參數。適合看過一兩個週期的讀者。',
+      questions: mediumQuestionsTextZhTw,
+    },
+    hard: {
+      title: '高階',
+      heading: '高階：邊界情形與推演',
+      tagline: '邊界情形與推演：惡意錢包、升級歷史、渲染管線。',
+      description:
+        '五十道高階題，獻給細心的讀者——到期後的語義、拒收 ETH 的合約、V2 為何改了五處、V3 重新定價了什麼、隨機性如何構造，以及一台 Yoshida 積分器在藝術專案裡做什麼。',
+      questions: hardQuestionsTextZhTw,
+    },
+  },
+} as const satisfies QuizText;

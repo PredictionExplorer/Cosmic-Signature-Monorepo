@@ -1,0 +1,75 @@
+{
+  "breadcrumbs": {
+    "home": "首页",
+    "code": "源代码"
+  },
+  "viewer": {
+    "title": "代码查看器",
+    "description": "把每个种子转换为图像和视频的 Rust 程序。同一文件也发布在 IPFS 上。",
+    "language": "Rust",
+    "lines": "{count, plural, other {# 行}}",
+    "codeAria": "图像生成源代码（Rust）",
+    "copy": "复制代码",
+    "copied": "已复制",
+    "wrap": "自动换行",
+    "ipfs": "IPFS",
+    "github": "GitHub",
+    "cid": "IPFS 内容标识符",
+    "copyCid": "复制 IPFS 标识符"
+  },
+  "pipeline": {
+    "heading": "从种子到图像",
+    "description": "下方代码如何一步步把 NFT 的种子变成艺术作品。",
+    "galleryLink": "在画廊中查看这些图像",
+    "steps": {
+      "seed": {
+        "label": "种子",
+        "description": "NFT 的种子，在铭刻时记录在链上。"
+      },
+      "stream": {
+        "label": "SHA3-256 随机流",
+        "description": "将种子哈希为可复现的随机字节流。"
+      },
+      "simulation": {
+        "label": "三体模拟",
+        "description": "从随机流中取得三个天体的质量、位置和速度，并计算它们的轨道。"
+      },
+      "renderer": {
+        "label": "光谱渲染器",
+        "description": "以沿光谱渐变的颜色描绘每个天体的轨迹。"
+      },
+      "image": {
+        "label": "Cosmic Signature NFT 图像",
+        "description": "最后一帧即为图像，全部帧组成视频。同一个种子总是得到同样的结果。"
+      }
+    }
+  },
+  "seo": {
+    "heading": "Cosmic Signature 源代码"
+  },
+  "repositories": {
+    "heading": "项目代码仓库",
+    "items": {
+      "frontend": {
+        "title": "前端",
+        "description": "基于 Next.js 的网站与应用界面。"
+      },
+      "backend": {
+        "title": "Go 后端（Augur Explorer）",
+        "description": "索引链上事件，并通过 API 提供协议数据。"
+      },
+      "contracts": {
+        "title": "智能合约",
+        "description": "以 Solidity 编写，定义 Arbitrum 上的 Cosmic Signature 协议。"
+      },
+      "images": {
+        "title": "图像生成",
+        "description": "以 Rust 编写的三体模拟与渲染器，用于生成 Cosmic Signature 图像和视频。"
+      }
+    }
+  },
+  "page": {
+    "lede": "Cosmic Signature 各个部分的源代码，以及把每个种子变成作品的程序。",
+    "license": "许可：CC0 1.0"
+  }
+}

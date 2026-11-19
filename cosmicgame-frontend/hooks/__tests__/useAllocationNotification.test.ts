@@ -1,0 +1,392 @@
+import { renderHook, act } from '@testing-library/react';
+
+import {
+  ATTENTION_STORAGE_KEY,
+  getNotificationPermission,
+  readAttentionPreferences,
+  resetAttentionPreferencesForTest,
+  updateAttentionPreferences,
+} from '../useAttentionPreferences';
+import { useAllocationNotification } from '../useAllocationNotification';
+
+const WARNING_TITLE = 'Localized finalization warning';
+
+function setupNotificationMock(permission: NotificationPermission) {
+  const instances: { onclick: (() => void) | null; close: jest.Mock }[] = [];
+  const mockNotification = jest.fn(function (this: unknown) {
+    const instance = { onclick: null, close: jest.fn() };
+    instances.push(instance);
+    return instance;
+  });
+  Object.defineProperty(window, 'Notification', {
+    value: Object.assign(mockNotification, {
+      permission,
+      requestPermission: jest.fn().mockResolvedValue('granted'),
+    }),
+    writable: true,
+    configurable: true,
+  });
+  return { mockNotification, instances };
+}
+
+function enableAlert(alertMinutes: 5 | 30 | 60 = 5) {
+  act(() => {
+    updateAttentionPreferences({ finalizationAlert: true, alertMinutes });
+  });
+}
+
+beforeEach(() => {
+  jest.useFakeTimers();
+  window.localStorage.clear();
+  resetAttentionPreferencesForTest();
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
+describe('useAllocationNotification', () => {
+  it('stays silent until the viewer turns the alert on (off by default)', () => {
+    const { mockNotification } = setupNotificationMock('granted');
+    renderHook(() =>
+      useAllocationNotification({
+        allocationTime: Date.now() + 3 * 60_000,
+        notificationTitle: WARNING_TITLE,
+        notificationBody: 'body',
+      }),
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(2_000);
+    });
+    expect(mockNotification).not.toHaveBeenCalled();
+  });
+
+  it('fires once inside the chosen window, reporting the minutes actually left', () => {
+    const { mockNotification } = setupNotificationMock('granted');
+    const { result } = renderHook(() =>
+      useAllocationNotification({
+        allocationTime: Date.now() + 3 * 60_000,
+        cycleNumber: 12,
+        notificationTitle: WARNING_TITLE,
+        notificationBody: (minutes) => `${minutes} minutes left`,
+      }),
+    );
+    enableAlert(5);
+
+    act(() => {
+      jest.advanceTimersByTime(1_000);
+    });
+
+    expect(result.current.alertEnabled).toBe(true);
+    expect(mockNotification).toHaveBeenCalledTimes(1);
+    expect(mockNotification).toHaveBeenCalledWith(WARNING_TITLE, {
+      body: '3 minutes left',
+      tag: 'cosmic-cycle-12-finalize',
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(10_000);
+    });
+    expect(mockNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('honours the chosen threshold', () => {
+    const { mockNotification } = setupNotificationMock('granted');
+    renderHook(() =>
+      useAllocationNotification({
+        allocationTime: Date.now() + 45 * 60_000,
+        notificationTitle: WARNING_TITLE,
+        notificationBody: 'body',
+      }),
+    );
+
+    enableAlert(30);
+    act(() => {
+      jest.advanceTimersByTime(1_000);
+    });
+    expect(mockNotification).not.toHaveBeenCalled();
+
+    enableAlert(60);
+    act(() => {
+      jest.advanceTimersByTime(1_000);
+    });
+    expect(mockNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-arms when a gesture pushes the deadline back out of the window', () => {
+    const { mockNotification } = setupNotificationMock('granted');
+    const { rerender } = renderHook(
+      ({ allocationTime }) =>
+        useAllocationNotification({
+          allocationTime,
+          notificationTitle: WARNING_TITLE,
+          notificationBody: 'body',
+        }),
+      { initialProps: { allocationTime: Date.now() + 2 * 60_000 } },
+    );
+    enableAlert(5);
+    act(() => {
+      jest.advanceTimersByTime(1_000);
+    });
+    expect(mockNotification).toHaveBeenCalledTimes(1);
+
+    rerender({ allocationTime: Date.now() + 20 * 60_000 });
+    act(() => {
+      jest.advanceTimersByTime(1_000);
+    });
+    rerender({ allocationTime: Date.now() + 4 * 60_000 });
+    act(() => {
+      jest.advanceTimersByTime(1_000);
+    });
+    expect(mockNotification).toHaveBeenCalledTimes(2);
+  });
+
+  it('never fires after the deadline has passed', () => {
+    const { mockNotification } = setupNotificationMock('granted');
+    renderHook(() =>
+      useAllocationNotification({
+        allocationTime: Date.now() - 1_000,
+        notificationTitle: WARNING_TITLE,
+        notificationBody: 'body',
+      }),
+    );
+    enableAlert(5);
+    act(() => {
+      jest.advanceTimersByTime(3_000);
+    });
+    expect(mockNotification).not.toHaveBeenCalled();
+  });
+
+  it('re-reads the time left from the chain before it fires', async () => {
+    const { mockNotification } = setupNotificationMock('granted');
+    const verifyRemainingMs = jest.fn().mockResolvedValue(2 * 60_000 + 10_000);
+    renderHook(() =>
+      useAllocationNotification({
+        allocationTime: Date.now() + 4 * 60_000,
+        notificationTitle: WARNING_TITLE,
+        notificationBody: (minutes) => `${minutes} minutes left`,
+        verifyRemainingMs,
+      }),
+    );
+    enableAlert(5);
+
+    await act(async () => {
+      jest.advanceTimersByTime(1_000);
+    });
+
+    expect(verifyRemainingMs).toHaveBeenCalledTimes(1);
+    // The chain's reading, not the cached deadline, sets the minutes.
+    expect(mockNotification).toHaveBeenCalledWith(WARNING_TITLE, {
+      body: '3 minutes left',
+      tag: 'cosmic-cycle-current-finalize',
+    });
+  });
+
+  it('stays silent when the chain shows the deadline moved out of the window', async () => {
+    const { mockNotification } = setupNotificationMock('granted');
+    const verifyRemainingMs = jest.fn().mockResolvedValue(45 * 60_000);
+    renderHook(() =>
+      useAllocationNotification({
+        allocationTime: Date.now() + 2 * 60_000,
+        notificationTitle: WARNING_TITLE,
+        notificationBody: 'body',
+        verifyRemainingMs,
+      }),
+    );
+    enableAlert(5);
+
+    await act(async () => {
+      jest.advanceTimersByTime(1_000);
+    });
+    expect(verifyRemainingMs).toHaveBeenCalled();
+    expect(mockNotification).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['the cycle already finalized', 0],
+    ['the deadline moved well out of the window', 45 * 60_000],
+  ])('waits before reading the chain again when %s', async (_case, verifiedMs) => {
+    // Regression: only a failed read set a retry wait, so these outcomes raced
+    // both RPC nodes every second until the page's own deadline caught up.
+    const { mockNotification } = setupNotificationMock('granted');
+    const verifyRemainingMs = jest.fn().mockResolvedValue(verifiedMs);
+    renderHook(() =>
+      useAllocationNotification({
+        allocationTime: Date.now() + 2 * 60_000,
+        notificationTitle: WARNING_TITLE,
+        notificationBody: 'body',
+        verifyRemainingMs,
+      }),
+    );
+    enableAlert(5);
+
+    for (let second = 0; second < 10; second += 1) {
+      await act(async () => {
+        jest.advanceTimersByTime(1_000);
+      });
+    }
+    expect(verifyRemainingMs).toHaveBeenCalledTimes(1);
+    expect(mockNotification).not.toHaveBeenCalled();
+  });
+
+  it('reads again as soon as the chain says the window opens', async () => {
+    const { mockNotification } = setupNotificationMock('granted');
+    // The chain is 3s outside the 5-minute window; the page thinks it is inside.
+    const verifyRemainingMs = jest
+      .fn()
+      .mockResolvedValueOnce(5 * 60_000 + 3_000)
+      .mockResolvedValueOnce(5 * 60_000 - 1_000);
+    renderHook(() =>
+      useAllocationNotification({
+        allocationTime: Date.now() + 2 * 60_000,
+        notificationTitle: WARNING_TITLE,
+        notificationBody: 'body',
+        verifyRemainingMs,
+      }),
+    );
+    enableAlert(5);
+
+    await act(async () => {
+      jest.advanceTimersByTime(1_000);
+    });
+    expect(verifyRemainingMs).toHaveBeenCalledTimes(1);
+    for (let second = 0; second < 4; second += 1) {
+      await act(async () => {
+        jest.advanceTimersByTime(1_000);
+      });
+    }
+    expect(verifyRemainingMs).toHaveBeenCalledTimes(2);
+    expect(mockNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a failed chain read later instead of alerting on a stale deadline', async () => {
+    const { mockNotification } = setupNotificationMock('granted');
+    const verifyRemainingMs = jest.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(90_000);
+    renderHook(() =>
+      useAllocationNotification({
+        allocationTime: Date.now() + 3 * 60_000,
+        notificationTitle: WARNING_TITLE,
+        notificationBody: 'body',
+        verifyRemainingMs,
+      }),
+    );
+    enableAlert(5);
+
+    await act(async () => {
+      jest.advanceTimersByTime(1_000);
+    });
+    expect(mockNotification).not.toHaveBeenCalled();
+
+    // No second read inside the retry wait.
+    await act(async () => {
+      jest.advanceTimersByTime(5_000);
+    });
+    expect(verifyRemainingMs).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      jest.advanceTimersByTime(11_000);
+    });
+    expect(verifyRemainingMs).toHaveBeenCalledTimes(2);
+    expect(mockNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('focuses the tab when the notification is clicked', () => {
+    const { instances } = setupNotificationMock('granted');
+    const focus = jest.spyOn(window, 'focus').mockImplementation(() => undefined);
+    const { result } = renderHook(() =>
+      useAllocationNotification({ allocationTime: Date.now() + 60_000 }),
+    );
+
+    act(() => {
+      result.current.sendNotification('Test', { body: 'Hello' });
+    });
+    instances[0]!.onclick?.();
+
+    expect(focus).toHaveBeenCalled();
+    expect(instances[0]!.close).toHaveBeenCalled();
+    focus.mockRestore();
+  });
+
+  it('does not create a notification without permission', () => {
+    const { mockNotification } = setupNotificationMock('denied');
+    const { result } = renderHook(() =>
+      useAllocationNotification({ allocationTime: Date.now() + 60_000 }),
+    );
+
+    act(() => {
+      result.current.sendNotification('Test', { body: 'Hello' });
+    });
+
+    expect(mockNotification).not.toHaveBeenCalled();
+  });
+
+  it('reads the preference persisted by another page view', () => {
+    const { mockNotification } = setupNotificationMock('granted');
+    window.localStorage.setItem(
+      ATTENTION_STORAGE_KEY,
+      JSON.stringify({ finalizationAlert: true, alertMinutes: 5 }),
+    );
+    renderHook(() =>
+      useAllocationNotification({
+        allocationTime: Date.now() + 2 * 60_000,
+        notificationTitle: WARNING_TITLE,
+        notificationBody: 'body',
+      }),
+    );
+    act(() => {
+      jest.advanceTimersByTime(1_000);
+    });
+    expect(mockNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('turns the alert off, uncaught-error free, where the browser refuses to construct one', () => {
+    // Chrome for Android: Notification exists and permission can be granted,
+    // but the constructor throws unless a service worker shows it.
+    setupNotificationMock('granted');
+    const illegal = jest.fn(() => {
+      throw new TypeError('Illegal constructor. Use ServiceWorkerRegistration.showNotification()');
+    });
+    Object.assign(illegal, { permission: 'granted', requestPermission: jest.fn() });
+    Object.defineProperty(window, 'Notification', {
+      value: illegal,
+      writable: true,
+      configurable: true,
+    });
+    enableAlert(5);
+    renderHook(() =>
+      useAllocationNotification({
+        allocationTime: Date.now() + 3 * 60_000,
+        notificationTitle: WARNING_TITLE,
+        notificationBody: 'body',
+      }),
+    );
+
+    expect(() =>
+      act(() => {
+        jest.advanceTimersByTime(2_000);
+      }),
+    ).not.toThrow();
+    expect(illegal).toHaveBeenCalledTimes(1);
+    expect(readAttentionPreferences().finalizationAlert).toBe(false);
+    // The menu reads the alert as unavailable from then on.
+    expect(getNotificationPermission()).toBe('unsupported');
+  });
+});
+
+describe('getNotificationPermission', () => {
+  const realUserAgent = navigator.userAgent;
+  afterEach(() => {
+    Object.defineProperty(navigator, 'userAgent', { value: realUserAgent, configurable: true });
+  });
+
+  it('reads Android browsers as unsupported: they only notify from a service worker', () => {
+    setupNotificationMock('default');
+    expect(getNotificationPermission()).toBe('default');
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/128.0 Mobile',
+      configurable: true,
+    });
+    expect(getNotificationPermission()).toBe('unsupported');
+  });
+});

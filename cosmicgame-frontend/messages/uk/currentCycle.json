@@ -1,0 +1,215 @@
+{
+  "error": {
+    "title": "Не вдалося завантажити дані циклу",
+    "message": "Перевірте з’єднання та спробуйте ще раз."
+  },
+  "status": {
+    "notStarted": "Не розпочато",
+    "heading": "Стан циклу",
+    "figuresHeading": "Цикл на цю мить"
+  },
+  "sectionNav": {
+    "aria": "На цій сторінці",
+    "standings": "Позиції",
+    "allocations": "Розподіли",
+    "participants": "Учасники",
+    "gestures": "Жести",
+    "rules": "Правила"
+  },
+  "hero": {
+    "title": "Цикл {n}",
+    "cta": {
+      "viewHomeClock": "Таймер на головній",
+      "finalizeCycle": "Завершити цикл",
+      "makeFirstGesture": "Зробити перший жест",
+      "makeGesture": "Зробити жест"
+    },
+    "countdown": {
+      "opensAt": "Цикл {n} відкривається {date}"
+    }
+  },
+  "stats": {
+    "contributedEth": {
+      "label": "Внесено ETH",
+      "tooltip": "Прямі внески ETH від спільноти в цьому циклі."
+    },
+    "attachedNfts": {
+      "label": "Долучені NFT",
+      "tooltip": "NFT, долучені спільнотою до жестів у цьому циклі."
+    }
+  },
+  "figures": {
+    "running": "Триває",
+    "participants": "Учасники"
+  },
+  "allocations": {
+    "recipientCount": "{count, plural, one {# отримувач} few {# отримувачі} many {# отримувачів} other {# отримувача}}",
+    "columns": {
+      "allocation": "Розподіл",
+      "share": "Частка резерву",
+      "receives": "Кожен отримувач отримує",
+      "recipients": "Отримувачі"
+    },
+    "explain": "Як розподіляється резерв",
+    "amounts": {
+      "ethEach": "по {amount} ETH",
+      "fixedCst": "1 000 CST",
+      "fixedCstEach": "по 1 000 CST",
+      "nft": "1 Cosmic Signature NFT",
+      "nftEach": "по 1 Cosmic Signature NFT",
+      "attachedTokens": "Долучені токени (якщо є)",
+      "nftCount": "{count, plural, one {# Cosmic Signature NFT} few {# Cosmic Signature NFT} many {# Cosmic Signature NFT} other {# Cosmic Signature NFT}}"
+    },
+    "cards": {
+      "signature": {
+        "name": "Розподіл Сигнатури",
+        "tooltip": "Отримувач завершення отримує 3 послідовні Cosmic Signature NFT і загалом 1 000 CST. Право завершення визначається ексклюзивним та відкритим вікнами."
+      },
+      "chronoWarrior": {
+        "name": "Розподіл Воїна часу",
+        "tooltip": "Учасник, який найдовше безперервно утримував позицію Чемпіона витривалості, отримує відсоток резерву циклу в ETH, 1 000 CST та Cosmic Signature NFT."
+      },
+      "ethStellar": {
+        "name": "Зоряний відбір ETH",
+        "tooltip": "Учасників випадково відбирають серед записів циклу, щоб розділити між ними розподіл ETH."
+      },
+      "cosmicAnchor": {
+        "name": "Надходження за закріплення",
+        "tooltip": "Частка резерву циклу в ETH, яку під час завершення порівну ділять усі закріплені Cosmic Signature NFT.",
+        "recipientLabel": "Порівну на кожен закріплений NFT"
+      },
+      "publicGoods": {
+        "name": "Суспільні блага",
+        "tooltip": "{percent}% спрямовується до сховища суспільних благ. Будь-хто може окремо переслати його баланс налаштованому бенефіціару, нині Protocol Guild.",
+        "recipientLabel": "Protocol Guild"
+      },
+      "nftStellar": {
+        "name": "Зоряний відбір NFT",
+        "tooltip": "Учасників випадково відбирають серед записів циклу для отримання CST визнання та Cosmic Signature NFT."
+      },
+      "randomWalkAnchor": {
+        "name": "Зоряний відбір закріплених NFT",
+        "tooltip": "Власники закріплень Random Walk NFT можуть отримати CST визнання та Cosmic Signature NFT."
+      },
+      "endurance": {
+        "name": "Чемпіон витривалості",
+        "tooltip": "Учасник, який найдовше безперервно залишався автором останнього жесту. Отримує закарбування CST визнання на 1 000 CST і Cosmic Signature NFT."
+      },
+      "finalCst": {
+        "name": "Завершальний CST-жест",
+        "tooltip": "Учасник, який зробив останній CST-жест циклу, отримує закарбування CST визнання на 1 000 CST і Cosmic Signature NFT."
+      }
+    }
+  },
+  "sections": {
+    "allocations": {
+      "title": "Структура розподілу",
+      "description": "Як резерв циклу розходиться за напрямами розподілу: розподіл Сигнатури, Воїн часу, зоряний відбір, надходження за закріплення та суспільні блага; решта переходить у наступний цикл як накопичувальний резерв."
+    },
+    "participants": {
+      "title": "Учасники цього циклу"
+    },
+    "stellarSelectionEntries": {
+      "title": "Записи зоряного відбору",
+      "tooltip": "Під час завершення циклу кожен відбір відбувається з усіх жестів цього циклу з повторенням, тож того самого учасника можуть обрати кілька разів. Таблиця показує частку кожного учасника у відборі."
+    },
+    "topEthSpenders": {
+      "title": "Найбільші витрати ETH",
+      "tooltip": "Адреси учасників за загальною сумою ETH, витраченою на жести в цьому циклі."
+    },
+    "enduranceChampions": {
+      "title": "Чемпіони витривалості",
+      "tooltip": "Учасники за тривалістю безперервного лідерства: скільки часу їхній жест залишався останнім. Автор найдовшого такого періоду отримує 1 000 закарбованих CST визнання та Cosmic Signature NFT."
+    },
+    "gestureHistory": {
+      "title": "Історія жестів",
+      "tooltip": "Хронологічний перелік усіх жестів цього циклу, від найновіших."
+    },
+    "ethContributions": {
+      "title": "Внески ETH",
+      "tooltip": "Прямі внески ETH від учасників спільноти протягом цього циклу."
+    },
+    "cycleRules": {
+      "title": "Правила циклу",
+      "tooltip": "Ключові правила та механіка розподілу для цього циклу."
+    }
+  },
+  "rules": {
+    "howItWorks": "Як це працює",
+    "participation": "Роблячи жест, ви можете закарбувати <em>динамічні CST участі</em>. Сума обчислюється за формулою квадратного кореня від часу, що минув від попереднього жесту.",
+    "participationV3": "Наступний жест зараховує попередньому учаснику <em>динамічні CST участі</em>, лінійно залежні від часу. Перший жест нічого не зараховує, а завершення не здійснює додаткового розрахунку.",
+    "calibration": "ETH-жести скорочують вікно калібрування CST приблизно на {decreasePercent}%; CST-жести подовжують його приблизно на {increasePercent}%.",
+    "stellarSelection": "Кожен жест створює один запис у зоряному відборі. Відібрані записи ETH ({ethEntries}) разом отримують {rafflePercent}% резерву циклу. Додаткові отримувачі NFT-відбору ({nftEntries}) та власники закріплень Random Walk NFT ({anchorHolders}) отримують Cosmic Signature NFT.",
+    "stellarSelectionV3": "Обидва напрями серед учасників використовують базову ETH-вартість без знижки й надбавки; CST-жест бере поточну ETH-базу. {ethEntries} відбори ділять {rafflePercent}% ETH. {nftEntries} NFT-відборів серед учасників і до {anchorHolders} відборів активних Random Walk NFT отримують NFT та CST. Повтори можливі.",
+    "publicGoods": "Protocol Guild щоциклу отримує {percent}% резерву циклу (щонайменше {amount} ETH).",
+    "learnMore": "Як працює цикл"
+  },
+  "attachedTokens": {
+    "title": "Долучені токени",
+    "tooltip": "NFT та ERC-20-токени, долучені спільнотою до жестів, щоб збагатити резерв циклу.",
+    "erc721Tab": "Токени ERC-721",
+    "erc20Tab": "Токени ERC-20"
+  },
+  "showcase": {
+    "badge": "У складі розподілу Сигнатури",
+    "heading": "Активи, долучені до цього циклу",
+    "cycleFallback": "поточний",
+    "description": {
+      "nftOnly": "Активи, долучені спільнотою, передаються разом із розподілом Сигнатури. Той, хто завершить цикл {cycle}, отримає {nftCount, plural, one {# долучений NFT} few {усі # долучені NFT} many {усі # долучених NFT} other {# долученого NFT}}.",
+      "erc20Only": "Активи, долучені спільнотою, передаються разом із розподілом Сигнатури. Той, хто завершить цикл {cycle}, отримає {erc20Count, plural, one {# долучений депозит ERC-20} few {усі # долучені депозити ERC-20} many {усі # долучених депозитів ERC-20} other {# долученого депозиту ERC-20}}.",
+      "mixed": "Активи, долучені спільнотою, передаються разом із розподілом Сигнатури. Той, хто завершить цикл {cycle}, отримає {nftCount, plural, one {# долучений NFT} few {усі # долучені NFT} many {усі # долучених NFT} other {# долученого NFT}} та {erc20Count, plural, one {# долучений депозит ERC-20} few {усі # долучені депозити ERC-20} many {усі # долучених депозитів ERC-20} other {# долученого депозиту ERC-20}}."
+    },
+    "bonusReceipt": {
+      "nftOnly": "{nftCount, plural, one {# токен ERC-721} few {# токени ERC-721} many {# токенів ERC-721} other {# токена ERC-721}}",
+      "erc20Only": "{erc20Count, plural, one {# депозит ERC-20} few {# депозити ERC-20} many {# депозитів ERC-20} other {# депозиту ERC-20}}",
+      "mixed": "{nftCount, plural, one {# токен ERC-721} few {# токени ERC-721} many {# токенів ERC-721} other {# токена ERC-721}} + {erc20Count, plural, one {# депозит ERC-20} few {# депозити ERC-20} many {# депозитів ERC-20} other {# депозиту ERC-20}}"
+    },
+    "summary": {
+      "assetsIncluded": "Долучені активи",
+      "cycle": "Цикл",
+      "cycleValue": "{cycle}",
+      "recipientRule": "Правило отримувача",
+      "recipientRuleValue": "Той, хто завершить цикл"
+    },
+    "remainder": {
+      "nftOnly": "Показано вибрані активи. Ще {nftCount, plural, one {# долучений NFT} few {# долучені NFT} many {# долучених NFT} other {# долученого NFT}} — у повних деталях циклу.",
+      "erc20Only": "Показано вибрані активи. Ще {erc20Count, plural, one {# долучений депозит ERC-20} few {# долучені депозити ERC-20} many {# долучених депозитів ERC-20} other {# долученого депозиту ERC-20}} — у повних деталях циклу.",
+      "mixed": "Показано вибрані активи. Ще {nftCount, plural, one {# долучений NFT} few {# долучені NFT} many {# долучених NFT} other {# долученого NFT}} та {erc20Count, plural, one {# долучений депозит ERC-20} few {# долучені депозити ERC-20} many {# долучених депозитів ERC-20} other {# долученого депозиту ERC-20}} — у повних деталях циклу."
+    },
+    "nftCard": {
+      "badge": "ERC-721",
+      "fallbackTitle": "NFT {id}",
+      "fallbackTitleUnknown": "Долучений NFT",
+      "fallbackSubtitle": "ERC-721, долучений спільнотою",
+      "imageAlt": "Долучений NFT {name}",
+      "imageAltFallback": "Розподіл долученого NFT",
+      "mediaAria": "{label}: {title}",
+      "floorEstimate": "Мінімальна ціна ~{price} {currency}",
+      "floorTooltip": "Оцінка мінімальної ціни колекції, а не вартості саме цього токена.",
+      "metadataUnavailable": "Метадані недоступні. Долучений NFT усе одно є частиною розподілу цього циклу.",
+      "explorer": "Оглядач",
+      "links": {
+        "opensea": "Переглянути на OpenSea",
+        "explorer": "Переглянути контракт"
+      }
+    },
+    "erc20Card": {
+      "badge": "Депозит ERC-20",
+      "badgeTooltipLogo": "Джерело логотипа: {source}. Перевірте адресу токена, перш ніж оцінювати його вартість.",
+      "badgeTooltipDefault": "Цей депозит ERC-20-токена долучено до циклу; після завершення він переходить отримувачу розподілу Сигнатури.",
+      "symbolFallback": "ERC20",
+      "nameFallback": "Долучений ERC20-токен",
+      "logoSourceFallback": "добірка метаданих токенів",
+      "unknownAmount": "Сума невідома",
+      "viewToken": "Переглянути токен {symbol}",
+      "logoAlt": "Логотип токена {token}"
+    },
+    "facts": {
+      "tokenId": "ID токена",
+      "tokenIdValue": "{id}",
+      "token": "Токен",
+      "attachedBy": "Хто долучив",
+      "unknown": "Невідомо"
+    }
+  }
+}

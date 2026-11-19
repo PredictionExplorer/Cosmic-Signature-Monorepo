@@ -1,0 +1,905 @@
+'use client';
+
+import { memo, useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { zeroAddress } from 'viem';
+import { ArrowRight } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { LazyMotion, domAnimation } from 'framer-motion';
+import { useLocale, useTranslations } from 'next-intl';
+
+import { Link } from '@/i18n/navigation';
+import { reportError } from '@/utils/errors';
+import { headerRootMargin } from '@/lib/headerOffset';
+import { ErrorState } from '@/components/ui/error-state';
+import { AttentionMenu } from '@/components/ui/attention-menu';
+import { PageShell } from '@/components/ui/page-shell';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { useActiveWeb3React } from '@/hooks/web3';
+import { CyclePhaseGuide, PHASE_GUIDE_LINK_CLASS } from '@/components/home/CyclePhaseGuide';
+import { GestureMessageChat } from '@/components/home/GestureMessageChat';
+import { deriveFeedSystemEvents } from '@/components/home/deck/feedSystemEvents';
+import { ActionDock } from '@/components/home/observatory/ActionDock';
+import { AllocationLedger } from '@/components/home/observatory/AllocationLedger';
+import {
+  AllocationsDisclosure,
+  ControlDesk,
+  DESK_REGION,
+} from '@/components/home/observatory/ControlDesk';
+import { HomeStory } from '@/components/home/observatory/HomeStory';
+import { CycleClock } from '@/components/home/observatory/CycleClock';
+import { useLiveAllocationFacts } from '@/hooks/useLiveAllocationFacts';
+import { CalibrationStatus } from '@/components/home/observatory/CalibrationStatus';
+import { CycleStanding } from '@/components/home/observatory/CycleStanding';
+import { GesturePanel } from '@/components/home/observatory/GesturePanel';
+import { LatestSignature } from '@/components/home/observatory/LatestSignature';
+import { PulseBar } from '@/components/home/observatory/PulseBar';
+import { StandingsLedger } from '@/components/home/observatory/StandingsLedger';
+import { getGestureSubmitParts } from '@/components/home/observatory/gestureSubmitLabel';
+import { AttachedNFTAllocationShowcase } from '@/components/attachments/DonatedNFTPrizeShowcase';
+import { useContractAddresses } from '@/contexts/ContractAddressesContext';
+import { useGestureForm } from '@/hooks/useGestureForm';
+import { useHomeGestureFeed } from '@/hooks/useHomeGestureFeed';
+import { useChampions } from '@/hooks/useChampions';
+import { useAllocationFinalize } from '@/hooks/useAllocationFinalize';
+import { useCycleActions } from '@/hooks/useCycleActions';
+import { useCycleParticipation, useRetrieveStatus } from '@/hooks/useCycleParticipation';
+import { useSelectionPool } from '@/hooks/useSelectionPool';
+import { useVerifiedFinalizationAlert } from '@/hooks/useVerifiedFinalizationAlert';
+import { useAttentionPreferences } from '@/hooks/useAttentionPreferences';
+import { useBackgroundDeadlineRefresh } from '@/hooks/useDeadlineWatch';
+import { useLiveFreshness } from '@/hooks/useLiveFreshness';
+import { useGestureChime } from '@/hooks/useGestureChime';
+import { useHomeAnnouncer } from '@/hooks/useHomeAnnouncer';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useNow } from '@/hooks/useNow';
+import { useOwnGestureOverlay } from '@/hooks/useOwnGestureOverlay';
+import { usePositionMoment } from '@/hooks/usePositionMoment';
+import { useLatestSignatures } from '@/hooks/useLatestSignatures';
+import { useTabTitleCountdown } from '@/hooks/useTabTitleCountdown';
+import { useTokenPrice } from '@/hooks/useTokenPrice';
+import {
+  trackChatJoinCtaClicked,
+  trackGestureSheetOpened,
+  type GestureSurface,
+} from '@/lib/gameAnalytics';
+import {
+  useDashboardInfo,
+  useCurrentTime,
+  useDonationsNFTByRound,
+  useDonationsERC20ByRound,
+} from '@/hooks/useApiQuery';
+import { deriveAllocationTrackAmounts } from '@/lib/allocationTracks';
+import { getCycleState, getDashboardActivationTime } from '@/lib/cycleState';
+import { resolveLatestGesture, type LatestParticipantEvidence } from '@/lib/latestGesture';
+import { poolShareOf } from '@/lib/selectionWeights';
+import { fetchEndgameChainSample, type EndgameChainSample } from '@/lib/rpcRace';
+import { cn } from '@/lib/utils';
+import { getStableClientTargetTime, type ServerTimingSample } from '@/utils/time';
+import { toFiniteNumber } from '@/utils/finiteNumber';
+import { sameAddress } from '@/utils/format';
+import { useUxScenarioSnapshot } from '@/lib/uxCycleScenarios';
+import type { CSTTokenInfo, DashboardInfo, GestureInfo, SpecialRecipients } from '@/services/api';
+import { deriveLiveCstGestureData } from '@/utils/cstGesture';
+
+// This page re-renders every second (useNow keeps countdown-derived CTA
+// state honest). These sections never consume the tick, so memo boundaries
+// stop the per-second reconciliation of the heaviest subtrees — the chat
+// feed alone renders dozens of rows — which directly reduces main-thread
+// churn (INP) on mid-range phones. Their props are kept referentially
+// stable below (useMemo'd arrays, useCallback handlers).
+const MemoGestureMessageChat = memo(GestureMessageChat);
+const MemoAttachedNFTAllocationShowcase = memo(AttachedNFTAllocationShowcase);
+const MemoLatestSignature = memo(LatestSignature);
+
+/** The deadline's own read: the tab title trusts it while it keeps arriving. */
+const DEADLINE_FRESHNESS_KEYS = [['allocationTime']] as const;
+
+/** How long the sheet shows its confirmed state before it closes by itself. */
+const SHEET_SUCCESS_CLOSE_MS = 1_600;
+
+/** Where the page lists the NFTs and tokens attached to this cycle's Gestures. */
+const ATTACHED_ASSETS_ID = 'home-attached-assets';
+
+/**
+ * The latest Signature's rendered width: edge to edge on phones, the one
+ * column on tablets, then its desk cell from 1024px (5 of 12 columns beside
+ * the standings, 7 of 12 in the form's place between cycles, at the 80rem
+ * content edge), so the browser picks a sharp rendition.
+ */
+const ART_SIZES_BESIDE_STANDINGS = '(max-width: 639px) 100vw, (max-width: 1023px) 90vw, 33rem';
+const ART_SIZES_BETWEEN_CYCLES = '(max-width: 639px) 100vw, (max-width: 1023px) 90vw, 46rem';
+
+export function resolveHomeNow(
+  tickingNow: number,
+  timingSample?: Pick<ServerTimingSample, 'sampledAtMs'> | null,
+  initialRenderAtMs = 0,
+): number {
+  return tickingNow || timingSample?.sampledAtMs || initialRenderAtMs;
+}
+
+interface HomePageProps {
+  initialDashboardData?: DashboardInfo | null;
+  /** The newest imprinted Signatures, so the plate ships in the SSR HTML. */
+  initialLatestSignatures?: CSTTokenInfo[] | null;
+  /** Server-seeded latest gesture so participant intelligence is complete on first paint. */
+  initialLatestGesture?: GestureInfo | null;
+  /** Server-seeded role snapshot; direct-chain fallback still takes over when required. */
+  initialSpecialRecipients?: SpecialRecipients | null;
+  /** Server clock + finalization sample keeps ISR and hydration on the same phase. */
+  initialTimingSample?: ServerTimingSample | null;
+  /** Unconditional SSR/hydration clock fallback when timing APIs are unavailable. */
+  initialRenderAtMs?: number;
+}
+
+const HomePage = ({
+  initialDashboardData = null,
+  initialLatestSignatures = null,
+  initialLatestGesture = null,
+  initialSpecialRecipients = null,
+  initialTimingSample = null,
+  initialRenderAtMs = 0,
+}: HomePageProps) => {
+  const { signatureNftCount } = useLiveAllocationFacts();
+  const t = useTranslations('home');
+  const locale = useLocale();
+  const { account } = useActiveWeb3React();
+  const { cosmicGame } = useContractAddresses();
+  const queryClient = useQueryClient();
+  const uxScenario = useUxScenarioSnapshot();
+  const coherentInitialTimingSample =
+    initialTimingSample &&
+    (initialTimingSample.cycleNumber === undefined ||
+      initialTimingSample.cycleNumber === initialDashboardData?.CurRoundNum)
+      ? initialTimingSample
+      : null;
+
+  const {
+    data: dashboardData,
+    isLoading: dashboardLoading,
+    isError: dashboardFailed,
+    refetch: refetchDashboard,
+  } = useDashboardInfo(initialDashboardData);
+  const { data: currentTimeData, dataUpdatedAt: currentTimeUpdatedAt } = useCurrentTime(
+    coherentInitialTimingSample?.currentServerTimeSec,
+    coherentInitialTimingSample ? 0 : undefined,
+  );
+
+  // The wallet's own confirmed Gesture until the index includes it (F221):
+  // every surface reads the dashboard through this overlay, so the count, the
+  // Last Gesture, the hold, the dock and the standing agree the moment the
+  // receipt arrives, and stay so while the chain still names the wallet.
+  const readChain = useMemo(
+    () => (cosmicGame ? () => fetchEndgameChainSample(cosmicGame) : null),
+    [cosmicGame],
+  );
+  const storeChainSample = useCallback(
+    (sample: EndgameChainSample) => {
+      queryClient.setQueryData(['allocationTime'], sample.mainPrizeTimeSec);
+      queryClient.setQueryData(['currentTime'], sample.blockTimestampSec);
+    },
+    [queryClient],
+  );
+  const {
+    data,
+    own: ownGesture,
+    pending: ownGesturePending,
+    record: recordOwnGesture,
+  } = useOwnGestureOverlay({
+    dashboard: dashboardData ?? null,
+    readChain,
+    onChainSample: storeChainSample,
+    // The wallet's own history now includes the Gesture.
+    onIndexed: (address) => void queryClient.invalidateQueries({ queryKey: ['userInfo', address] }),
+    onError: reportError,
+  });
+
+  const round = data?.CurRoundNum ?? -1;
+  const initialGestureList = useMemo(
+    () =>
+      initialLatestGesture && initialLatestGesture.RoundNum === round
+        ? [initialLatestGesture]
+        : undefined,
+    [initialLatestGesture, round],
+  );
+  const feed = useHomeGestureFeed(round, initialGestureList);
+  const { data: nftDonationsData } = useDonationsNFTByRound(round);
+  const { data: erc20DonationsData } = useDonationsERC20ByRound(round);
+
+  const loading = dashboardLoading;
+  // Stable fallbacks: a bare `?? []` would mint a new array identity every
+  // second (this page ticks via useNow) and defeat the memo boundaries.
+  const curGestureList = feed.gestures;
+  const chatGestures = feed.chatGestures;
+  const chatPagination = useMemo(
+    () => ({
+      hasMore: feed.hasMore,
+      isLoading: feed.isLoadingOlder,
+      error: Boolean(feed.olderError),
+      onLoadMore: feed.loadOlder,
+    }),
+    [feed.hasMore, feed.isLoadingOlder, feed.olderError, feed.loadOlder],
+  );
+  const donatedNFTs = useMemo(() => nftDonationsData ?? [], [nftDonationsData]);
+  const donatedERC20Tokens = useMemo(() => erc20DonationsData ?? [], [erc20DonationsData]);
+
+  // Re-renders every second so countdown comparisons (allocationTime > now,
+  // claimWait > now, activationTime check) update without bare Date.now().
+  const tickingNow = useNow(1000);
+  // useNow intentionally returns 0 for the hydration snapshot. Reuse the
+  // serialized timing sample for both SSR and the first client render so an
+  // active cycle does not prerender as "opening soon" and then reshape the
+  // control desk after hydration.
+  const now = resolveHomeNow(tickingNow, coherentInitialTimingSample, initialRenderAtMs);
+  const [clientClockAnchorMs, setClientClockAnchorMs] = useState(
+    () => coherentInitialTimingSample?.sampledAtMs || initialRenderAtMs || Date.now(),
+  );
+  useEffect(() => {
+    if (!coherentInitialTimingSample || currentTimeUpdatedAt > 0) return undefined;
+    // Re-anchor once after hydration, on the first frame. Keeping this out of
+    // render preserves byte-identical SSR while avoiding persistent
+    // server/browser clock skew when the immediate timing refetch fails.
+    const frame = window.requestAnimationFrame(() =>
+      setClientClockAnchorMs((current) =>
+        current === coherentInitialTimingSample.sampledAtMs ? Date.now() : current,
+      ),
+    );
+    return () => window.cancelAnimationFrame(frame);
+  }, [coherentInitialTimingSample, currentTimeUpdatedAt]);
+  const currentTimeAnchorMs = currentTimeUpdatedAt || clientClockAnchorMs;
+  const latestResolution = useMemo(
+    () =>
+      resolveLatestGesture({
+        dashboardLastAddress: data?.LastBidderAddr,
+        gestures: feed.latestGesture ? [feed.latestGesture] : [],
+      }),
+    [feed.latestGesture, data?.LastBidderAddr],
+  );
+  const latestGesture = latestResolution.gesture;
+  // Until the wallet's own Gesture is indexed, its block time is the evidence
+  // for the hold, so the Last Gesture never reads "held 0s" after it lands.
+  const latestEvidence = useMemo<LatestParticipantEvidence | undefined>(() => {
+    if (
+      ownGesture &&
+      !latestResolution.gesture &&
+      sameAddress(latestResolution.address, ownGesture.address)
+    ) {
+      return { address: ownGesture.address, timestamp: ownGesture.timestampSec };
+    }
+    return latestResolution.evidence;
+  }, [latestResolution, ownGesture]);
+
+  const offset = useMemo(() => {
+    if (currentTimeData == null) return 0;
+    return currentTimeData * 1000 - currentTimeAnchorMs;
+  }, [currentTimeAnchorMs, currentTimeData]);
+
+  const imprintedTokenCount = dashboardData?.MainStats?.NumCSTokenMints ?? null;
+  // The art is the newest imprints, newest first (F089): the server seeds the
+  // list so the plate is in the HTML, and a finalization that imprints new
+  // Signatures refetches it through the dashboard's imprint count.
+  const latestSignatures = useLatestSignatures(imprintedTokenCount, initialLatestSignatures);
+
+  const hasCurrentGesture = !!data && data.LastBidderAddr !== zeroAddress;
+  // Before the cycle's first Gesture the form holds ETH, the only method the
+  // contract accepts then, even if CST was chosen in the previous cycle.
+  const gestureForm = useGestureForm({
+    firstGesture: data?.LastBidderAddr === zeroAddress,
+    lastGesturerAddress: data?.LastBidderAddr ?? null,
+  });
+  // The page clock seeds the standings, so server rendering and hydration
+  // measure holds against the same instant as the countdown (F007).
+  const champions = useChampions(initialSpecialRecipients, latestEvidence, hasCurrentGesture, now);
+  const allocationFinalize = useAllocationFinalize({
+    data,
+    offset,
+    initialTimingSample: coherentInitialTimingSample,
+  });
+  const ethUsdPrice = useTokenPrice();
+
+  // Attention settings (chime, alert before finalization, tab-title
+  // countdown) are opt-in per browser: nothing sounds or notifies until the
+  // viewer turns it on in the bell menu (useAttentionPreferences). The alert
+  // re-reads the time left from the chain before it fires (F220).
+  useVerifiedFinalizationAlert({
+    allocationTime: allocationFinalize.allocationTime,
+    cycleNumber: dashboardData?.CurRoundNum ?? null,
+  });
+
+  // Chime only for a connected viewer who opted in, when their Gesture was
+  // just followed by someone else's.
+  useGestureChime({
+    account,
+    lastGestureAddress: dashboardData?.LastBidderAddr,
+    gestureCount: dashboardData?.CurNumBids,
+  });
+
+  const {
+    gestureType,
+    ethGestureInfo,
+    cstGestureData,
+    isGesturing,
+    gestureTxStage,
+    rwlkId,
+    setBidType,
+    setRwlkId,
+  } = gestureForm;
+  // The CST quote extrapolated to the page's tick. A sample read after the
+  // last tick is shown as read (the derivation never runs time backwards).
+  const liveCstGestureData = useMemo(
+    () => deriveLiveCstGestureData(cstGestureData, { nowMs: now }),
+    [now, cstGestureData],
+  );
+  const { allocationTime, isClaiming, activationTime: chainActivationTime } = allocationFinalize;
+  const projectedDashboardActivationTime = useMemo(() => {
+    const rawActivationTime = getDashboardActivationTime(data);
+    if (rawActivationTime == null) return 0;
+    const projectedTargetMs = getStableClientTargetTime({
+      targetServerTimeSec: rawActivationTime,
+      currentServerTimeSec: currentTimeData,
+      currentServerTimeUpdatedAtMs: currentTimeUpdatedAt,
+      fallbackNowMs: currentTimeAnchorMs,
+    });
+    return projectedTargetMs > 0 ? projectedTargetMs / 1000 : 0;
+  }, [currentTimeAnchorMs, currentTimeData, currentTimeUpdatedAt, data]);
+  // Keep phase inputs on the same cycle snapshot. Around finalization the
+  // direct chain read can already be on cycle N+1 while the indexed dashboard
+  // still describes cycle N; preferring that read produced an impossible
+  // "opening soon" clock beside the previous cycle's participant/finalize
+  // data. The chain value remains the fallback when an older API omits the
+  // dashboard activation field.
+  const activationTime =
+    projectedDashboardActivationTime > 0 ? projectedDashboardActivationTime : chainActivationTime;
+
+  // Mobile bottom sheet: hosts the same gesture panel, opened from the dock,
+  // so phones can act from anywhere on the page. It exists below 768px only:
+  // a phone turned to landscape (or a window widened) past that closes it,
+  // and focus moves to the in-page form, which holds the same draft and
+  // transaction stage. Otherwise its overlay, focus trap and scroll lock
+  // would stay over the page with the sheet itself hidden.
+  const [gestureSheetOpen, setGestureSheetOpen] = useState(false);
+  const tabletUp = useMediaQuery('(min-width: 48rem)');
+  const [sheetClosedByWidth, setSheetClosedByWidth] = useState(false);
+  if (gestureSheetOpen && tabletUp) {
+    setSheetClosedByWidth(true);
+    setGestureSheetOpen(false);
+  }
+  const sheetCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (sheetCloseTimerRef.current) clearTimeout(sheetCloseTimerRef.current);
+    },
+    [],
+  );
+  const openGestureSheet = useCallback(() => {
+    trackGestureSheetOpened();
+    setGestureSheetOpen(true);
+  }, []);
+
+  // Sending a Gesture or Finalize and everything that follows a confirmed
+  // one, shared with every page that acts on the live cycle.
+  const closeSheetAfterSuccess = useCallback((source: GestureSurface) => {
+    if (source !== 'sheet') return;
+    // The sheet stays open through signing and pending, so its commit button
+    // shows the transaction stage; it closes only after success.
+    if (sheetCloseTimerRef.current) clearTimeout(sheetCloseTimerRef.current);
+    sheetCloseTimerRef.current = setTimeout(
+      () => setGestureSheetOpen(false),
+      SHEET_SUCCESS_CLOSE_MS,
+    );
+  }, []);
+  const {
+    finalizationConfirmed,
+    canGesture,
+    canClaim,
+    claimWait,
+    gesturePulseKey,
+    pendingMessages,
+    handleGesture,
+    handleFinalize,
+  } = useCycleActions({
+    data,
+    loading,
+    now,
+    offset,
+    account,
+    gestureForm,
+    allocationFinalize,
+    chatGestures,
+    recordOwnGesture,
+    onGestureConfirmed: closeSheetAfterSuccess,
+  });
+
+  const cycleState = getCycleState({
+    data,
+    loading,
+    allocationTime,
+    activationTime,
+    now,
+    finalizationConfirmed,
+  });
+  const isRoundActive =
+    cycleState.isGestureOpen || cycleState.isReadyToFinalize || cycleState.isConfirmingFinalization;
+  // A non-zero latest participant means a Gesture exists in this cycle even
+  // if activation-time/indexer fields momentarily disagree about the phase.
+  // Never let that cross-source race hide Last Gesture.
+  const showLastGesture = hasCurrentGesture;
+  const cycleTimerEnded = cycleState.isReadyToFinalize || cycleState.isConfirmingFinalization;
+  const isFinalWindow =
+    cycleState.phase === 'final-hour' ||
+    cycleState.phase === 'final-ten' ||
+    cycleState.phase === 'final-minute';
+  const showPanel = loading || isRoundActive;
+
+  // The opt-in tab-title countdown during the final window. An armed alert
+  // or countdown keeps the deadline fresh while the tab is hidden, and the
+  // title never counts toward a deadline that stopped updating.
+  const { preferences: attention } = useAttentionPreferences();
+  useBackgroundDeadlineRefresh(
+    attention.finalizationAlert || (attention.tabTitle && isFinalWindow),
+  );
+  const deadlineFreshness = useLiveFreshness({
+    queryKeys: DEADLINE_FRESHNESS_KEYS,
+    pollIntervalMs: 60_000,
+  });
+  useTabTitleCountdown({
+    enabled: isFinalWindow,
+    targetMs: allocationTime,
+    stale: deadlineFreshness.state === 'delayed' || deadlineFreshness.state === 'offline',
+  });
+
+  // One shared label for the gesture panel and the action dock, so the
+  // displayed cost can never drift between them.
+  const submit = getGestureSubmitParts({
+    t,
+    locale,
+    gestureType,
+    ethPrice: ethGestureInfo?.ETHPrice,
+    rwlkId,
+    cstGestureData: liveCstGestureData,
+  });
+
+  const trackAmounts = useMemo(() => deriveAllocationTrackAmounts(data), [data]);
+  // Read, never assumed: null while the dashboard has not reported them.
+  const signatureEth = toFiniteNumber(data?.PrizeAmountEth ?? data?.CurPrizeAmountEth);
+  const reserveEth = toFiniteNumber(data?.CosmicGameBalanceEth);
+
+  // The wallet's place in this cycle: its own moment when the Last Gesture
+  // changes hands, what it has spent, and what waits to be retrieved.
+  const position = usePositionMoment({
+    account,
+    latestAddress: loading ? undefined : data?.LastBidderAddr,
+    cycle: data?.CurRoundNum,
+    gestureCount: data?.CurNumBids,
+    nowMs: now,
+  });
+  const announcement = useHomeAnnouncer({
+    phase: cycleState.phase,
+    latestAddress: loading ? undefined : data?.LastBidderAddr,
+    gestureCount: data?.CurNumBids ?? null,
+    account,
+    moment: position.moment,
+  });
+  const participation = useCycleParticipation(account, data?.CurRoundNum);
+  // The weighted Stellar Selection pool, read from the Game contract; null
+  // wherever the count-based share is the one the cycle selects by.
+  const { data: selectionPool } = useSelectionPool(toFiniteNumber(data?.CurRoundNum));
+  const weightedSelectionShare =
+    selectionPool && account ? poolShareOf(selectionPool, account) : null;
+  const retrieve = useRetrieveStatus(account);
+  const cycleSpend = !account
+    ? null
+    : ownGesturePending || participation.status === 'loading'
+      ? ({ status: 'loading' } as const)
+      : participation.status === 'error'
+        ? ({ status: 'unknown' } as const)
+        : ({ status: 'ready', eth: participation.spentEth, cst: participation.spentCst } as const);
+
+  const scrollToElement = useCallback((id: string) => {
+    const el = document.getElementById(id);
+    if (!el || typeof el.scrollIntoView !== 'function') return;
+    el.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'instant'
+        : 'smooth',
+      block: 'start',
+    });
+    el.focus({ preventScroll: true });
+  }, []);
+  const scrollToGesturePanel = useCallback(
+    () => scrollToElement('make-gesture'),
+    [scrollToElement],
+  );
+  const scrollToClock = useCallback(() => scrollToElement('cycle-clock'), [scrollToElement]);
+  const handleSheetCloseAutoFocus = useCallback(
+    (event: Event) => {
+      if (!sheetClosedByWidth) return;
+      setSheetClosedByWidth(false);
+      // The dock button that opened the sheet is gone at this width.
+      event.preventDefault();
+      scrollToGesturePanel();
+    },
+    [scrollToGesturePanel, sheetClosedByWidth],
+  );
+
+  // Method switches reset any picked RandomWalk token so a stale token can't
+  // ride along silently.
+  const handleSelectGestureType = useCallback(
+    (value: string) => {
+      setRwlkId(-1);
+      setBidType(value);
+    },
+    [setBidType, setRwlkId],
+  );
+
+  // The dock is the way to act once the page's own Cycle clock and gesture
+  // form have both scrolled away, and it never repeats them: while the clock
+  // is on screen it would show the same time and allocation twice, and while
+  // any of the form is on screen it would lie over the form's controls. The
+  // first screen of every width holds the clock, so until the observers
+  // report (the server HTML, the first paint) the dock stays aside, and it
+  // slides in only once the reader has scrolled past both.
+  const [clockInView, setClockInView] = useState<boolean | null>(null);
+  const [formInView, setFormInView] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return undefined;
+    // The sticky header covers the top; a sliver behind it is not "in view".
+    const options: IntersectionObserverInit = { rootMargin: headerRootMargin() };
+    const watch = (id: string, report: (inView: boolean) => void) => {
+      const element = document.getElementById(id);
+      // Nothing to repeat or cover (no form between cycles, say).
+      if (!element) {
+        report(false);
+        return null;
+      }
+      const observer = new IntersectionObserver(
+        ([entry]) => report(entry ? entry.isIntersecting : false),
+        options,
+      );
+      observer.observe(element);
+      return observer;
+    };
+    const observers = [watch('cycle-clock', setClockInView), watch('make-gesture', setFormInView)];
+    return () => observers.forEach((observer) => observer?.disconnect());
+  }, [showPanel, loading]);
+  const dockPlacement = gestureSheetOpen || clockInView !== false || formInView !== false;
+
+  // The source-aligned clock discovers milestones even between Gestures.
+  // A 30-second bucket keeps this larger timeline out of the one-second
+  // countdown render path; event timestamps still retain their exact second.
+  const feedNowSeconds = Math.floor((now + offset) / 30_000) * 30;
+  const feedActivationTs = getDashboardActivationTime(data) ?? 0;
+  const feedSystemEvents = useMemo(
+    () =>
+      deriveFeedSystemEvents({
+        gestures: curGestureList,
+        cycleNumber: round >= 0 ? round : undefined,
+        roundStartTs: data?.TsRoundStart ?? 0,
+        activationTs: feedActivationTs,
+        nowSeconds: feedNowSeconds,
+        expectedGestureCount: data?.CurNumBids,
+      }),
+    [curGestureList, round, data?.TsRoundStart, data?.CurNumBids, feedActivationTs, feedNowSeconds],
+  );
+
+  // Chat empty-state CTA: bring the one gesture panel into view, open its
+  // message editor and focus it (messages ride on gestures).
+  const panelMessageInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const [messageFocusRequest, setMessageFocusRequest] = useState(0);
+  const handleJoinChatCta = useCallback(() => {
+    trackChatJoinCtaClicked();
+    scrollToGesturePanel();
+    setMessageFocusRequest((value) => value + 1);
+  }, [scrollToGesturePanel]);
+
+  // Relative age of the dashboard/list-reconciled latest gesture.
+  const lastGestureAge = useMemo(() => {
+    const timestamp = Number(latestGesture?.TimeStamp);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return null;
+    const elapsedSeconds = Math.max(0, Math.floor((now - timestamp * 1000) / 1000));
+    if (elapsedSeconds < 60) return t('ticker.age.seconds', { count: String(elapsedSeconds) });
+    const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+    if (elapsedMinutes < 60) return t('ticker.age.minutes', { count: String(elapsedMinutes) });
+    const elapsedHours = Math.floor(elapsedMinutes / 60);
+    if (elapsedHours < 24) return t('ticker.age.hours', { count: String(elapsedHours) });
+    return t('ticker.age.days', { count: String(Math.floor(elapsedHours / 24)) });
+  }, [latestGesture?.TimeStamp, now, t]);
+
+  const attachedAssetCount = donatedNFTs.length + donatedERC20Tokens.length;
+  const hasAttachedAssets = attachedAssetCount > 0;
+  const cycleNumber = data?.CurRoundNum;
+  // Cycles count from 0, so while Cycle 1 runs, Cycle 0 is the one before it.
+  const previousCycle = cycleNumber != null ? cycleNumber - 1 : -1;
+  const hasPreviousCycle = previousCycle >= 0;
+
+  const holdSeconds =
+    champions.latestGesture.isTimeKnown === false ? null : champions.latestGesture.holdDuration;
+  const exclusiveWindowOpen = claimWait > now;
+  // Only a connected wallet has a standing to show: without one, the form's
+  // own connect action already says what connecting adds.
+  const standing = account ? (
+    <CycleStanding
+      isLatest={position.isLatest}
+      isReadyToFinalize={cycleState.isReadyToFinalize}
+      isConfirmingFinalization={cycleState.isConfirmingFinalization}
+      exclusiveWindowOpen={exclusiveWindowOpen}
+      holdSeconds={holdSeconds}
+      moment={position.moment}
+      onDismissMoment={position.dismiss}
+      nowMs={now}
+      participation={participation}
+      participationUpdating={ownGesturePending}
+      totalGestures={data?.CurNumBids ?? null}
+      weightedShare={weightedSelectionShare}
+      retrieve={retrieve}
+      onGoToFinalize={scrollToClock}
+    />
+  ) : undefined;
+
+  // Without the dashboard read there is no cycle number, countdown, or
+  // allocation pool — rendering the page would show an idle cycle that does
+  // not exist, so say the read failed and offer a retry instead.
+  if (dashboardFailed && !dashboardData) {
+    return (
+      <PageShell variant="data" backdrop="subtle">
+        <ErrorState
+          title={t('error.title')}
+          message={t('error.message')}
+          onRetry={() => void refetchDashboard()}
+          surface
+          headingLevel={2}
+        />
+      </PageShell>
+    );
+  }
+
+  return (
+    <LazyMotion features={domAnimation}>
+      <PageShell
+        variant="data"
+        backdrop="hero"
+        // The site's one content edge (site-container: the gutter, capped at
+        // 80rem), so the desk lines up with the header and footer at every
+        // width instead of overhanging them on wide screens.
+        className="home-control-shell w-[min(100%-2*var(--gutter),80rem)] max-w-none px-0 pb-16 pt-[calc(var(--header-height)+1.5rem)] max-sm:pt-[calc(var(--header-height)+1rem)] sm:px-0"
+      >
+        {uxScenario && (
+          <div className="mb-3 rounded-control bg-attention-surface px-3 py-1.5 type-caption text-attention">
+            <span className="font-semibold">UX scenario: {uxScenario.name}</span>
+            <span className="ms-2">
+              Cycle data and gesture placement are simulated for local UI testing.
+            </span>
+          </div>
+        )}
+
+        {/* The page's one polite voice: the wallet's own moment, a new Last
+            Gesture and the clock's phase changes; never every chat update. */}
+        <p role="status" aria-live="polite" className="sr-only" data-testid="home-announcer">
+          {announcement.text ? <span key={announcement.id}>{announcement.text}</span> : null}
+        </p>
+
+        <ControlDesk
+          header={
+            <PulseBar
+              cycleNumber={cycleNumber ?? null}
+              phase={cycleState.phase}
+              gestureCount={data?.CurNumBids ?? null}
+              lastGestureAge={lastGestureAge}
+              youHoldLatest={position.isLatest}
+            />
+          }
+          clock={
+            <CycleClock
+              data={data}
+              loading={loading}
+              allocationTime={allocationTime}
+              activationTime={activationTime}
+              now={now}
+              finalizationConfirmed={finalizationConfirmed}
+              account={account}
+              canClaim={canClaim}
+              isClaiming={isClaiming}
+              claimWait={claimWait}
+              onFinalize={() => void handleFinalize('clock')}
+              ethUsdPrice={ethUsdPrice}
+              signatureNftCount={signatureNftCount}
+              attachedAssetCount={attachedAssetCount}
+              attachedAssetsHref={`#${ATTACHED_ASSETS_ID}`}
+              // The alerts are about the clock reaching zero: they sit beside it.
+              headingAction={<AttentionMenu className="-my-2.5" />}
+            />
+          }
+          calibration={
+            <CalibrationStatus
+              data={data}
+              ethGestureInfo={ethGestureInfo}
+              cstGestureData={liveCstGestureData}
+            />
+          }
+          standings={
+            <StandingsLedger
+              champions={champions}
+              latestGesture={latestGesture}
+              gestureDetailsPending={latestResolution.isSyncing}
+              showLastGesture={showLastGesture}
+              account={account}
+              chronoEth={data ? trackAmounts.chronoEth : null}
+              // The Last Gesture's figure, like every other role's.
+              signatureEth={signatureEth}
+              moment={position.moment}
+            />
+          }
+          gestureConsole={
+            showPanel ? (
+              <GesturePanel
+                data={data}
+                loading={loading}
+                isRoundActive={isRoundActive}
+                account={account}
+                form={gestureForm}
+                cstGestureData={liveCstGestureData}
+                submit={submit}
+                canGesture={canGesture}
+                isGesturing={isGesturing}
+                txStage={gestureTxStage}
+                cycleTimerEnded={cycleTimerEnded}
+                onSubmit={() => void handleGesture('panel')}
+                onSelectGestureType={handleSelectGestureType}
+                variant="card"
+                cycleSpend={cycleSpend}
+                onGoToFinalize={scrollToClock}
+                messageFocusRequest={messageFocusRequest}
+                messageInputRef={panelMessageInputRef}
+              />
+            ) : undefined
+          }
+          standing={standing}
+          art={
+            <MemoLatestSignature
+              signatures={latestSignatures.signatures}
+              loading={latestSignatures.isLoading}
+              sizes={showPanel ? ART_SIZES_BESIDE_STANDINGS : ART_SIZES_BETWEEN_CYCLES}
+            />
+          }
+        />
+
+        {/* Row 3: the conversation beside where the cycle is now (F169, F296).
+            Messages lead the chat; the guide explains the loop as the six
+            steps with the current one marked, and carries the cycle links.
+            Both open on a hairline, like the desk above. */}
+        <div
+          data-testid="home-feed-layout"
+          className="mt-10 grid min-w-0 gap-y-7 lg:grid-cols-12 lg:items-start lg:gap-x-6"
+        >
+          <div data-testid="home-feed-column" className="min-w-0 lg:col-span-7">
+            <MemoGestureMessageChat
+              gestures={chatGestures}
+              pagination={chatPagination}
+              serverModerated={feed.mode === 'paged'}
+              isLoading={feed.isLoading}
+              error={Boolean(feed.error)}
+              onRetry={feed.retry}
+              account={account}
+              resetKey={feed.resetKey}
+              cycleNumber={round >= 0 ? round : undefined}
+              pulseKey={gesturePulseKey}
+              onJoinCta={!loading && isRoundActive ? handleJoinChatCta : undefined}
+              systemEvents={feedSystemEvents}
+              pendingMessages={pendingMessages}
+            />
+          </div>
+          <CyclePhaseGuide
+            phase={cycleState.phase}
+            className={cn(DESK_REGION, 'lg:col-span-5')}
+            cycleLinks={
+              <>
+                <li data-testid="home-feed-actions">
+                  <Link
+                    href="/current-cycle"
+                    data-testid="cycle-details-link-card"
+                    className={PHASE_GUIDE_LINK_CLASS}
+                  >
+                    {t('cycleDetails.title')}
+                    <ArrowRight className="size-3.5" aria-hidden />
+                  </Link>
+                </li>
+                {hasPreviousCycle && (
+                  <li>
+                    <Link
+                      href={`/allocation/${previousCycle}`}
+                      data-testid="previous-cycle-link-card"
+                      className={PHASE_GUIDE_LINK_CLASS}
+                    >
+                      {t('hero.console.previousAllocations', { number: String(previousCycle) })}
+                      <ArrowRight className="size-3.5" aria-hidden />
+                    </Link>
+                  </li>
+                )}
+              </>
+            }
+          />
+        </div>
+
+        {/* Receipts use the full content width. */}
+        {hasAttachedAssets && (
+          <div
+            id={ATTACHED_ASSETS_ID}
+            data-testid="home-attached-assets"
+            className="mt-10 scroll-mt-24"
+          >
+            <MemoAttachedNFTAllocationShowcase
+              nfts={donatedNFTs}
+              erc20Tokens={donatedERC20Tokens}
+              cycleNumber={round >= 0 ? round : undefined}
+              className="my-0"
+            />
+          </div>
+        )}
+
+        {/* The page's two disclosures read as one list of hairline rows. */}
+        <AllocationsDisclosure className="mt-10" reserveEth={reserveEth}>
+          <AllocationLedger data={data} />
+        </AllocationsDisclosure>
+        <HomeStory />
+      </PageShell>
+
+      {/* The one persistent quick-action surface: routes to the gesture
+          panel (bottom sheet on phones, scroll from tablets up). */}
+      <ActionDock
+        stepAside={dockPlacement}
+        data={data}
+        loading={loading}
+        allocationTime={allocationTime}
+        activationTime={activationTime}
+        now={now}
+        finalizationConfirmed={finalizationConfirmed}
+        submit={submit}
+        isGesturing={isGesturing}
+        txStage={gestureTxStage}
+        account={account}
+        canClaim={canClaim}
+        isClaiming={isClaiming}
+        claimWait={claimWait}
+        onFinalize={() => void handleFinalize('dock')}
+        moment={position.moment}
+        // While any of the form is on screen, the dock takes the reader to it
+        // rather than opening a second copy of it in the sheet.
+        onOpenSheet={formInView ? scrollToGesturePanel : openGestureSheet}
+        onJumpToPanel={scrollToGesturePanel}
+      />
+
+      {/* Mobile bottom sheet: the same gesture panel, same shared form
+          state, so drafts follow the participant between mounts. It stays
+          open through signing and pending, and closes after success. */}
+      <Sheet open={gestureSheetOpen} onOpenChange={setGestureSheetOpen}>
+        <SheetContent
+          side="bottom"
+          // The panel speaks for itself; there is no separate description.
+          aria-describedby={undefined}
+          onCloseAutoFocus={handleSheetCloseAutoFocus}
+          className="max-h-[88dvh] overflow-y-auto rounded-t-surface border-rule bg-surface-raised px-4 pb-0 pt-5"
+        >
+          <SheetTitle className="sr-only">{t('observatory.panel.sheetTitle')}</SheetTitle>
+          <GesturePanel
+            data={data}
+            loading={loading}
+            isRoundActive={isRoundActive}
+            account={account}
+            form={gestureForm}
+            cstGestureData={liveCstGestureData}
+            submit={submit}
+            canGesture={canGesture}
+            isGesturing={isGesturing}
+            txStage={gestureTxStage}
+            cycleTimerEnded={cycleTimerEnded}
+            onSubmit={() => void handleGesture('sheet')}
+            onSelectGestureType={handleSelectGestureType}
+            cycleSpend={cycleSpend}
+            variant="sheet"
+          />
+        </SheetContent>
+      </Sheet>
+    </LazyMotion>
+  );
+};
+
+export default HomePage;

@@ -1,0 +1,87 @@
+{
+  "invalid": {
+    "title": "Недійсний ID жесту",
+    "help": "ID жесту в URL має бути невід’ємним цілим числом."
+  },
+  "header": {
+    "title": "Жест #{position}",
+    "fallback": "Запис жесту {id}",
+    "explorer": "Переглянути транзакцію"
+  },
+  "empty": {
+    "title": "Інформацію про жест не знайдено.",
+    "help": "Можливо, ID недійсний або дані про жест ще не оновлено.",
+    "action": "Переглянути поточний цикл"
+  },
+  "error": {
+    "title": "Не вдалося завантажити запис жесту",
+    "message": "Перевірте з’єднання та спробуйте ще раз."
+  },
+  "figures": {
+    "cost": "Вартість жесту",
+    "held": "Час утримання",
+    "heldInfo": "Скільки цей жест був Останнім жестом: до наступного жесту або до завершення циклу.",
+    "heldLive": "Досі Останній жест"
+  },
+  "credit": {
+    "titlePrevious": "CST зараховано попередньому учаснику",
+    "titleCurrent": "CST зараховано цьому учаснику",
+    "titleUnknown": "Зарахування CST",
+    "recipient": "Отримувач",
+    "recipientUnavailable": "Отримувач невідомий",
+    "sameWallet": "Той самий гаманець",
+    "firstGesture": "Перший жест циклу — без зарахування CST",
+    "zero": "CST не зараховано",
+    "amountUnavailable": "Сума CST невідома",
+    "incomplete": "Частина даних про зарахування CST недоступна.",
+    "bodyPrevious": "Під час цього жесту CST зараховано учаснику попереднього жесту."
+  },
+  "method": {
+    "eth": "ETH",
+    "ethRandomWalk": "ETH + Random Walk NFT",
+    "cst": "CST"
+  },
+  "sections": {
+    "details": {
+      "title": "Запис"
+    },
+    "message": {
+      "title": "Повідомлення"
+    },
+    "nft": {
+      "title": "Долучений NFT"
+    }
+  },
+  "rows": {
+    "participant": "Учасник",
+    "finalizationTime": "Час завершення після цього жесту",
+    "clockExtended": "Продовжено на {duration}",
+    "transaction": "Транзакція",
+    "copyHash": "Копіювати хеш транзакції",
+    "hashCopied": "Хеш транзакції скопійовано",
+    "erc20": "Долучений ERC-20",
+    "erc20Amount": "Кількість долучених токенів ERC-20",
+    "nftContract": "Адреса контракту долученого NFT",
+    "nftId": "ID долученого NFT"
+  },
+  "nav": {
+    "aria": "Сусідні жести",
+    "previous": "Попередній жест",
+    "next": "Наступний жест",
+    "all": "Усі жести циклу {cycle}"
+  },
+  "nftPreview": {
+    "collectionName": "Назва колекції",
+    "artist": "Автор",
+    "platform": "Платформа",
+    "description": "Опис"
+  },
+  "randomWalk": {
+    "heading": "Random Walk NFT"
+  },
+  "rail": {
+    "position": "Жест {position} з {total}",
+    "positionLive": "Жест {position} з {total}, цикл триває",
+    "liveNote": "Цикл ще триває. Його Сигнатуру буде закарбовано, коли цикл завершиться."
+  }
+}

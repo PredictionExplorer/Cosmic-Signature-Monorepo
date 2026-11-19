@@ -1,0 +1,87 @@
+{
+  "invalid": {
+    "title": "落筆 ID 無效",
+    "help": "網址中的落筆 ID 需為非負整數。"
+  },
+  "header": {
+    "title": "落筆 #{position}",
+    "fallback": "落筆紀錄 {id}",
+    "explorer": "查看交易"
+  },
+  "empty": {
+    "title": "未找到落筆資訊。",
+    "help": "此 ID 可能無效，或這一筆尚未被索引收錄。",
+    "action": "查看目前週期"
+  },
+  "error": {
+    "title": "未能載入落筆紀錄",
+    "message": "請檢查網路連線後重試。"
+  },
+  "figures": {
+    "cost": "落筆價格",
+    "held": "保持時長",
+    "heldInfo": "這次落筆作為最新落筆保持的時長：直到下一次落筆，或直到週期收官。",
+    "heldLive": "仍是最新落筆"
+  },
+  "credit": {
+    "titlePrevious": "上一筆參與者收到的 CST",
+    "titleCurrent": "本次參與者收到的 CST",
+    "titleUnknown": "CST 入帳",
+    "recipient": "獲配者",
+    "recipientUnavailable": "獲配者不明",
+    "sameWallet": "同一錢包",
+    "firstGesture": "本週期首筆落筆未發放參與 CST",
+    "zero": "這次落筆未發放 CST",
+    "amountUnavailable": "CST 數量不明",
+    "incomplete": "部分 CST 入帳資料無法取得。",
+    "bodyPrevious": "這次落筆執行時，CST 發放給上一筆落筆的參與者。"
+  },
+  "method": {
+    "eth": "ETH",
+    "ethRandomWalk": "ETH + Random Walk NFT",
+    "cst": "CST"
+  },
+  "sections": {
+    "details": {
+      "title": "記錄"
+    },
+    "message": {
+      "title": "留言"
+    },
+    "nft": {
+      "title": "已附加 NFT"
+    }
+  },
+  "rows": {
+    "participant": "參與者",
+    "finalizationTime": "此次落筆後的收官時間",
+    "clockExtended": "延後了 {duration}",
+    "transaction": "交易",
+    "copyHash": "複製交易雜湊",
+    "hashCopied": "交易雜湊已複製",
+    "erc20": "已附加 ERC-20",
+    "erc20Amount": "已附加 ERC-20 代幣數量",
+    "nftContract": "已附加 NFT 代幣地址",
+    "nftId": "已附加 NFT 代幣 ID"
+  },
+  "nav": {
+    "aria": "相鄰落筆",
+    "previous": "上一次落筆",
+    "next": "下一次落筆",
+    "all": "第 {cycle} 個週期的全部落筆"
+  },
+  "nftPreview": {
+    "collectionName": "系列名稱",
+    "artist": "藝術家",
+    "platform": "平台",
+    "description": "描述"
+  },
+  "randomWalk": {
+    "heading": "Random Walk NFT"
+  },
+  "rail": {
+    "position": "第 {position} 次落筆，共 {total} 次",
+    "positionLive": "第 {position} 次落筆，目前共 {total} 次",
+    "liveNote": "本週期仍在進行，它的簽名將在週期收官時銘刻。"
+  }
+}

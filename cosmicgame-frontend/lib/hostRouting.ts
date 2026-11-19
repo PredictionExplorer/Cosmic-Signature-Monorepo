@@ -1,0 +1,231 @@
+import { routing } from '@/i18n/routing';
+
+const IS_DEV = process.env.NODE_ENV === 'development';
+
+const BASE_LANDING_HOSTS = ['cosmicsignature.com', 'www.cosmicsignature.com'];
+const BASE_APP_HOSTS = ['app.cosmicsignature.com'];
+const LEGACY_WWW_LANDING_HOST = 'www.cosmicsignature.com';
+
+/**
+ * Dev-only hosts for local browser testing via /etc/hosts entries.
+ *
+ * IMPORTANT: `localhost` and `127.0.0.1` are NOT in either set. This
+ * preserves the existing behavior of `next dev` on localhost serving the
+ * dApp by default, which every existing E2E test assumes. To test the
+ * landing locally, either:
+ *   - Add `127.0.0.1 cosmicsignature.local app.cosmicsignature.local` to
+ *     /etc/hosts and visit http://cosmicsignature.local:3000
+ *   - Or force the Host header:
+ *     `curl -H "Host: cosmicsignature.com" http://localhost:3000/`
+ */
+const DEV_LANDING_HOSTS = ['cosmicsignature.local'];
+const DEV_APP_HOSTS = ['app.cosmicsignature.local'];
+
+const LANDING_HOSTS = new Set<string>(
+  IS_DEV ? [...BASE_LANDING_HOSTS, ...DEV_LANDING_HOSTS] : BASE_LANDING_HOSTS,
+);
+
+const APP_HOSTS = new Set<string>(IS_DEV ? [...BASE_APP_HOSTS, ...DEV_APP_HOSTS] : BASE_APP_HOSTS);
+
+export const APP_ORIGIN = IS_DEV
+  ? 'http://app.cosmicsignature.local:3000'
+  : 'https://app.cosmicsignature.com';
+
+export const LANDING_ORIGIN = IS_DEV
+  ? 'http://cosmicsignature.local:3000'
+  : 'https://cosmicsignature.com';
+
+export function normalizeHost(host: string | null | undefined): string {
+  if (!host) {
+    return '';
+  }
+
+  return (host.split(':')[0] ?? host).trim().toLowerCase();
+}
+
+export function isLandingHost(host: string | null | undefined): boolean {
+  const normalized = normalizeHost(host);
+  return LANDING_HOSTS.has(normalized);
+}
+
+export function isLegacyWwwLandingHost(host: string | null | undefined): boolean {
+  return normalizeHost(host) === LEGACY_WWW_LANDING_HOST;
+}
+
+export function isAppHost(host: string | null | undefined): boolean {
+  const normalized = normalizeHost(host);
+  return APP_HOSTS.has(normalized);
+}
+
+/**
+ * Paths that should live exclusively on the app subdomain. Requests to these
+ * paths on the landing host are redirected (308) to app.cosmicsignature.com.
+ *
+ * Cosmic-lexicon-only: there are no legacy aliases. See
+ * marketing/cosmic-lexicon.md for the vocabulary spec.
+ */
+export const APP_ONLY_PATH_PREFIXES: readonly string[] = [
+  '/admin',
+  '/allocation',
+  '/allocation-finalized',
+  '/anchor-action',
+  '/anchoring',
+  '/api',
+  '/code',
+  '/contracts',
+  '/coordination-changes',
+  '/cosmic-signature-transfer',
+  '/cosmic-token-transfer',
+  '/current-cycle',
+  '/detail',
+  '/distributions-by-token',
+  '/embed',
+  '/eth-contribution',
+  '/experimental-ui',
+  '/faq',
+  '/gallery',
+  '/gesture',
+  '/how-it-works',
+  '/marketing',
+  '/imprint',
+  '/internal',
+  '/attached-nfts',
+  '/my-allocations',
+  '/my-anchors',
+  '/my-statistics',
+  '/my-tokens',
+  '/named-nfts',
+  '/public-goods-contributions-cg',
+  '/public-goods-contributions-voluntary',
+  '/public-goods-retrievals',
+  '/recipient-history',
+  '/privacy',
+  '/risk-disclosures',
+  '/audits',
+  '/security',
+  '/site-map',
+  '/source-code',
+  '/statistics',
+  '/system-event',
+  '/terms',
+  '/transfer-cst',
+  '/used-rwlk-nfts',
+  '/user',
+];
+
+export const LANDING_ONLY_PATH_PREFIXES: readonly string[] = [
+  '/about',
+  '/learn',
+  '/quiz',
+  '/white-paper',
+];
+
+export function isAppOnlyPath(pathname: string): boolean {
+  if (!pathname || pathname === '/') return false;
+  return APP_ONLY_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+export function isLandingOnlyPath(pathname: string): boolean {
+  if (!pathname || pathname === '/') return false;
+  return LANDING_ONLY_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+/**
+ * Whether a locale-stripped public path starts like one of the site's pages:
+ * the home or a prefix of either host. Everything else is a 404
+ * (app/global-not-found.tsx), which proxy.ts serves without the `hreflang`
+ * alternates the locale middleware would otherwise advertise for it.
+ */
+export function isKnownPublicPath(pathname: string): boolean {
+  return pathname === '/' || isAppOnlyPath(pathname) || isLandingOnlyPath(pathname);
+}
+
+/**
+ * The INTERNAL route that renders the landing home. proxy.ts rewrites `/`
+ * on the marketing host to it and canonicalizes direct requests away from it;
+ * it must never appear in a link, a canonical, or a Location header.
+ */
+export const LANDING_SITE_INTERNAL_PATH = '/landing-site';
+
+/**
+ * The public path for a locale-stripped pathname. Everything maps to itself
+ * except the landing home, which `usePathname` reports as the internal
+ * `/landing-site` route while the page prerenders (there is no request URL
+ * to read at build time) and as `/` once the browser has the real URL. Links
+ * built from the pathname — the language directory's alternates — go through
+ * this so both renders agree and neither leaks the internal route.
+ */
+export function publicPathname(pathname: string): string {
+  return pathname === LANDING_SITE_INTERNAL_PATH ||
+    pathname.startsWith(`${LANDING_SITE_INTERNAL_PATH}/`)
+    ? '/'
+    : pathname;
+}
+
+/**
+ * Locale prefixes longest first, so `/zh-TW/…` is never read as `/zh` + `-TW/…`.
+ * Mirrors the order next-intl's own prefix matcher uses.
+ */
+const LOCALES_BY_PREFIX_LENGTH: readonly (typeof routing.locales)[number][] = [
+  ...routing.locales,
+].sort((a, b) => b.length - a.length);
+
+/**
+ * Splits a configured locale prefix off a public pathname.
+ * `/zh/gallery` -> `{ locale: 'zh', publicPath: '/gallery' }`;
+ * `/zh-TW/gallery` -> `{ locale: 'zh-TW', publicPath: '/gallery' }`;
+ * `/gallery` -> `{ locale: undefined, publicPath: '/gallery' }`.
+ *
+ * Matching is case-insensitive like next-intl's (which then redirects
+ * `/zh-tw/…` to the canonical `/zh-TW/…`), so host checks see the same public
+ * path either way; the returned `locale` is always the canonical code.
+ * Host-routing checks must always run against `publicPath`.
+ */
+export function splitLocalePrefix(pathname: string): {
+  locale?: (typeof routing.locales)[number];
+  publicPath: string;
+} {
+  const lower = pathname.toLowerCase();
+  for (const locale of LOCALES_BY_PREFIX_LENGTH) {
+    const prefix = `/${locale.toLowerCase()}`;
+    if (lower === prefix) {
+      return { locale, publicPath: '/' };
+    }
+    if (lower.startsWith(`${prefix}/`)) {
+      return { locale, publicPath: pathname.slice(prefix.length) };
+    }
+  }
+  return { publicPath: pathname || '/' };
+}
+
+/**
+ * Builds a cross-host absolute URL that carries the locale prefix, e.g.
+ * `localeHref(APP_ORIGIN, '/anchoring', 'zh')` -> `https://app…/zh/anchoring`.
+ * Locale-aware in-host navigation should use `Link` from `@/i18n/navigation`
+ * instead; this helper exists for absolute URLs that cross hosts.
+ */
+export function localeHref(origin: string, path: string, locale: string): string {
+  const prefix = locale === routing.defaultLocale ? '' : `/${locale}`;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const suffix = normalizedPath === '/' ? '' : normalizedPath;
+  return `${origin}${prefix}${suffix}` || origin;
+}
+
+/**
+ * Adds the active locale to absolute links between Cosmic Signature's two
+ * hosts. Third-party and relative URLs pass through unchanged.
+ */
+export function localizeCrossHostHref(href: string, locale: string): string {
+  const origin = [APP_ORIGIN, LANDING_ORIGIN].find(
+    (candidate) => href === candidate || href.startsWith(`${candidate}/`),
+  );
+  if (!origin) return href;
+
+  const url = new URL(href);
+  const { publicPath } = splitLocalePrefix(url.pathname);
+  return `${localeHref(origin, publicPath, locale)}${url.search}${url.hash}`;
+}

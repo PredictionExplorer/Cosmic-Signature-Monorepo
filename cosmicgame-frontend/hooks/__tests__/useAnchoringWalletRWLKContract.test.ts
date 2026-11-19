@@ -1,0 +1,70 @@
+import { renderHook } from '@testing-library/react';
+
+import { stakingWalletRwlkAbi } from '@/contracts/abis';
+import { TEST_APP_CONTRACT_ADDRESSES } from '@/test-utils/contractAddressesFixture';
+
+import {
+  emptyContractAddresses,
+  publishDashboardContractAddresses,
+  getCachedDashboardContractAddresses,
+} from '@/config/networks';
+
+import useAnchoringWalletRWLKContract from '../useAnchoringWalletRWLKContract';
+import useContract from '../useContract';
+
+jest.mock('../useContract');
+
+const mockUseContract = useContract as jest.Mock;
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  publishDashboardContractAddresses(TEST_APP_CONTRACT_ADDRESSES);
+});
+
+afterEach(() => {
+  publishDashboardContractAddresses(emptyContractAddresses());
+});
+
+describe('useAnchoringWalletRWLKContract', () => {
+  it('calls useContract with RWLK anchoring wallet address and stakingWalletRwlkAbi', () => {
+    mockUseContract.mockReturnValue(null);
+    renderHook(() => useAnchoringWalletRWLKContract());
+    expect(mockUseContract).toHaveBeenCalledWith(
+      getCachedDashboardContractAddresses().stakingRwalk,
+      stakingWalletRwlkAbi,
+    );
+  });
+
+  it('returns the contract from useContract', () => {
+    const mockContract = { read: {} };
+    mockUseContract.mockReturnValue(mockContract);
+    const { result } = renderHook(() => useAnchoringWalletRWLKContract());
+    expect(result.current).toBe(mockContract);
+  });
+
+  it('returns null when useContract returns null', () => {
+    mockUseContract.mockReturnValue(null);
+    const { result } = renderHook(() => useAnchoringWalletRWLKContract());
+    expect(result.current).toBeNull();
+  });
+
+  it('returns same reference on re-render', () => {
+    const mockContract = { read: {} };
+    mockUseContract.mockReturnValue(mockContract);
+    const { result, rerender } = renderHook(() => useAnchoringWalletRWLKContract());
+    const first = result.current;
+    rerender();
+    expect(result.current).toBe(first);
+  });
+
+  it('uses a valid non-empty address', () => {
+    const addr = TEST_APP_CONTRACT_ADDRESSES.stakingRwalk;
+    expect(typeof addr).toBe('string');
+    expect(addr.length).toBeGreaterThan(0);
+  });
+
+  it('uses a non-empty ABI array', () => {
+    expect(Array.isArray(stakingWalletRwlkAbi)).toBe(true);
+    expect(stakingWalletRwlkAbi.length).toBeGreaterThan(0);
+  });
+});

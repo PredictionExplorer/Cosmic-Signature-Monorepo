@@ -1,0 +1,123 @@
+import {
+  getExplorerUrl,
+  getProxiedUrl,
+  getOriginUrl,
+  getAssetsUrl,
+  getThumbUrl,
+  getRWLKImageUrl,
+  logoImgUrl,
+} from '../urls';
+
+describe('getProxiedUrl', () => {
+  it('returns the URL directly (no proxy)', () => {
+    const result = getProxiedUrl('https://example.com/path?q=1');
+    expect(result).toBe('https://example.com/path?q=1');
+  });
+
+  it('handles empty string', () => {
+    const result = getProxiedUrl('');
+    expect(result).toBe('');
+  });
+});
+
+describe('getOriginUrl', () => {
+  it('strips the proxy prefix and decodes the URL', () => {
+    const encoded = `/api/proxy?url=${encodeURIComponent('https://example.com')}`;
+    expect(getOriginUrl(encoded)).toBe('https://example.com');
+  });
+
+  it('handles URL without the proxy prefix', () => {
+    const result = getOriginUrl('https://direct.com');
+    expect(result).toBe('https://direct.com');
+  });
+});
+
+describe('getAssetsUrl', () => {
+  // Media follows the rotated API origin (jest.setup.ts NEXT_PUBLIC_API_URL).
+  const nftBase = 'http://test-api.example';
+
+  it('constructs direct URL with the NFT image server base', () => {
+    const result = getAssetsUrl('cosmicsignature/logo.png');
+    expect(result).toBe(`${nftBase}/images/new/cosmicsignature/logo.png`);
+  });
+});
+
+describe('getThumbUrl', () => {
+  // Media follows the rotated API origin (jest.setup.ts NEXT_PUBLIC_API_URL).
+  const nftBase = 'http://test-api.example';
+
+  it('builds the card thumbnail path inside the per-seed package dir', () => {
+    const result = getThumbUrl('abc123', 'card');
+    expect(result).toBe(`${nftBase}/images/new/cosmicsignature/0xabc123/thumb_card.webp`);
+  });
+
+  it('builds the micro thumbnail path', () => {
+    const result = getThumbUrl('abc123', 'micro');
+    expect(result).toBe(`${nftBase}/images/new/cosmicsignature/0xabc123/thumb_micro.webp`);
+  });
+
+  it('accepts numeric seeds', () => {
+    const result = getThumbUrl(0, 'card');
+    expect(result).toBe(`${nftBase}/images/new/cosmicsignature/0x0/thumb_card.webp`);
+  });
+});
+
+describe('getRWLKImageUrl', () => {
+  // Media follows the rotated API origin (jest.setup.ts NEXT_PUBLIC_API_URL).
+  const nftBase = 'http://test-api.example';
+
+  it('constructs direct URL with default variant', () => {
+    const result = getRWLKImageUrl('12345');
+    expect(result).toBe(`${nftBase}/images/randomwalk/12345_black_thumb.jpg`);
+  });
+
+  it('uses custom variant when provided', () => {
+    const result = getRWLKImageUrl('12345', 'color.png');
+    expect(result).toBe(`${nftBase}/images/randomwalk/12345_color.png`);
+  });
+});
+
+describe('logoImgUrl', () => {
+  it('is a non-empty string', () => {
+    expect(typeof logoImgUrl).toBe('string');
+    expect(logoImgUrl.length).toBeGreaterThan(0);
+  });
+});
+
+describe('getProxiedUrl edge cases', () => {
+  it('returns URLs with spaces unchanged', () => {
+    const result = getProxiedUrl('https://example.com/path with spaces');
+    expect(result).toBe('https://example.com/path with spaces');
+  });
+
+  it('returns URLs with ampersands and query params unchanged', () => {
+    const result = getProxiedUrl('https://api.example.com?a=1&b=2&c=3');
+    expect(result).toBe('https://api.example.com?a=1&b=2&c=3');
+  });
+});
+
+describe('getOriginUrl edge cases', () => {
+  it('returns the same URL if no proxy prefix present', () => {
+    expect(getOriginUrl('https://direct.com/page')).toBe('https://direct.com/page');
+  });
+
+  it('decodes a double-encoded URL correctly', () => {
+    const inner = encodeURIComponent('https://example.com');
+    const proxied = `/api/proxy?url=${inner}`;
+    expect(getOriginUrl(proxied)).toBe('https://example.com');
+  });
+});
+
+describe('getExplorerUrl edge cases', () => {
+  it('does not have a trailing slash before the type', () => {
+    const result = getExplorerUrl('tx', '0xhash');
+    expect(result).not.toMatch(/\/\/tx\//);
+  });
+
+  it('produces different URLs for different types', () => {
+    const tx = getExplorerUrl('tx', '0x1');
+    const addr = getExplorerUrl('address', '0x1');
+    const token = getExplorerUrl('token', '0x1');
+    expect(new Set([tx, addr, token]).size).toBe(3);
+  });
+});

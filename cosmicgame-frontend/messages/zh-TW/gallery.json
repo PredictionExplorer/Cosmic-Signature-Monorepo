@@ -1,0 +1,78 @@
+{
+  "error": {
+    "title": "無法載入銘刻檔案",
+    "message": "未能讀取 Cosmic Signature 藏品列表。請重試以載入檔案。"
+  },
+  "jsonLd": {
+    "name": "Cosmic Signature 畫廊"
+  },
+  "filters": {
+    "ariaLabel": "篩選 NFT",
+    "all": {
+      "label": "全部",
+      "tooltip": "顯示作品集中的全部 NFT。"
+    },
+    "anchored": {
+      "label": "已錨定",
+      "tooltip": "目前已錨定、正在累積錨定配發的 NFT。"
+    },
+    "named": {
+      "label": "已命名",
+      "tooltip": "由持有者賦予專屬名稱的 NFT。"
+    }
+  },
+  "sort": {
+    "ariaLabel": "排序方式",
+    "newest": "最新在前",
+    "oldest": "最早在前",
+    "cycleDesc": "週期（從高到低）",
+    "cycleAsc": "週期（從低到高）",
+    "rarity": "最稀有在前",
+    "chaosDesc": "混沌度（從高到低）",
+    "chaosAsc": "混沌度（從低到高）",
+    "syzygiesDesc": "連珠最多在前"
+  },
+  "list": {
+    "headers": {
+      "artwork": "作品",
+      "token": "代幣",
+      "structure": "結構",
+      "palette": "調色",
+      "spectral": "光譜型",
+      "chaos": "混沌度",
+      "fate": "命運",
+      "allocation": "分配",
+      "cycle": "週期",
+      "age": "銘刻時間"
+    }
+  },
+  "view": {
+    "ariaLabel": "檢視模式",
+    "grid": "網格檢視",
+    "list": "列表檢視"
+  },
+  "pagination": {
+    "perPage": "每頁"
+  },
+  "empty": {
+    "title": "未找到 NFT",
+    "description": "沒有簽名符合這些篩選條件。清除篩選即可查看完整作品集。",
+    "collectionTitle": "尚無簽名",
+    "collectionDescription": "每件簽名會在其週期收官、完成銘刻後出現在這裡。"
+  },
+  "about": {
+    "title": "關於作品集",
+    "description": "每枚 Cosmic Signature 都是獨一無二的生成藝術，由鏈上種子經三體物理模擬推演而成。任何人都能依據協議紀錄復現，每一枚都屬於銘刻它的週期。通常每個週期銘刻 24 枚新簽名：4 枚歸該週期的角色獲配者，10 枚歸經星選確定的參與者，另有 10 枚歸 Random Walk NFT 錨定者。"
+  },
+  "toolbar": {
+    "filters": "篩選",
+    "filtersWithCount": "篩選 · {count}",
+    "show": "顯示",
+    "showResults": "顯示 {count, number} 枚 NFT"
+  },
+  "results": {
+    "total": "{count, number} 枚 NFT",
+    "filtered": "{total, number} 枚 NFT 中的 {count, number} 枚",
+    "regionLabel": "簽名"
+  }
+}

@@ -1,0 +1,370 @@
+{
+  "empty": {
+    "gestures": "暂无落笔记录",
+    "gestureHistory": "暂无落笔历史",
+    "participants": "暂无参与者",
+    "recipients": "暂无获配者",
+    "recipientCyclesTitle": "暂无获配者",
+    "recipientCyclesDescription": "尚无已收官的演绎周期。",
+    "allocations": "暂无分配。",
+    "outreachAllocations": "暂无推广储备分配",
+    "anchorActions": "暂无锚定操作。",
+    "anchorHolders": "暂无锚定者",
+    "anchoredTokens": "暂无已锚定代币。",
+    "contributions": "暂无贡献记录",
+    "contributors": "暂无贡献者",
+    "publicGoods": "暂无公共物品活动。",
+    "stellarSelection": "暂无星选分配。",
+    "tokens": "暂无代币。",
+    "holders": "暂无持有者。",
+    "stellarEntries": "暂无星选资格",
+    "spenders": "暂无 ETH 支出记录",
+    "enduranceChampions": "暂无坚守冠军",
+    "attachedNfts": "暂无已附加 NFT。",
+    "attachedTokens": "暂无已附加代币。",
+    "systemEvents": "暂无系统事件。",
+    "modeChanges": "暂无模式变更",
+    "events": "暂无事件",
+    "history": "暂无记录",
+    "retrievals": "暂无取回记录",
+    "generic": "暂无数据。",
+    "nothingHere": "暂无内容"
+  },
+  "attachedAssets": {
+    "actions": {
+      "claim": "取回"
+    },
+    "status": {
+      "yes": "是",
+      "no": "否"
+    },
+    "aria": {
+      "actions": "操作"
+    },
+    "nft": {
+      "empty": "暂无已附加 NFT。",
+      "imageAlt": "NFT #{id}",
+      "imageUnavailable": "暂无图像",
+      "unknownToken": "未知代币",
+      "columns": {
+        "datetime": "日期时间",
+        "contributorAddress": "附加者地址",
+        "round": "周期编号",
+        "tokenAddress": "代币地址",
+        "tokenId": "代币 ID",
+        "tokenImage": "代币图像",
+        "tokenUri": "代币 URI"
+      },
+      "ariaLabel": "已附加 NFT"
+    },
+    "erc20": {
+      "empty": "暂无已附加 ERC-20 代币。",
+      "columns": {
+        "datetime": "日期时间",
+        "cycle": "周期编号",
+        "tokenAddress": "代币地址",
+        "attachedAmount": "附加数量",
+        "retrievedAmount": "已取回数量",
+        "recipient": "获配者",
+        "retrieved": "已取回"
+      },
+      "ariaLabel": "已附加 ERC-20 代币"
+    }
+  },
+  "loading": "加载中…",
+  "status": {
+    "loading": "加载中…",
+    "live": "实时",
+    "youBadge": "你",
+    "yes": "是",
+    "no": "否",
+    "none": "无",
+    "unknown": "未知",
+    "unavailable": "暂不可用",
+    "undefined": "未定义",
+    "deployment": "部署",
+    "currentlyActive": "当前启用"
+  },
+  "columns": {
+    "cycle": "周期",
+    "cycleNumber": "周期编号",
+    "round": "周期",
+    "participant": "参与者",
+    "recipient": "获配者",
+    "gestureCount": "落笔次数",
+    "gestureType": "落笔类型",
+    "gestureDuration": "落笔时长",
+    "gestureInfo": "落笔信息",
+    "gestureCost": "价格",
+    "allocation": "分配",
+    "allocationsReceived": "获配次数（全部类型）",
+    "maxAllocationEth": "最高签名分配（ETH）",
+    "allocationsSumEth": "获配 ETH",
+    "anchorHolder": "锚定者",
+    "holder": "持有者",
+    "numberOfNfts": "NFT 数量",
+    "date": "日期",
+    "dateTime": "日期时间",
+    "datetime": "日期时间",
+    "dateTimeCompact": "日期时间",
+    "amount": "金额",
+    "amountEth": "金额（ETH）",
+    "amountCst": "金额（CST）",
+    "tokenId": "代币 ID",
+    "tokenName": "代币名称",
+    "tokenAddress": "代币地址",
+    "retrieved": "已取回",
+    "status": "状态",
+    "message": "留言",
+    "contributor": "贡献者",
+    "destination": "去向",
+    "from": "转出方",
+    "to": "接收方",
+    "event": "事件",
+    "newValue": "新值",
+    "previousValue": "原值",
+    "recordType": "记录类型",
+    "source": "来源",
+    "received": "获配",
+    "position": "位置",
+    "note": "备注",
+    "userAddress": "用户地址",
+    "spentAmountEth": "支出金额（ETH）",
+    "distributionAmountEth": "派发金额（ETH）",
+    "outreachContributor": "推广贡献者",
+    "maxGestureEth": "最高 ETH 落笔",
+    "numberOfContributions": "贡献次数",
+    "totalContributedEth": "贡献总额（ETH）",
+    "started": "开始时间",
+    "ended": "结束时间",
+    "actions": "操作",
+    "selected": "已选择",
+    "gesturesThisCycle": "本周期落笔次数",
+    "shareOfPool": "池中占比"
+  },
+  "names": {
+    "participants": "独立参与者",
+    "recipients": "独立获配者",
+    "ethContributors": "独立 ETH 贡献者",
+    "cstAnchorHolders": "Cosmic Signature NFT 锚定者",
+    "rwlkAnchorHolders": "Random Walk NFT 锚定者",
+    "publicGoodsContributions": "公共物品资助记录",
+    "publicGoodsRetrievals": "公共物品取回记录",
+    "outreachAllocations": "推广储备分配记录",
+    "parameterChanges": "参数变更记录",
+    "cycleActivations": "周期启用记录",
+    "nameHistory": "命名历史",
+    "transfers": "转移记录",
+    "anchorDistribution": "锚定派发获配者",
+    "ethContributions": "ETH 贡献",
+    "allocationRecords": "分配记录",
+    "allocationsByRecipient": "按获配者汇总的分配",
+    "ethSpent": "各参与者的 ETH 支出",
+    "stellarSelectionEntries": "星选资格",
+    "enduranceChampions": "坚守冠军",
+    "gestureMessages": "落笔留言"
+  },
+  "pagination": {
+    "label": "分页导航",
+    "labelFor": "{table} 的分页导航",
+    "range": "第 {from} 至 {to} 条，共 {total} 条",
+    "goToPage": "转到页码：",
+    "goToPageAria": "转到页码",
+    "previous": "上一页",
+    "next": "下一页",
+    "morePages": "更多页面"
+  },
+  "currentRow": {
+    "position": "第 {rank} 位，共 {total} 位",
+    "show": "查看我的位置"
+  },
+  "proof": {
+    "transactionNewTab": "区块浏览器中的交易，在新标签页中打开"
+  },
+  "links": {
+    "newTab": "在新标签页中打开"
+  },
+  "details": {
+    "header": "详情"
+  },
+  "message": {
+    "showAll": "展开全文",
+    "showLess": "收起"
+  },
+  "skeleton": {
+    "loadingText": "正在加载文本",
+    "loadingStat": "正在加载统计数据",
+    "loadingRows": "正在加载表格行",
+    "loadingNft": "正在加载 NFT"
+  },
+  "tableHeaderHelp": {
+    "explainColumn": "说明“{column}”列"
+  },
+  "adminEvents": {
+    "empty": "没有配置变更"
+  },
+  "allocation": {
+    "cycle": "第 {cycle} 个周期",
+    "gestures": "落笔",
+    "listAria": "按周期排列的获配者列表",
+    "groups": {
+      "eth": "各分配轨道 ETH",
+      "nfts": "NFT"
+    },
+    "columns": {
+      "finalized": "收官时间",
+      "signature": "签名分配",
+      "signatureRecipient": "签名分配获配者",
+      "signatureEth": "签名分配（ETH）",
+      "chrono": "时之勇士",
+      "chronoEth": "时之勇士（ETH）",
+      "stellar": "星选",
+      "stellarEth": "星选（ETH）",
+      "anchor": "锚定派发",
+      "anchorEth": "锚定派发（ETH）",
+      "publicGoods": "公共物品",
+      "publicGoodsEth": "公共物品（ETH）",
+      "attached": "附加",
+      "nftsAttached": "附加 NFT",
+      "nftsViaStellar": "星选 NFT"
+    }
+  },
+  "anchoringRecipient": {
+    "emptyTitle": "本周期没有锚定的 NFT",
+    "empty": "周期收官时没有已锚定的 Cosmic Signature NFT，该周期的锚定派发份额留在周期储备中。"
+  },
+  "publicGoods": {
+    "voluntaryEmpty": "直接转入公共物品金库的资助会显示在这里，由金库为当前配置的公共物品受益方保管。"
+  },
+  "outreach": {
+    "allocationsTitle": "分配记录",
+    "dustNote": "灰色数额为少于 {amount} 的分配，按当前精度无法完整显示。"
+  },
+  "banGesture": {
+    "banned": "留言已隐藏。",
+    "unbanned": "留言已恢复。",
+    "error": "未能更新留言状态，请重试。",
+    "hiddenLoadError": "未能加载已隐藏的留言。",
+    "ban": "隐藏",
+    "unban": "恢复",
+    "undo": "撤销",
+    "visibilityLabel": "显示留言",
+    "hiddenTag": "已隐藏",
+    "allCycles": "全部周期",
+    "search": "搜索留言",
+    "noMatches": "没有符合筛选条件的留言",
+    "filters": {
+      "all": "全部",
+      "visible": "可见",
+      "hidden": "已隐藏"
+    }
+  },
+  "ethContribution": {
+    "withNote": "附带留言",
+    "viewContribution": "贡献 #{id}"
+  },
+  "endurance": {
+    "liveHelp": "这位参与者也是最新落笔者，因此坚守时段仍在增长。",
+    "championTime": "坚守时长",
+    "chronoWarrior": "时之勇士"
+  },
+  "gestureHistory": {
+    "tableLabel": "落笔历史",
+    "viewGesture": "落笔 #{position}",
+    "attached": "附加",
+    "randomWalkToken": "Random Walk {id}",
+    "messagesHeld": {
+      "title": "留言暂不显示",
+      "description": "未能加载已隐藏留言的列表，加载完成前不显示留言。"
+    }
+  },
+  "nameHistory": {
+    "removed": "代币名称已移除。"
+  },
+  "stellarSelection": {
+    "draws": "周期收官时，协议会从本池中选取 {eth} 次 ETH 星选与 {nft} 次 NFT 星选。",
+    "weightedNote": "权重采用每笔当时未减免、未含溢价的 ETH 基础价格。"
+  },
+  "recipientHistory": {
+    "sources": {
+      "signature": "签名分配",
+      "finalCstGesture": "CST 收官之笔",
+      "enduranceChampion": "坚守冠军",
+      "chronoWarrior": "时之勇士",
+      "stellarSelection": "星选",
+      "anchoredStellarSelection": "锚定 NFT 星选",
+      "anchorDistribution": "锚定派发",
+      "attachedNftTimeout": "附加 NFT（超时取回）",
+      "attachedErc20Timeout": "附加 ERC-20（超时取回）",
+      "stellarEthTimeout": "ETH 星选（超时取回）"
+    },
+    "sourceTags": {
+      "anchoredStellarSelection": "锚定 NFT 星选"
+    },
+    "nft": "NFT #{id}",
+    "readyToRetrieve": "可取回",
+    "retrieve": "取回",
+    "retrieved": "已取回",
+    "allAnchorHolders": "全部 Cosmic Signature NFT 锚定者",
+    "showRecords": "{count, plural, other {查看 # 条记录}}",
+    "hideRecords": "收起记录",
+    "recordsHeader": "记录",
+    "received": {
+      "eth": "ETH",
+      "cst": "CST",
+      "nfts": "NFT"
+    },
+    "totals": {
+      "eth": "获配 ETH",
+      "cst": "获配 CST",
+      "nfts": "获配 NFT",
+      "cycles": "周期数"
+    }
+  },
+  "specialAllocation": {
+    "firstRecordForming": "首个坚守纪录正在形成",
+    "extendingRecord": "正在延长坚守冠军纪录",
+    "progressAria": "成为坚守冠军的进度",
+    "lastGesture": "最新落笔",
+    "gestureDetailsSyncing": "最新一笔的详情正在由索引器同步。",
+    "gestureDetailsUnavailable": "最新一笔的交易详情暂时无法获取。",
+    "method": "方式",
+    "gestureTime": "落笔时间",
+    "attachedAssets": "附加资产",
+    "growingNow": "正在增长",
+    "heading": "当前特别分配人选",
+    "sectionAria": "当前特别分配人选",
+    "latestParticipant": "最新参与者",
+    "latestTooltip": "最新落笔者正在累积坚守时段。连续保持这一位置的时长超过当前坚守冠军纪录后，即可取得领先。",
+    "enduranceChampion": "坚守冠军",
+    "chronoWarrior": "时之勇士",
+    "finalCstGesture": "CST 收官之笔",
+    "finalCstNote": "只有 CST 落笔会更新此人选；ETH 和 Random Walk 落笔不会更新。",
+    "headingHelp": "这些参与者目前可能在周期收官时获得特别分配。每次新落笔都可能改变当前人选。"
+  },
+  "systemModes": {
+    "viewEvent": "参数变更记录"
+  },
+  "uniqueAnchorHolders": {
+    "anchors": "锚定",
+    "releases": "解锚",
+    "imprinted": "已铭刻",
+    "anchored": "当前锚定",
+    "distributedEth": "已派发（ETH）",
+    "unretrievedEth": "未取回（ETH）"
+  },
+  "statisticsColumns": {
+    "ownerAddress": "持有者",
+    "cstBalance": "余额（CST）",
+    "contractAddress": "合约地址",
+    "numberOfNfts": "NFT 数量",
+    "isRandomWalk": "来自 Random Walk"
+  },
+  "statisticsTooltips": {
+    "maxAllocationEth": "此获配者因写下收官之笔而获得的最高一笔签名分配；从未获得则显示短横线。时之勇士与星选的 ETH 只计入获配 ETH。",
+    "allocationsSumEth": "此获配者获得的全部 ETH 分配。NFT 与 CST 分配计入“获配次数（全部类型）”，但不计入此处的 ETH。",
+    "cstBalance": "此钱包当前的 CST（ERC-20）余额。",
+    "attachedNftContractAddress": "随落笔附加的代币所属 ERC-721 合约地址。",
+    "attachedNftCount": "此合约中已随落笔附加的 NFT 数量。"
+  }
+}

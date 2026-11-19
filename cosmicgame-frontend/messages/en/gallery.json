@@ -1,0 +1,78 @@
+{
+  "error": {
+    "title": "Unable to load the imprint archive",
+    "message": "The Cosmic Signature collection could not be read. Try again to load the archive."
+  },
+  "jsonLd": {
+    "name": "Cosmic Signature Gallery"
+  },
+  "filters": {
+    "ariaLabel": "Filter NFTs",
+    "all": {
+      "label": "All",
+      "tooltip": "Show all NFTs in the collection"
+    },
+    "anchored": {
+      "label": "Anchored",
+      "tooltip": "NFTs currently anchored and receiving Anchor Distributions"
+    },
+    "named": {
+      "label": "Named",
+      "tooltip": "NFTs given a custom name by their owner"
+    }
+  },
+  "sort": {
+    "ariaLabel": "Sort order",
+    "newest": "Newest first",
+    "oldest": "Oldest first",
+    "cycleDesc": "Cycle (high → low)",
+    "cycleAsc": "Cycle (low → high)",
+    "rarity": "Rarest first",
+    "chaosDesc": "Chaos (high → low)",
+    "chaosAsc": "Chaos (low → high)",
+    "syzygiesDesc": "Most syzygies"
+  },
+  "list": {
+    "headers": {
+      "artwork": "Artwork",
+      "token": "Token",
+      "structure": "Structure",
+      "palette": "Palette",
+      "spectral": "Class",
+      "chaos": "Chaos",
+      "fate": "Fate",
+      "allocation": "Allocation",
+      "cycle": "Cycle",
+      "age": "Imprinted"
+    }
+  },
+  "view": {
+    "ariaLabel": "View mode",
+    "grid": "Grid view",
+    "list": "List view"
+  },
+  "pagination": {
+    "perPage": "Per page"
+  },
+  "empty": {
+    "title": "No NFTs found",
+    "description": "No Signature matches these filters. Clear them to see the whole collection.",
+    "collectionTitle": "No Signatures yet",
+    "collectionDescription": "Each Signature appears here once its cycle is finalized and it is imprinted."
+  },
+  "about": {
+    "title": "About the collection",
+    "description": "Each Cosmic Signature is a one-of-a-kind generative artwork, rendered from an on-chain seed by a three-body physics simulation. Anyone can reproduce it from the protocol’s records, and each one belongs to the cycle that imprinted it. A typical cycle imprints 24 new Signatures: four go to the cycle’s role holders, ten to participants chosen by Stellar Selection, and ten to Random Walk NFT anchor-holders."
+  },
+  "toolbar": {
+    "filters": "Filters",
+    "filtersWithCount": "Filters · {count}",
+    "show": "Show",
+    "showResults": "{count, plural, one {Show # NFT} other {Show # NFTs}}"
+  },
+  "results": {
+    "total": "{count, plural, one {# NFT} other {# NFTs}}",
+    "filtered": "{count, number} of {total, plural, one {# NFT} other {# NFTs}}",
+    "regionLabel": "Signatures"
+  }
+}

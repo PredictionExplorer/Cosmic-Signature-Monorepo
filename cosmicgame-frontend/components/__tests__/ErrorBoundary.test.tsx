@@ -1,0 +1,118 @@
+import '@testing-library/jest-dom';
+import type React from 'react';
+
+import ErrorBoundary, { ErrorBoundaryBase } from '@/components/layout/ErrorBoundary';
+
+import { render, screen, fireEvent, checkA11y } from '@/test-utils';
+
+const originalError = console.error;
+beforeAll(() => {
+  console.error = jest.fn();
+});
+afterAll(() => {
+  console.error = originalError;
+});
+
+function ThrowError({ shouldThrow }: { shouldThrow: boolean }) {
+  if (shouldThrow) throw new Error('Test error');
+  return <div>No error</div>;
+}
+
+describe('ErrorBoundary', () => {
+  it('renders children when there is no error', () => {
+    render(
+      <ErrorBoundary>
+        <div>Child content</div>
+      </ErrorBoundary>,
+    );
+    expect(screen.getByText('Child content')).toBeInTheDocument();
+  });
+
+  it('renders the default fallback UI when a child throws', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByText('errors.boundary.title')).toBeInTheDocument();
+    expect(screen.getByText('errors.boundary.description')).toBeInTheDocument();
+    expect(screen.queryByText('Test error')).not.toBeInTheDocument();
+  });
+
+  it('draws the shared error state, with a heading in the outline', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow />
+      </ErrorBoundary>,
+    );
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'errors.boundary.title' }),
+    ).toBeInTheDocument();
+  });
+
+  it('reloads the page rather than re-rendering the tree that just threw', () => {
+    const reload = jest.fn();
+    render(
+      <ErrorBoundaryBase
+        onReload={reload}
+        messages={{ title: 'Title', description: 'Description', reload: 'Reload', home: 'Home' }}
+      >
+        <ThrowError shouldThrow />
+      </ErrorBoundaryBase>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
+    expect(reload).toHaveBeenCalledTimes(1);
+    // The tree that threw is not rendered again in place.
+    expect(screen.getByText('Title')).toBeInTheDocument();
+  });
+
+  it('offers a way home', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByRole('link', { name: 'errors.boundary.home' })).toHaveAttribute('href', '/');
+  });
+
+  it('renders custom fallback when provided', () => {
+    render(
+      <ErrorBoundary fallback={<div>Custom fallback</div>}>
+        <ThrowError shouldThrow />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByText('Custom fallback')).toBeInTheDocument();
+    expect(screen.queryByText('errors.boundary.title')).not.toBeInTheDocument();
+  });
+
+  it('shows a generic message when error has no message', () => {
+    function ThrowEmpty(): React.ReactNode {
+      throw new Error('');
+    }
+
+    render(
+      <ErrorBoundary>
+        <ThrowEmpty />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByText('errors.boundary.title')).toBeInTheDocument();
+  });
+
+  it('calls console.error via componentDidCatch', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow />
+      </ErrorBoundary>,
+    );
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  it('has no accessibility violations', async () => {
+    const { container } = render(
+      <ErrorBoundary>
+        <div>Child content</div>
+      </ErrorBoundary>,
+    );
+    await checkA11y(container);
+  });
+});

@@ -1,0 +1,74 @@
+{
+  "timer": {
+    "cycle": {
+      "current": "the current cycle",
+      "numbered": "Cycle {number}",
+      "generic": "Performance Cycle"
+    },
+    "phases": {
+      "loading": {
+        "title": "Reading the Cycle Finalization Time"
+      },
+      "openingSoon": {
+        "title": "{cycle} opens soon"
+      },
+      "waitingFirstGesture": {
+        "title": "{cycle} is waiting for its first gesture",
+        "body": "The first gesture ignites the Cycle Finalization Time and starts shaping the next Signature."
+      },
+      "approach": {
+        "title": "{cycle} finalizes in"
+      },
+      "finalHour": {
+        "title": "{cycle} is entering the final hour"
+      },
+      "finalMinutes": {
+        "title": "{cycle}: final minutes"
+      },
+      "ready": {
+        "title": "{cycle} is ready to finalize",
+        "state": "Ready to finalize",
+        "body": "A new gesture can still extend the cycle. The participant who made the last gesture can finalize it now."
+      },
+      "confirming": {
+        "title": "{cycle} reached zero",
+        "state": "Confirming",
+        "body": "Checking the chain for a last-second gesture before the cycle can finalize."
+      },
+      "unavailable": {
+        "title": "Live cycle clock unavailable",
+        "body": "The landing page could not reach the protocol clock. Open the app for the latest cycle state."
+      },
+      "live": {
+        "title": "{cycle} finalizes in"
+      }
+    },
+    "liveClock": "Live cycle clock",
+    "cycleClock": "Cycle clock",
+    "gestureCount": "{count, plural, one {# gesture} other {# gestures}}",
+    "duration": {
+      "days": "{count, plural, one {# day} other {# days}}",
+      "hours": "{count, plural, one {# hour} other {# hours}}",
+      "minutes": "{count, plural, one {# minute} other {# minutes}}",
+      "seconds": "{count, plural, one {# second} other {# seconds}}"
+    },
+    "currentCycle": "Open the current cycle",
+    "noscript": "The live clock needs JavaScript. The app always shows the current cycle.",
+    "durationSeparator": ", "
+  },
+  "artwork": {
+    "previous": "Previous artwork",
+    "next": "Next artwork",
+    "pauseRotation": "Pause the artwork rotation",
+    "resumeRotation": "Resume the artwork rotation",
+    "playAnimation": "Play the animation",
+    "pauseAnimation": "Pause the animation",
+    "resumeAnimation": "Resume the animation",
+    "replayAnimation": "Play again",
+    "unavailable": "Artwork unavailable"
+  },
+  "whitePaperHistorical": {
+    "body": "This is archived version {version}. Current protocol mechanics are documented in English version {currentVersion}.",
+    "link": "Read the current English edition"
+  }
+}

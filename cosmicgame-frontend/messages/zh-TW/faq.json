@@ -1,0 +1,74 @@
+{
+  "hero": {
+    "title": "Cosmic Signature 常見問題",
+    "breadcrumb": "常見問題",
+    "subtitle": "從初次參與到深入理解週期機制，這裡彙集了關於 Cosmic Signature 的常見疑問。",
+    "answerCount": "{count, number} 條解答",
+    "categoryCount": "{count, number} 個分類"
+  },
+  "search": {
+    "placeholder": "搜尋問題……",
+    "ariaLabel": "搜尋常見問題",
+    "clearAria": "清除搜尋內容",
+    "noResults": "未找到相關問題，請嘗試其他關鍵詞。",
+    "resultCount": "共 {totalCount} 個問題，目前顯示 {resultCount} 個"
+  },
+  "navigation": {
+    "ariaLabel": "常見問題分類",
+    "heading": "本頁內容"
+  },
+  "category": {
+    "expandAll": "全部展開",
+    "collapseAll": "全部收起",
+    "expandAllAria": "全部展開：{category}",
+    "collapseAllAria": "全部收起：{category}",
+    "copyLink": "複製連結",
+    "copied": "已複製",
+    "copyLinkAria": "複製連結：{question}",
+    "linkCopied": "連結已複製"
+  },
+  "popular": {
+    "heading": "熱門問題"
+  },
+  "empty": {
+    "heading": "未找到相關問題",
+    "description": "請嘗試其他關鍵詞，或清除搜尋查看全部問題。",
+    "clearAction": "清除搜尋"
+  },
+  "glossary": {
+    "title": "術語表",
+    "description": "Cosmic Signature 的專用術語，每個術語只有一個定義。"
+  },
+  "contact": {
+    "heading": "還有其他問題？",
+    "description": "可以在 Discord 或 X 上提問，社群成員和團隊都會看到。",
+    "x": "X（Twitter）",
+    "discord": "Discord"
+  },
+  "tooltips": {
+    "erc20": {
+      "term": "ERC-20",
+      "content": "以太坊廣泛採用的同質化代幣標準，同一合約中的代幣可以互換。"
+    },
+    "erc721": {
+      "term": "ERC-721",
+      "content": "以太坊的非同質化代幣（NFT）標準，每枚代幣都獨一無二。"
+    },
+    "layer2": {
+      "term": "Layer 2",
+      "content": "建構在以太坊之上的擴容協議，可更快、以更低成本處理交易，同時承襲以太坊的安全性。"
+    },
+    "rollup": {
+      "term": "彙總網路",
+      "content": "把多筆交易彙總處理並將資料發布回以太坊的 Layer 2 技術，可顯著降低成本並保留以太坊級別的安全性。"
+    },
+    "randomWalkNft": {
+      "term": "Random Walk NFT",
+      "content": "與 Cosmic Signature 相關聯的 NFT 系列。將一枚附加至 ETH 落筆，可一次性降低 50% 的 ETH 落筆價格。"
+    },
+    "renounceOwnership": {
+      "term": "放棄所有權",
+      "content": "不可逆的智慧合約操作，會永久撤銷團隊更改協議參數的能力。"
+    }
+  }
+}

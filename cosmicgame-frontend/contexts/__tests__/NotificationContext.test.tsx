@@ -1,0 +1,308 @@
+import { renderHook, act } from '@testing-library/react';
+import { type ReactNode } from 'react';
+
+import { render, checkA11y } from '@/test-utils';
+
+import { NotificationProvider, useNotification } from '../NotificationContext';
+
+const mockToast = jest.fn();
+const mockToastSuccess = jest.fn();
+const mockToastInfo = jest.fn();
+const mockToastWarning = jest.fn();
+const mockToastError = jest.fn();
+
+jest.mock('sonner', () => {
+  const toastFn = (...args: unknown[]) => mockToast(...args);
+  toastFn.success = (...args: unknown[]) => mockToastSuccess(...args);
+  toastFn.info = (...args: unknown[]) => mockToastInfo(...args);
+  toastFn.warning = (...args: unknown[]) => mockToastWarning(...args);
+  toastFn.error = (...args: unknown[]) => mockToastError(...args);
+  return { toast: toastFn };
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+const wrapper = ({ children }: { children: ReactNode }) => (
+  <NotificationProvider>{children}</NotificationProvider>
+);
+
+describe('NotificationProvider', () => {
+  it('provides setNotification function', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+    expect(typeof result.current.setNotification).toBe('function');
+  });
+
+  it('setNotification is memoized across re-renders', () => {
+    const { result, rerender } = renderHook(() => useNotification(), { wrapper });
+    const first = result.current.setNotification;
+    rerender();
+    expect(result.current.setNotification).toBe(first);
+  });
+
+  it('has no accessibility violations', async () => {
+    const { container } = render(
+      <NotificationProvider>
+        <div>Test</div>
+      </NotificationProvider>,
+    );
+    await checkA11y(container);
+  });
+});
+
+describe('toast type dispatch', () => {
+  it('calls toast.success for success type', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({ text: 'Done!', type: 'success', visible: true });
+    });
+
+    expect(mockToastSuccess).toHaveBeenCalledWith('Done!');
+    expect(mockToastInfo).not.toHaveBeenCalled();
+    expect(mockToastWarning).not.toHaveBeenCalled();
+    expect(mockToastError).not.toHaveBeenCalled();
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it('calls toast.info for info type', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({ text: 'FYI', type: 'info', visible: true });
+    });
+
+    expect(mockToastInfo).toHaveBeenCalledWith('FYI');
+    expect(mockToastSuccess).not.toHaveBeenCalled();
+  });
+
+  it('calls toast.warning for warning type', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({ text: 'Careful', type: 'warning', visible: true });
+    });
+
+    expect(mockToastWarning).toHaveBeenCalledWith('Careful');
+    expect(mockToastError).not.toHaveBeenCalled();
+  });
+
+  it('calls toast.error for error type', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({ text: 'Oops', type: 'error', visible: true });
+    });
+
+    expect(mockToastError).toHaveBeenCalledWith('Oops');
+    expect(mockToastSuccess).not.toHaveBeenCalled();
+  });
+
+  it('calls toast() directly for unknown type (default branch)', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({
+        text: 'generic',
+        type: 'other' as 'success',
+        visible: true,
+      });
+    });
+
+    expect(mockToast).toHaveBeenCalledWith('generic');
+    expect(mockToastSuccess).not.toHaveBeenCalled();
+    expect(mockToastError).not.toHaveBeenCalled();
+  });
+});
+
+describe('visibility gate', () => {
+  it('does not call any toast when visible is false', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({ text: 'hidden', type: 'error', visible: false });
+    });
+
+    expect(mockToast).not.toHaveBeenCalled();
+    expect(mockToastSuccess).not.toHaveBeenCalled();
+    expect(mockToastInfo).not.toHaveBeenCalled();
+    expect(mockToastWarning).not.toHaveBeenCalled();
+    expect(mockToastError).not.toHaveBeenCalled();
+  });
+});
+
+describe('function updater', () => {
+  it('receives default state { text: "", type: "error", visible: false }', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+    const updater = jest.fn((prev) => ({ ...prev, visible: true }));
+
+    act(() => {
+      result.current.setNotification(updater);
+    });
+
+    expect(updater).toHaveBeenCalledWith({ text: '', type: 'error', visible: false });
+  });
+
+  it('shows toast when updater returns visible: true', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification(() => ({
+        text: 'from updater',
+        type: 'success',
+        visible: true,
+      }));
+    });
+
+    expect(mockToastSuccess).toHaveBeenCalledWith('from updater');
+  });
+
+  it('does not show toast when updater returns visible: false', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification(() => ({
+        text: 'suppressed',
+        type: 'error',
+        visible: false,
+      }));
+    });
+
+    expect(mockToastError).not.toHaveBeenCalled();
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+});
+
+describe('integration', () => {
+  it('passes correct message text through to toast', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({
+        text: 'Transaction confirmed: 0xABC',
+        type: 'success',
+        visible: true,
+      });
+    });
+
+    expect(mockToastSuccess).toHaveBeenCalledWith('Transaction confirmed: 0xABC');
+  });
+
+  it('handles multiple sequential notifications', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({ text: 'first', type: 'info', visible: true });
+      result.current.setNotification({ text: 'second', type: 'error', visible: true });
+      result.current.setNotification({ text: 'third', type: 'success', visible: true });
+    });
+
+    expect(mockToastInfo).toHaveBeenCalledWith('first');
+    expect(mockToastError).toHaveBeenCalledWith('second');
+    expect(mockToastSuccess).toHaveBeenCalledWith('third');
+  });
+
+  it('handles empty string message', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({ text: '', type: 'info', visible: true });
+    });
+
+    expect(mockToastInfo).toHaveBeenCalledWith('');
+  });
+});
+
+describe('useNotification', () => {
+  it('falls back to a local dispatcher outside NotificationProvider', () => {
+    const { result } = renderHook(() => useNotification());
+
+    act(() => {
+      result.current.setNotification({ text: 'Standalone', type: 'warning', visible: true });
+    });
+
+    expect(mockToastWarning).toHaveBeenCalledWith('Standalone');
+  });
+});
+
+describe('technical details', () => {
+  it('offers a Copy details action and keeps the normal duration for a read error', () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({
+        text: 'Friendly sentence',
+        type: 'error',
+        visible: true,
+        details: 'InsufficientFundsError: insufficient funds',
+      });
+    });
+
+    expect(mockToastError).toHaveBeenCalledWith(
+      'Friendly sentence',
+      expect.objectContaining({
+        action: expect.objectContaining({ label: 'toasts.tx.copyDetails' }),
+      }),
+    );
+    expect(mockToastError.mock.calls[0]![1]).not.toHaveProperty('duration');
+    const [, options] = mockToastError.mock.calls[0] as [
+      string,
+      { action: { onClick: (event: { preventDefault: () => void }) => void } },
+    ];
+    const preventDefault = jest.fn();
+    options.action.onClick({ preventDefault });
+    expect(preventDefault).toHaveBeenCalled();
+    expect(writeText).toHaveBeenCalledWith('InsufficientFundsError: insufficient funds');
+  });
+
+  it('shows a repeated read error once instead of stacking copies', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+    const failure = {
+      text: 'Could not load your NFTs.',
+      type: 'error' as const,
+      visible: true,
+      details: 'HttpRequestError: 429',
+    };
+
+    act(() => {
+      result.current.setNotification(failure);
+      result.current.setNotification(failure);
+    });
+
+    const [first, second] = mockToastError.mock.calls as [string, { id: string }][];
+    expect(first![1].id).toBeTruthy();
+    expect(second![1].id).toBe(first![1].id);
+  });
+
+  it('keeps a sticky failure open until dismissed', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({
+        text: 'Transfer did not go through.',
+        type: 'error',
+        visible: true,
+        details: 'TxRevertedError',
+        sticky: true,
+      });
+    });
+
+    expect(mockToastError).toHaveBeenCalledWith(
+      'Transfer did not go through.',
+      expect.objectContaining({ duration: Number.POSITIVE_INFINITY }),
+    );
+  });
+
+  it('replaces the toast with the same id instead of stacking another', () => {
+    const { result } = renderHook(() => useNotification(), { wrapper });
+
+    act(() => {
+      result.current.setNotification({ text: 'Once', type: 'info', visible: true, id: 'n1' });
+    });
+
+    expect(mockToastInfo).toHaveBeenCalledWith('Once', { id: 'n1' });
+  });
+});

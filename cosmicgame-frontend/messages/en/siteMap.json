@@ -1,0 +1,23 @@
+{
+  "page": {
+    "title": "Site map",
+    "subtitle": "Every page of Cosmic Signature, grouped the way the menus group them.",
+    "home": "Home",
+    "jsonLdName": "Cosmic Signature site map"
+  },
+  "sections": {
+    "participate": "Make a gesture in the live cycle and imprint Random Walk NFTs.",
+    "collection": "Every Signature, and the NFTs named, attached and used along the way.",
+    "explore": "The live cycle in full, and protocol-wide figures theme by theme.",
+    "records": "Where each cycle’s reserves went: allocations, anchoring, outreach and Public Goods.",
+    "learn": "How the protocol works, from a first gesture to the white paper.",
+    "trust": "Verification, audits, risk disclosures and the legal terms.",
+    "account": "Your statistics, allocations, NFTs and anchors. Connect a wallet to see them.",
+    "ecosystem": "Independent services built around Cosmic Signature. They open in a new tab.",
+    "community": "Where the community talks, and where the Public Goods Allocation goes."
+  },
+  "guides": {
+    "title": "Guides",
+    "description": "Articles on the protocol, the art and taking part, from Learn on {host}."
+  }
+}

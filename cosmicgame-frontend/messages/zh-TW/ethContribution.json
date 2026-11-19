@@ -1,0 +1,79 @@
+{
+  "page": {
+    "historyTitle": "貢獻紀錄",
+    "historyEmpty": "透過表單完成的貢獻會顯示在這裡，附帶的留言也會一併顯示。",
+    "historyError": "無法載入貢獻紀錄。",
+    "jumpToForm": "貢獻 ETH"
+  },
+  "form": {
+    "optional": "（可選）",
+    "titleLabel": "標題",
+    "titlePlaceholder": "貢獻標題",
+    "urlLabel": "網址",
+    "messageLabel": "留言",
+    "messagePlaceholder": "可為這筆貢獻附上一段留言",
+    "contributeEth": "貢獻 ETH",
+    "title": "貢獻 ETH",
+    "description": "無需落筆，ETH 會直接進入當前週期的週期儲備。貢獻一經傳送便無法撤回。",
+    "amountHint": "任意大於 0 的數量，從 {network} 上的錢包傳送。",
+    "connectHint": "連接 {network} 上的錢包即可貢獻。",
+    "noteSummary": "附上公開留言",
+    "noteAdded": "已填寫",
+    "noteHint": "留言會隨貢獻一起記錄在鏈上，並顯示在其公開紀錄頁。",
+    "urlError": "請填寫以 https:// 或 http:// 開頭的完整連結。",
+    "summary": "{amount} 將進入第 {cycle} 個週期的週期儲備。",
+    "summaryNoCycle": "{amount} 將進入週期儲備。",
+    "submitAmount": "貢獻 {amount}",
+    "riskLink": "貢獻前請閱讀風險揭露"
+  },
+  "detail": {
+    "invalidId": "貢獻 ID 無效",
+    "title": "貢獻 #{id}",
+    "breadcrumbContributions": "ETH 貢獻",
+    "lede": "向第 {cycle} 個週期的週期儲備直接貢獻的 ETH。",
+    "figures": {
+      "amount": "數量",
+      "from": "來自",
+      "cycle": "週期",
+      "date": "日期"
+    },
+    "noteTitle": "貢獻者留言",
+    "noteCaption": "由貢獻者撰寫，並隨貢獻一起記錄在鏈上。",
+    "noteRawCaption": "此留言不是表單的常規格式，按原樣顯示。",
+    "opensInNewTab": "在新標籤頁中開啟",
+    "recordTitle": "紀錄",
+    "transactionLabel": "交易",
+    "cycleLink": "第 {cycle} 個週期的全部貢獻",
+    "recordLabel": "紀錄編號",
+    "recordValue": "#{id}",
+    "invalidIdTitle": "此連結沒有指向任何貢獻",
+    "invalidIdDescription": "貢獻編號是整數，例如 7。",
+    "notFoundTitle": "沒有編號為 #{id} 的貢獻",
+    "notFoundDescription": "只有附帶留言的貢獻才有紀錄頁。請在完整列表中查找。",
+    "backToAll": "全部貢獻",
+    "loadError": "無法載入這筆貢獻。",
+    "notFoundHeading": "找不到這筆貢獻"
+  },
+  "cycle": {
+    "invalidNumber": "週期編號無效",
+    "title": "第 {cycle} 個週期的貢獻",
+    "breadcrumbContributions": "ETH 貢獻",
+    "lede": "第 {cycle} 個週期內直接貢獻給週期儲備的 ETH。",
+    "figures": {
+      "count": "貢獻筆數",
+      "total": "貢獻總額",
+      "contributors": "貢獻者"
+    },
+    "otherCycles": "其他週期",
+    "previous": "上一個週期",
+    "next": "下一個週期",
+    "cycleLabel": "第 {cycle} 個週期",
+    "viewAllocation": "第 {cycle} 個週期的分配",
+    "viewLive": "進行中的週期",
+    "emptyDescription": "第 {cycle} 個週期進行期間傳送的貢獻會顯示在這裡。",
+    "loadError": "無法載入該週期的貢獻。",
+    "invalidTitle": "此連結沒有指向任何週期",
+    "invalidDescription": "週期編號是從 0 開始的整數，例如 3。",
+    "emptyDescriptionPast": "第 {cycle} 個週期內沒有直接 ETH 貢獻。"
+  }
+}

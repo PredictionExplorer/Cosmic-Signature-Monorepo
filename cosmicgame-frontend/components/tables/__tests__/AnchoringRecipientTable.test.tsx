@@ -1,0 +1,92 @@
+import '@testing-library/jest-dom';
+
+import { formatAddress } from '@/utils';
+
+import { checkA11y, render, screen } from '@/test-utils';
+
+// eslint-disable-next-line import/order
+import AnchoringRecipientTable from '@/components/tables/AnchoringRecipientTable';
+
+const createRecipient = (overrides = {}) => ({
+  EvtLogId: 1,
+  RoundNum: 1,
+  TokenId: 0,
+  TxHash: '0xabc123def456abc123def456abc123def456abc123def456abc123def456abc1',
+  TimeStamp: 1701346718,
+  StakerAddr: '0x1234567890abcdef1234567890abcdef12345678',
+  StakerNumStakedNFTs: 3,
+  StakerAmountEth: 0.5,
+  ...overrides,
+});
+
+beforeEach(() => jest.clearAllMocks());
+
+describe('AnchoringRecipientTable', () => {
+  it('renders custom empty message when list is empty', () => {
+    render(<AnchoringRecipientTable list={[]} />);
+    expect(screen.getByText('tables.anchoringRecipient.empty')).toBeInTheDocument();
+  });
+
+  it('renders table headers', () => {
+    render(<AnchoringRecipientTable list={[createRecipient()]} />);
+    expect(screen.getAllByText('tables.columns.datetime').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('tables.columns.anchorHolder').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('tables.columns.numberOfNfts').length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText('tables.columns.distributionAmountEth').length,
+    ).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders datetime as explorer link', () => {
+    const recipient = createRecipient();
+    render(<AnchoringRecipientTable list={[recipient]} />);
+    const datetime = screen.getByText('Nov 30, 2023, 12:18');
+    expect(datetime.closest('a')).toHaveAttribute('target', '_blank');
+    expect(datetime.closest('a')).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(
+      document.querySelector(
+        `time[datetime="${new Date(recipient.TimeStamp * 1000).toISOString()}"]`,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('renders shortened anchorHolder address with link', () => {
+    const addr = '0x1234567890abcdef1234567890abcdef12345678';
+    render(<AnchoringRecipientTable list={[createRecipient({ StakerAddr: addr })]} />);
+    expect(screen.getByText(formatAddress(addr))).toBeInTheDocument();
+    const addrLink = screen.getByText(formatAddress(addr)).closest('a');
+    expect(addrLink).toHaveAttribute('href', `/user/${addr}`);
+  });
+
+  it('renders NFT count and reward amount', () => {
+    render(
+      <AnchoringRecipientTable
+        list={[createRecipient({ StakerNumStakedNFTs: 5, StakerAmountEth: 1.2345 })]}
+      />,
+    );
+    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText('1.2345')).toBeInTheDocument();
+  });
+
+  it('formats StakerAmountEth to 4 decimal places', () => {
+    render(<AnchoringRecipientTable list={[createRecipient({ StakerAmountEth: 0.1 })]} />);
+    expect(screen.getByText('0.1000')).toBeInTheDocument();
+  });
+
+  it('shows 20 rows a page with the row range', () => {
+    const list = Array.from({ length: 25 }, (_, i) =>
+      createRecipient({
+        StakerAddr: `0x${String(i).padStart(40, '0')}`,
+        StakerNumStakedNFTs: 100 + i,
+      }),
+    );
+    const { container } = render(<AnchoringRecipientTable list={list} />);
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(20);
+    expect(screen.getByText('tables.pagination.range(from=1,to=20,total=25)')).toBeInTheDocument();
+  });
+
+  it('has no accessibility violations', async () => {
+    const { container } = render(<AnchoringRecipientTable list={[]} />);
+    await checkA11y(container);
+  });
+});

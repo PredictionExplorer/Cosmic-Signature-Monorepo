@@ -1,0 +1,262 @@
+'use client';
+
+import type { ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
+
+import { cn } from '@/lib/utils';
+import { useFormat } from '@/hooks/useFormat';
+import { PageHeaderFigures, type PageHeaderFigure } from '@/components/layout/PageHeader';
+import { Amount } from '@/components/ui/amount';
+import { DataTableWidth } from '@/components/ui/data-table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { GlobalAnchorActionsTable } from '@/components/anchoring/GlobalAnchorActionsTable';
+import { GlobalAnchoredTokensTable } from '@/components/anchoring/GlobalAnchoredTokensTable';
+import { AnchorHoldersTable } from '@/components/tables/AnchorHoldersTable';
+import type { AnchorAction, AnchoredTokenInfo } from '@/services/api';
+import type { UniqueAnchorHolderCST, UniqueAnchorHolderRWLK } from '@/services/api/types';
+
+import { StatsSection } from './StatsSection';
+
+/** Query-state bundle for one anchoring dataset. */
+export interface AnchoringDataState<T> {
+  data: T[] | null | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+}
+
+/** Props for the anchoring statistics section. */
+export interface AnchoringSectionProps {
+  /** The dashboard's Cosmic Signature anchoring figures; missing while loading or when unread. */
+  cstStats?: {
+    NumActiveStakers?: number;
+    NumDeposits?: number;
+    TotalRewardEth?: number;
+    UnclaimedRewardEth?: number;
+  } | null;
+  /** The dashboard's Random Walk anchoring figures; missing while loading or when unread. */
+  rwlkStats?: {
+    NumActiveStakers?: number;
+    TotalTokensMinted?: number;
+  } | null;
+  /** The dashboard is still loading: the figures hold skeletons, not dashes or zeros. */
+  statsLoading?: boolean;
+  cstAnchorActions: AnchoringDataState<AnchorAction>;
+  rwlkAnchorActions: AnchoringDataState<AnchorAction>;
+  anchoredCSTokens: AnchoringDataState<AnchoredTokenInfo>;
+  anchoredRWLKTokens: AnchoringDataState<AnchoredTokenInfo>;
+  uniqueCSTAnchorHolders: AnchoringDataState<UniqueAnchorHolderCST>;
+  uniqueRWLKAnchorHolders: AnchoringDataState<UniqueAnchorHolderRWLK>;
+}
+
+interface AnchoringTableSectionProps<T> {
+  title: string;
+  tooltip: string;
+  state: AnchoringDataState<T>;
+  emptyTitle: string;
+  children: ReactNode;
+}
+
+function AnchoringTableSection<T>({
+  title,
+  tooltip,
+  state,
+  emptyTitle,
+  children,
+}: AnchoringTableSectionProps<T>) {
+  return (
+    <StatsSection
+      title={title}
+      tooltip={tooltip}
+      isLoading={state.isLoading}
+      isError={state.isError}
+      onRetry={state.onRetry}
+      isEmpty={(state.data ?? []).length === 0}
+      emptyTitle={emptyTitle}
+    >
+      {/* The tab stacks five-column and four-column ledgers: every one runs
+          the full width, so they share a right edge. */}
+      <DataTableWidth value="fill">{children}</DataTableWidth>
+    </StatsSection>
+  );
+}
+
+/**
+ * A tab's figure strip, a level under the page's "Anchoring now" figures:
+ * values at the inline-readout size (`type-figure-md`, never the strip's
+ * 32px), so "this collection" reads under "all anchoring". A label that wraps
+ * pushes nothing: each figure is a column whose label grows, so every value
+ * sits on the row's bottom line. The label stretches across its column
+ * (`self-stretch`): the header's `self-end` means "bottom" in its subgrid but
+ * "right" in a flex column, which pushed a one-line label to the far edge
+ * while its value stayed at the start.
+ */
+const FIGURES_LAYOUT = cn(
+  'mt-0 sm:mt-0 sm:[&>div]:flex sm:[&>div]:flex-col sm:[&>div>dt]:grow sm:[&>div>dt]:self-stretch',
+  '[&>div>dd:first-of-type]:type-figure-md lg:[&>div]:px-6',
+);
+
+/**
+ * The Cosmic Signature strip's four figures: 2 + 2 on a tablet, then one row
+ * of four from `lg`, never a lone fourth figure wrapped under three (the
+ * header strip's wrapping flex row does that at 1024px, and wider in
+ * Ukrainian). The two counts take less room than the two ETH amounts, and the
+ * columns pad a little less than the page header's, so an amount keeps its
+ * line at 1024px.
+ */
+const CST_FIGURES_LAYOUT = cn(
+  FIGURES_LAYOUT,
+  'sm:grid-cols-2 lg:grid lg:grid-cols-[repeat(2,minmax(0,4fr))_repeat(2,minmax(0,5fr))] lg:[&>div]:px-5',
+);
+
+/**
+ * The anchoring statistics, one segmented view per NFT kind (a view of one
+ * thing, not a second navigation row under the Statistics tabs): the kind's
+ * own figures, each label explaining itself (the anchored counts of both
+ * kinds lead the page above), then the actions, anchored NFTs and
+ * anchor-holders ledgers as sections. While the dashboard loads each figure
+ * holds a skeleton; one it could not read is the Unavailable dash.
+ */
+export function AnchoringSection({
+  cstStats,
+  rwlkStats,
+  statsLoading = false,
+  cstAnchorActions,
+  rwlkAnchorActions,
+  anchoredCSTokens,
+  anchoredRWLKTokens,
+  uniqueCSTAnchorHolders,
+  uniqueRWLKAnchorHolders,
+}: AnchoringSectionProps) {
+  const t = useTranslations('statistics');
+  const format = useFormat();
+  const pending = <Skeleton className="h-7 w-20" />;
+  const count = (value: number | undefined) =>
+    statsLoading ? pending : typeof value === 'number' ? format.count(value) : null;
+  const eth = (value: number | undefined) =>
+    statsLoading ? pending : typeof value === 'number' ? <Amount value={value} unit="ETH" /> : null;
+
+  // Each label explains itself (the one definition mechanism of the page's figures), so the
+  // tabs need no separate Definitions disclosure.
+  const cstFigures: PageHeaderFigure[] = [
+    {
+      id: 'activeHolders',
+      label: t('anchoringPage.stats.activeHoldersCosmicSignature'),
+      info: t('anchoringTooltips.cstActiveAnchorHolders'),
+      value: count(cstStats?.NumActiveStakers),
+    },
+    {
+      id: 'deposits',
+      label: t('anchoringPage.stats.distributionDeposits'),
+      info: t('anchoringTooltips.cstAnchorDistributionDeposits'),
+      value: count(cstStats?.NumDeposits),
+    },
+    {
+      id: 'totalDistributions',
+      label: t('anchoringPage.stats.totalDistributions'),
+      info: t('anchoringTooltips.cstTotalAnchorDistributions'),
+      value: eth(cstStats?.TotalRewardEth),
+    },
+    {
+      id: 'unretrieved',
+      label: t('anchoringPage.stats.unretrievedDistributions'),
+      info: t('anchoringTooltips.cstUnretrievedAnchorDistributions'),
+      value: eth(cstStats?.UnclaimedRewardEth),
+    },
+  ];
+
+  const rwlkFigures: PageHeaderFigure[] = [
+    {
+      id: 'activeHolders',
+      label: t('anchoringPage.stats.activeHoldersRandomWalk'),
+      info: t('anchoringTooltips.rwlkActiveAnchorHolders'),
+      value: count(rwlkStats?.NumActiveStakers),
+    },
+    {
+      id: 'tokensImprinted',
+      label: t('anchoringPage.stats.tokensImprinted'),
+      info: t('anchoringTooltips.rwlkTotalTokensImprinted'),
+      value: count(rwlkStats?.TotalTokensMinted),
+    },
+  ];
+
+  return (
+    <Tabs defaultValue="cst" className="mt-10">
+      <TabsList aria-label={t('anchoringPage.tabs.label')}>
+        <TabsTrigger value="cst">{t('anchoringPage.tabs.cosmicSignature')}</TabsTrigger>
+        <TabsTrigger value="rwlk">{t('anchoringPage.tabs.randomWalk')}</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="cst" className="mt-8 space-y-12 sm:space-y-16">
+        {/* A wrapper takes the tab's rhythm: the strip's own negative margin would cancel it. */}
+        <div>
+          <PageHeaderFigures figures={cstFigures} className={CST_FIGURES_LAYOUT} />
+        </div>
+
+        <AnchoringTableSection
+          title={t('anchoringPage.tables.actions')}
+          tooltip={t('sectionTooltips.anchorReleaseActions')}
+          state={cstAnchorActions}
+          emptyTitle={t('anchoringPage.empty.actions')}
+        >
+          <GlobalAnchorActionsTable list={cstAnchorActions.data ?? []} IsRWLK={false} />
+        </AnchoringTableSection>
+
+        <AnchoringTableSection
+          title={t('anchoringPage.tables.anchoredTokens')}
+          tooltip={t('sectionTooltips.anchoredTokens')}
+          state={anchoredCSTokens}
+          emptyTitle={t('anchoringPage.empty.tokens')}
+        >
+          <GlobalAnchoredTokensTable list={anchoredCSTokens.data ?? []} IsRWLK={false} />
+        </AnchoringTableSection>
+
+        <AnchoringTableSection
+          title={t('anchoringPage.tables.uniqueHolders')}
+          tooltip={t('sectionTooltips.uniqueAnchorHolders')}
+          state={uniqueCSTAnchorHolders}
+          emptyTitle={t('anchoringPage.empty.holders')}
+        >
+          <AnchorHoldersTable
+            collection="cosmicSignature"
+            list={uniqueCSTAnchorHolders.data ?? []}
+          />
+        </AnchoringTableSection>
+      </TabsContent>
+
+      <TabsContent value="rwlk" className="mt-8 space-y-12 sm:space-y-16">
+        <div>
+          <PageHeaderFigures figures={rwlkFigures} className={FIGURES_LAYOUT} />
+        </div>
+
+        <AnchoringTableSection
+          title={t('anchoringPage.tables.actions')}
+          tooltip={t('sectionTooltips.anchorReleaseActions')}
+          state={rwlkAnchorActions}
+          emptyTitle={t('anchoringPage.empty.actions')}
+        >
+          <GlobalAnchorActionsTable list={rwlkAnchorActions.data ?? []} IsRWLK={true} />
+        </AnchoringTableSection>
+
+        <AnchoringTableSection
+          title={t('anchoringPage.tables.anchoredTokens')}
+          tooltip={t('sectionTooltips.anchoredTokens')}
+          state={anchoredRWLKTokens}
+          emptyTitle={t('anchoringPage.empty.tokens')}
+        >
+          <GlobalAnchoredTokensTable list={anchoredRWLKTokens.data ?? []} IsRWLK={true} />
+        </AnchoringTableSection>
+
+        <AnchoringTableSection
+          title={t('anchoringPage.tables.uniqueHolders')}
+          tooltip={t('sectionTooltips.uniqueAnchorHolders')}
+          state={uniqueRWLKAnchorHolders}
+          emptyTitle={t('anchoringPage.empty.holders')}
+        >
+          <AnchorHoldersTable collection="randomWalk" list={uniqueRWLKAnchorHolders.data ?? []} />
+        </AnchoringTableSection>
+      </TabsContent>
+    </Tabs>
+  );
+}

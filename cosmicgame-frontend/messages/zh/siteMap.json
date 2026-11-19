@@ -1,0 +1,23 @@
+{
+  "page": {
+    "title": "网站地图",
+    "subtitle": "Cosmic Signature 的所有页面，按菜单的分组排列。",
+    "home": "首页",
+    "jsonLdName": "Cosmic Signature 网站地图"
+  },
+  "sections": {
+    "participate": "在进行中的周期落笔，以及铭刻 Random Walk NFT。",
+    "collection": "每一件签名作品，以及过程中被命名、附加和使用的 NFT。",
+    "explore": "进行中周期的全貌，以及按主题查看的协议全局数据。",
+    "records": "每个周期的储备去向：分配、锚定、推广与公共物品。",
+    "learn": "从第一次落笔到白皮书，了解协议如何运作。",
+    "trust": "验证、审计、风险披露与法律条款。",
+    "account": "你的统计、分配、NFT 与锚定。连接钱包后即可查看。",
+    "ecosystem": "围绕 Cosmic Signature 构建的独立服务，将在新标签页中打开。",
+    "community": "社区交流的地方，以及公共物品分配的去向。"
+  },
+  "guides": {
+    "title": "指南",
+    "description": "{host} 上的学习文章：协议、艺术与参与方式。"
+  }
+}

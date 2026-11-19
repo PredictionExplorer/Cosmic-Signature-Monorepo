@@ -1,0 +1,478 @@
+import { chaosZeroParagraphs } from '@/content/chaos-zero/text.en';
+import { AUDIT_FINDINGS_TOTAL, HACKEN_AUDIT } from '@/content/legal/audit';
+
+import type { LearnText } from './structure';
+
+/** English learn copy, keyed by the skeleton in structure.ts. */
+export const learnTextEn = {
+  hub: {
+    meta: {
+      title: 'Learn Cosmic Signature | On-Chain Art, Performance Cycles, and Arbitrum',
+      description:
+        'Learn how Cosmic Signature works: Performance Cycles, gestures, CST, three-body NFT art, Arbitrum contracts, anchoring, Public Goods, and risk clarifications.',
+    },
+    h1: 'Learn Cosmic Signature',
+    intro:
+      'Explore how Cosmic Signature works, from your first gesture to the three-body physics behind each artwork. These guides explain Performance Cycles, protocol rules, and the records you can inspect on Arbitrum.',
+    breadcrumbs: {
+      homeLabel: 'Cosmic Signature',
+      learnLabel: 'Learn',
+    },
+    groups: {
+      start: {
+        title: 'Start here',
+        description:
+          'Four guides on what the protocol is, how a cycle runs, what a gesture does and where the art comes from.',
+      },
+      mechanics: {
+        title: 'How it runs',
+        description:
+          'The chain it runs on, its contracts, CST and the Cosmic Council, and anchoring.',
+      },
+      context: {
+        title: 'Context',
+        description:
+          'Public Goods, where the art is collected and traded, and what the protocol is not.',
+      },
+    },
+    whitePaper: {
+      eyebrow: 'The full reference',
+      readLabel: 'Read the white paper',
+    },
+    quizCta: {
+      heading: 'Think you know the protocol?',
+      body: 'One hundred questions in three tiers, based on the white paper. Every answer explains the rule behind it and points to the section that settles it.',
+      linkLabel: 'Take the quiz',
+    },
+  },
+  articleUi: {
+    breadcrumbs: {
+      homeLabel: 'Cosmic Signature',
+      learnLabel: 'Learn',
+    },
+    guideTemplate: 'Guide {number} of {total}',
+    readingTimeTemplate: '{minutes} min read',
+    nextGuideLabel: 'Next guide',
+    contents: {
+      railLabel: 'On this page',
+      openLabel: 'Contents',
+      backToTopLabel: 'Back to top',
+    },
+    headingLinkTemplate: 'Link to this section: {title}',
+    relatedResourcesHeading: 'Related resources',
+    contractsFigure: {
+      title: 'The core contracts on Arbitrum One',
+      caption:
+        'Each address opens on Arbiscan. The contracts page lists every official address, the vaults and wallets included.',
+    },
+  },
+  articles: {
+    'what-is-cosmic-signature': {
+      cardTitle: 'What the protocol is',
+      cardDescription:
+        'Procedural art on Arbitrum, shaped by the gestures of each Performance Cycle.',
+      title: 'What Is Cosmic Signature? | Cosmic Signature',
+      description:
+        'Cosmic Signature is a procedural on-chain art protocol on Arbitrum where Performance Cycle gestures shape deterministic three-body NFT artwork.',
+      h1: 'What is Cosmic Signature?',
+      summary:
+        'Cosmic Signature is a procedural on-chain art protocol on Arbitrum. Participants make gestures during Performance Cycles, and those gestures shape deterministic Cosmic Signature NFT artwork generated from on-chain data.',
+      sections: [
+        {
+          heading: 'The short definition',
+          body: [
+            'Cosmic Signature combines public blockchain participation, deterministic art generation, and protocol allocations. The protocol runs on Arbitrum, an Ethereum Layer 2 network, so the important actions and records are visible on-chain.',
+            'Each Performance Cycle gathers gestures. When the cycle finalizes, the final Signature is imprinted as NFT artwork and the Cycle Reserve is distributed across protocol-defined allocation tracks, including a public-goods allocation currently directed to Protocol Guild.',
+          ],
+        },
+        {
+          heading: 'Why the name matters',
+          body: [
+            'The word Signature refers to the final artwork produced by a cycle. Every gesture influences the cycle context that ultimately becomes part of the protocol history around that Signature.',
+          ],
+        },
+        {
+          heading: 'What makes the protocol distinct',
+          body: [
+            'Each cycle connects public on-chain actions with artwork and allocations. Its final Signature reflects a shared process whose history remains open for anyone to inspect.',
+            'The app brings these records together: Performance Cycles, Signature artwork, Cosmic Signature NFTs, CST, anchoring, the Cosmic Council, and Public Goods Allocations. Each is linked to activity recorded on Arbitrum.',
+          ],
+        },
+        {
+          heading: 'How to read the public data',
+          body: [
+            'In the app you can follow the current cycle, statistics, allocation recipients, contract addresses, gallery records and contribution histories, all without connecting a wallet: every figure comes from public records on Arbitrum.',
+            'Read a rule here, then open the app to see how it applies to the live cycle: the Gesture Cost right now, the time left, and everything recorded so far.',
+          ],
+        },
+      ],
+    },
+    'how-the-performance-cycle-works': {
+      cardTitle: 'The Performance Cycle',
+      cardDescription: 'How a cycle opens, runs on its clock, finalizes and allocates its reserve.',
+      title: 'How the Cosmic Signature Performance Cycle Works | Cosmic Signature',
+      description:
+        'Learn how Cosmic Signature Performance Cycles use Calibration Windows, gestures, finalization, and allocation tracks on Arbitrum.',
+      h1: 'How the Cosmic Signature Performance Cycle works',
+      summary:
+        'A Cosmic Signature Performance Cycle is the protocol window where gestures accumulate, timing evolves, and the final Signature Allocation is determined by on-chain rules.',
+      sections: [
+        {
+          heading: 'Cycle opening',
+          body: [
+            'A cycle opens at its on-chain activation time. The first gesture must use ETH and ends its opening ETH Calibration Window. The carried CST ceiling and decline rate determine the first CST window; V3 has no fixed reference duration for it.',
+            'The first gesture starts the deadline. Later gestures extend the stored deadline, including after expiry. ETH gestures can increase the CST decline rate subject to a minimum-window safeguard; CST gestures reduce that rate and restart the ceiling using the premium-free base cost and on-chain minimums.',
+          ],
+        },
+        {
+          heading: 'Finalization',
+          body: [
+            'When the Cycle Finalization Time expires, the participant who made the Final Gesture may finalize the cycle. After the exclusivity window, open finalization becomes available.',
+            'Finalization imprints the cycle result, updates protocol history, and distributes the Cycle Reserve across allocation tracks such as Signature Allocation, Anchor Distribution, Stellar Selection, and Public Goods Allocation.',
+          ],
+        },
+        {
+          heading: 'Why cycles are the core unit',
+          body: [
+            'A Performance Cycle gives Cosmic Signature a repeatable public rhythm. Instead of isolated actions with no context, each gesture belongs to a cycle that has an opening state, evolving timing, current cost, participation history, finalization window, and allocation outcome.',
+            'This structure is important for verification. A reader can inspect the current cycle while it is active, then return later to compare the finalized allocation records, gallery output, and statistics. The cycle number becomes the bridge between live participation and historical records.',
+          ],
+        },
+        {
+          heading: 'What changes during a cycle',
+          body: [
+            'Gesture Cost, Cycle Finalization Time, CST participation, public-goods accounting, and leader context can all change as the cycle progresses. These changes are recorded by the protocol and surfaced by app pages such as Current Cycle, Statistics, Allocation Recipients, and Coordination Changes.',
+            'When a cycle finalizes, the protocol stops treating it as live state and starts treating it as history. The final Signature, recipient records, allocation retrievals, attached NFTs, and public-goods contributions become part of the public archive that future participants can inspect.',
+          ],
+        },
+      ],
+    },
+    'how-gestures-work': {
+      cardTitle: 'How gestures work',
+      cardDescription:
+        'What an ETH or CST gesture costs, what it records and how it extends the clock.',
+      title: 'How Gestures Work in Cosmic Signature | Cosmic Signature',
+      description:
+        'Understand ETH gestures, CST gestures, Gesture Cost, Participation CST, and how gestures shape each Cosmic Signature Performance Cycle.',
+      h1: 'How gestures work in Cosmic Signature',
+      summary:
+        'A gesture is an on-chain participation action in Cosmic Signature. Gestures can be made with ETH or CST, and every gesture affects the active Performance Cycle.',
+      sections: [
+        {
+          heading: 'What a gesture does',
+          body: [
+            'A gesture records weighted selection participation and updates the stored deadline. V3 Participation CST is linear in elapsed time and is credited to the previous participant when the next gesture arrives. The opening gesture credits none; finalization does not settle an additional dynamic amount for the final participant.',
+            'ETH and CST base costs follow different paths. CST base cost declines using an on-chain rate; ETH and CST gestures adjust that rate. A CST gesture resets its ceiling from the largest of twice the premium-free base cost, the configured minimum, and the updated rate times the safeguard interval. Both currencies can carry a late premium, which does not increase later base costs or selection weights.',
+          ],
+        },
+        {
+          heading: 'Random Walk NFT attachments',
+          body: [
+            'A participant may attach an unused Random Walk NFT to an ETH gesture for a one-time Gesture Cost reduction. Random Walk NFTs can also be anchored for Anchored-NFT Stellar Selection eligibility.',
+            'Read the rules and inspect your NFT’s status before using it. Connect a wallet when you are ready to make a gesture or anchor an eligible NFT.',
+          ],
+        },
+        {
+          heading: 'Gestures as public signals',
+          body: [
+            'A gesture is a public protocol action. It records that a participant interacted with the active Performance Cycle, and it changes the cycle context that ultimately surrounds the final Signature. The gesture may use ETH or CST, but in both cases it is part of the public sequence of cycle activity.',
+            'Because gestures are on-chain, the app can show them as more than UI events. They can be connected to participant addresses, timing, CST participation, attached tokens, cycle extensions, and the later allocation history that explains how a cycle resolved.',
+          ],
+        },
+        {
+          heading: 'ETH, CST, and RandomWalk context',
+          body: [
+            'ETH gestures and CST gestures serve related but separate roles. ETH gestures contribute to the Cycle Reserve, while CST gestures express participation through the protocol token. The app labels both flows so participants can understand which asset is being used and how it affects the current cycle.',
+            'RandomWalk NFT attachments add another public context layer. An unused RandomWalk NFT can be attached for a one-time Gesture Cost reduction, and used RandomWalk NFTs are listed separately so the public record remains understandable after the moment of participation has passed.',
+          ],
+        },
+      ],
+    },
+    'three-body-nft-art': {
+      cardTitle: 'Three-body art',
+      cardDescription:
+        'How an on-chain seed, renderer revision and configuration produce three-body artwork.',
+      title: 'How Cosmic Signature Generates Three-Body NFT Art | Cosmic Signature',
+      description:
+        'A technical explanation of deterministic Cosmic Signature NFT artwork generated from on-chain seeds and three-body physics.',
+      h1: 'How Cosmic Signature generates three-body NFT art',
+      summary:
+        'Cosmic Signature NFTs are deterministic artwork generated from on-chain seeds and a reproducible three-body physics rendering pipeline.',
+      sections: [
+        {
+          heading: 'On-chain seed to deterministic render',
+          body: [
+            'Each NFT records a seed on-chain. The renderer creates images and videos off-chain using that seed, its software revision and configuration. Reproducing a published output requires the matching inputs and a compatible toolchain.',
+            'The art process simulates three celestial bodies under Newtonian gravity. Chaotic trajectories become spectral orbital trails, creating a recognizable visual identity for the protocol.',
+          ],
+        },
+        {
+          heading: 'Open and reproducible',
+          body: [
+            'The source includes manual reference-image checks. The current continuous-integration workflow does not compare generated frame hashes, and a seed alone does not identify every output-changing renderer option.',
+            'The artwork is dedicated to the public domain under CC0.',
+          ],
+        },
+        {
+          heading: 'Why determinism matters for art',
+          body: [
+            'The three-body system gives Cosmic Signature a visual language based on motion, gravity, and unstable trajectories. Determinism matters because the artwork should be reproducible from public inputs instead of relying on an opaque hosted renderer.',
+            'A deterministic pipeline lets collectors, developers, and researchers verify that a Signature image corresponds to the seed and rendering code. That is why the code page, gallery, token detail pages, and contract pages all support the same trust story.',
+          ],
+        },
+        {
+          heading: 'From cycle history to visual identity',
+          body: [
+            'The final Signature is not random decoration. It is the visual endpoint of a Performance Cycle, with the cycle history providing cultural and protocol context around the image. The artwork becomes the visible marker of a completed public process.',
+            'A token’s gallery page connects the artwork to its cycle, seed, and metadata. Those records let you trace the image back to the protocol activity and code that produced it.',
+          ],
+        },
+      ],
+    },
+    'cosmic-signature-on-arbitrum': {
+      cardTitle: 'Built on Arbitrum',
+      cardDescription: 'Why the protocol runs on Arbitrum, an Ethereum Layer 2 network.',
+      title: 'Cosmic Signature on Arbitrum | Cosmic Signature',
+      description:
+        'Why Cosmic Signature runs on Arbitrum and how the protocol uses Ethereum Layer 2 infrastructure for on-chain art.',
+      h1: 'Cosmic Signature on Arbitrum',
+      summary:
+        'Cosmic Signature runs on Arbitrum so gestures, cycles, NFT records, and allocations can be handled on an Ethereum Layer 2 network.',
+      sections: [
+        {
+          heading: 'Why Arbitrum',
+          body: [
+            'Arbitrum provides lower-cost execution while staying connected to Ethereum security. That matters for a protocol where participants may make repeated gestures and inspect public state.',
+            'The app links gestures, contracts, statistics, and gallery records to their underlying Arbitrum activity.',
+          ],
+        },
+        {
+          heading: 'Why the chain context is visible',
+          body: [
+            'Cosmic Signature identifies Arbitrum throughout the app because chain context is part of the protocol identity. Gestures, cycle records, contract addresses, CST, NFT ownership, and allocation retrievals all need a concrete network reference to be independently checked.',
+            'Use the [contracts page](contracts) to find deployment addresses and the [statistics page](statistics) to explore recorded activity. Together they connect the protocol’s rules to records you can verify.',
+          ],
+        },
+        {
+          heading: 'How app pages connect to Arbitrum records',
+          body: [
+            'App pages translate raw chain and API records into readable protocol language. Allocation pages explain recipients and cycle outcomes; anchoring pages explain token commitments; public-goods pages explain contribution and retrieval flows; the gallery explains token output.',
+            'These records are public. You can browse them and follow links to Arbitrum without connecting a wallet.',
+          ],
+        },
+      ],
+    },
+    'contracts-security-verification': {
+      cardTitle: 'Contracts and verification',
+      cardDescription:
+        'Where to find the contracts and source code, and how to verify them yourself.',
+      title: 'Cosmic Signature Contracts, Security, and Verification | Cosmic Signature',
+      description:
+        'Find the Cosmic Signature smart contract, source code, verification, and security context for the Arbitrum protocol.',
+      h1: 'Cosmic Signature contracts, security, and verification',
+      summary:
+        'Cosmic Signature runs on a small set of contracts on Arbitrum One. This guide names the core ones, shows how to check any of them yourself, and says what an independent audit has covered.',
+      sections: [
+        {
+          heading: 'The contracts behind the protocol',
+          body: [
+            'Cosmic Signature runs on Arbitrum One, chain ID 42161. Gestures, cycles and allocations all go through one contract, the Cosmic Signature Protocol, deployed as an upgradeable proxy: its address stays the same while its logic lives in the implementation contract the proxy points to. CST, both NFT collections and the Cosmic Council each have an address of their own.',
+            'The [contracts page](contracts) is the one list of official addresses, the vaults and wallets included. Treat any other address that presents itself as Cosmic Signature as unofficial.',
+          ],
+        },
+        {
+          heading: 'Check a contract yourself',
+          body: ['None of these steps needs a wallet.'],
+          steps: [
+            'Open the address from the [contracts page](contracts) on [Arbiscan](explorer), and confirm the network is Arbitrum One, not a test network.',
+            'Compare the current implementation with the [public repository](contractsRepository) and check its own [Sourcify record](sourcify). The October 21 V3 runtime matches the reviewed local production artifact, but Sourcify currently reports it as unverified; historical V2 verification is not evidence for V3.',
+            'For the protocol contract, open Read as Proxy: the implementation it names should be the implementation address on the contracts page.',
+            'Pick a record in the app, such as a gesture or an allocation, and find the same transaction among the contract’s transactions on the explorer.',
+          ],
+        },
+        {
+          heading: 'What has been audited',
+          body: [
+            `In late 2025, Hacken reviewed the production contracts: the core protocol that runs each cycle, the CST token, both NFT collections, the anchoring wallets, and the wallet and system management contracts. [The report](hackenReport), published in January 2026, lists ${AUDIT_FINDINGS_TOTAL} findings, none of them critical or high, and ${HACKEN_AUDIT.invariants.held} of the ${HACKEN_AUDIT.invariants.tested} invariants Hacken fuzz-tested held.`,
+            'The contracts repository also carries Certora Prover specifications, a Solidity SMTChecker configuration, Slither static analysis and a test suite, each linked from the [audits page](audits). They prove or test the properties they state, and no more.',
+            'The report covers its historical reviewed revision, not every later V2 or V3 change. The website, data service and art renderer were outside that audit scope. Source verification and test results establish specific properties; they do not remove risk. Read the [risk disclosures](riskDisclosures) before taking part.',
+          ],
+        },
+      ],
+    },
+    'cst-token-and-cosmic-council': {
+      cardTitle: 'CST and the Cosmic Council',
+      cardDescription: 'What CST is, how it is imprinted and how holders coordinate the protocol.',
+      title: 'CST and the Cosmic Council | Cosmic Signature',
+      description:
+        'Learn how CST tokens relate to gestures, protocol coordination, and the Cosmic Council.',
+      h1: 'CST and the Cosmic Council',
+      summary:
+        'CST is the Cosmic Signature ERC-20 token imprinted through participation and used for protocol coordination through the Cosmic Council.',
+      sections: [
+        {
+          heading: 'CST in the protocol',
+          body: [
+            'Gestures can imprint Participation CST, and CST can also be used as an alternative gesture currency through its own Calibration Window. CST spent on a gesture is burned \u2014 permanently removed from supply \u2014 rather than pooled.',
+            'V3 credits the full dynamic Participation CST amount to the previous participant when a later gesture arrives. It grows linearly with elapsed time. The first gesture creates none, and finalization does not pay a final dynamic amount. Fixed recognition and outreach allocations are separate.',
+            'CST expresses coordination weight in the Cosmic Council once delegated (holders can delegate to themselves), where participants coordinate protocol changes according to on-chain rules.',
+          ],
+        },
+        {
+          heading: 'CST as protocol context',
+          body: [
+            'CST is part of the participation and coordination layer of Cosmic Signature. It can be imprinted through gestures, used for CST gestures, and used to express Coordination Weight in the Cosmic Council. That makes it a protocol token, not an equity claim.',
+            'The app describes CST through operational terms because its purpose in the interface is participation, coordination, and protocol state. Public pages should explain where CST appears and what it does without implying price behavior.',
+          ],
+        },
+        {
+          heading: 'Coordination records',
+          body: [
+            'The Cosmic Council gives CST holders a way to coordinate protocol changes according to on-chain rules. Coordination Changes and related app pages make the history of parameter changes visible so readers can understand how the protocol evolves.',
+            'The Council acts through proposals and delegated historical CST weight, but can control only assets and permissions assigned to it. It does not currently own the core protocol. V3 does not automatically transfer or remove owner powers.',
+          ],
+        },
+      ],
+    },
+    'anchoring-nfts': {
+      cardTitle: 'Anchoring NFTs',
+      cardDescription:
+        'How anchored NFTs share each cycle’s Anchor Distribution, and how release works.',
+      title: 'Anchoring Cosmic Signature NFTs | Cosmic Signature',
+      description:
+        'How anchoring works for Cosmic Signature NFTs, ETH Anchor Distributions, and Random Walk NFT eligibility.',
+      h1: 'Anchoring Cosmic Signature NFTs',
+      summary:
+        'Anchoring connects NFTs back to the protocol: Cosmic Signature NFTs receive ETH Anchor Distributions, while RandomWalk NFTs enter Anchored-NFT Stellar Selection.',
+      sections: [
+        {
+          heading: 'Anchor Distributions',
+          body: [
+            'Cosmic Signature NFTs can be anchored to the protocol. Anchored Cosmic Signature NFTs share the ETH Anchor Distribution for a cycle according to the protocol rules, and the accumulated ETH is retrieved when the anchor is released.',
+            'Random Walk NFTs have a separate anchoring role for Anchored-NFT Stellar Selection eligibility; they do not receive ETH Anchor Distributions.',
+            'Each NFT \u2014 Cosmic Signature or Random Walk \u2014 can be anchored only once. Releasing an anchor returns the NFT and any accumulated distributions, but that NFT can never be anchored again.',
+          ],
+        },
+        {
+          heading: 'What anchoring makes public',
+          body: [
+            'Anchoring connects an NFT back to the protocol after it has been imprinted or acquired. Public anchoring pages show anchor and release actions, anchored token counts, distribution records, and related RandomWalk NFT activity.',
+            'You can inspect these records without connecting a wallet, including a token’s anchor history and any distributions associated with it.',
+          ],
+        },
+        {
+          heading: 'Cosmic Signature and RandomWalk roles',
+          body: [
+            'Cosmic Signature NFTs and RandomWalk NFTs have different anchoring contexts. Cosmic Signature NFTs connect to ETH Anchor Distributions, while RandomWalk NFTs can connect to selection eligibility and one-time ETH gesture discounts depending on their state.',
+            'Check which collection an NFT belongs to and whether it has been anchored before. Use the gallery and anchoring records to verify its status, and the current-cycle page to see the allocations available.',
+          ],
+        },
+      ],
+    },
+    'protocol-guild-public-goods': {
+      cardTitle: 'Public Goods and Protocol Guild',
+      cardDescription: 'How part of every Cycle Reserve reaches Ethereum’s core contributors.',
+      title: 'Cosmic Signature and Ethereum Public Goods | Cosmic Signature',
+      description:
+        'How Cosmic Signature routes a public-goods allocation to Protocol Guild, the funding mechanism for Ethereum core contributors.',
+      h1: 'Cosmic Signature and Ethereum Public Goods',
+      summary:
+        'Cosmic Signature allocates part of the reserve to a Public Goods Vault. Anyone can separately forward its balance to the configured beneficiary, currently Protocol Guild.',
+      sections: [
+        {
+          heading: 'Protocol Guild allocation',
+          body: [
+            'Protocol Guild supports Ethereum core contributors and is the current vault beneficiary. Finalization attempts the transfer to the vault; a separate permissionless transaction forwards the vault balance. The owner can change the beneficiary, and failed core-to-vault transfers can leave that share in the reserve.',
+            'Public Goods Allocation is one of the protocol’s allocation tracks. Its contribution and forwarding records are available in the app.',
+          ],
+        },
+        {
+          heading: 'Why Public Goods are part of the protocol',
+          body: [
+            'Public-goods forwarding is a protocol-level allocation track rather than an occasional marketing statement. A portion of the Cycle Reserve is directed to a public-goods beneficiary, currently Protocol Guild, according to the rules surfaced in the app.',
+            'The Public Goods pages show contributions, funds forwarded from the vault, and the beneficiary’s address. These records make the path from cycle participation to Ethereum infrastructure support visible.',
+          ],
+        },
+        {
+          heading: 'How to verify the public-goods flow',
+          body: [
+            'Use the public-goods contribution pages for deposited amounts and the retrieval page for funds forwarded from the vault. Use the contracts page for addresses and the statistics page for aggregate context.',
+            'A record of funds forwarded to Protocol Guild confirms the transfer. It does not establish any particular tax treatment or legal status.',
+          ],
+        },
+      ],
+    },
+    'collecting-and-trading-cosmic-signature': {
+      cardTitle: 'Collecting and trading',
+      cardDescription: 'Where the NFTs and CST trade, and what to check before you do.',
+      title: 'Collecting and Trading Cosmic Signature NFTs and CST | Cosmic Signature',
+      description:
+        'Where Cosmic Signature assets trade: the zero-fee Axiom Zero NFT marketplace, Uniswap CST swaps on Arbitrum, and the Chaos Zero prediction market for cycles.',
+      h1: 'Collecting and trading Cosmic Signature',
+      summary:
+        'Cosmic Signature NFTs trade on Axiom Zero, the zero-fee marketplace for fair-launch generative art on Arbitrum. CST trades on Uniswap, and Chaos Zero runs a prediction market on each Performance Cycle.',
+      sections: [
+        {
+          heading: 'Where the assets trade',
+          body: [
+            'Cosmic Signature NFTs are standard ERC-721 tokens on Arbitrum, and their primary marketplace is Axiom Zero. Axiom Zero is built for fair-launch generative art: it charges no platform fee, listings and sales settle directly on-chain in a single transaction, and sellers receive the full sale amount. The marketplace lists both Axiom Zero collections \u2014 Cosmic Signature and Random Walk \u2014 and reads every price it displays straight from verified marketplace contracts.',
+            'CST is a standard ERC-20 token and trades on Uniswap on Arbitrum. Because both assets follow open token standards, any Arbitrum marketplace or exchange that supports ERC-721 or ERC-20 can also handle them; always confirm contract addresses against the official contracts page before trading.',
+          ],
+        },
+        {
+          heading: 'The Chaos Zero prediction market',
+          body: chaosZeroParagraphs,
+        },
+        {
+          heading: 'Anchor status and collector context',
+          body: [
+            'Anchoring gives Cosmic Signature and Random Walk NFTs a second market-relevant property besides the artwork itself. Every NFT can be anchored to the protocol exactly once, ever, and releasing an anchor permanently ends that eligibility. A never-anchored token therefore keeps its one-time anchoring option open for its next owner, which is why collectors often value that status.',
+            'Axiom Zero reads anchor status live from the anchoring contracts and labels every token as never anchored or anchored, and each collection can be filtered by that status. This keeps the marketplace description of a token consistent with the on-chain anchoring records that the app itself displays.',
+          ],
+        },
+        {
+          heading: 'How to verify venues and addresses',
+          body: [
+            'Before trading, confirm the official contract addresses on the contracts page in the app and compare them with the collection or token pair you are viewing on a marketplace or exchange. Cosmic Signature links its ecosystem venues \u2014 Axiom Zero, Chaos Zero, and Uniswap \u2014 from the app header, footer, and site map so there is always an official navigation path to the correct destination.',
+            'Check that the CST address matches the published token contract. The outcome source reads the cycle statistics directly from Cosmic Signature on Arbitrum.',
+          ],
+        },
+      ],
+    },
+    // lexicon-allow-start: explicit denial language for crawler and compliance clarity.
+    'not-a-lottery-not-an-investment': {
+      cardTitle: 'What it is not',
+      cardDescription: 'What the protocol is not, and why the difference matters.',
+      title: 'Is Cosmic Signature a Lottery, Casino, or Investment? | Cosmic Signature',
+      description:
+        'Cosmic Signature is a procedural on-chain art protocol, not a lottery, casino, gambling product, or investment product.',
+      h1: 'Is Cosmic Signature a lottery, casino, or investment?',
+      summary:
+        'Cosmic Signature is a procedural on-chain art protocol. It is not a lottery, casino, gambling product, or investment product.',
+      sections: [
+        {
+          heading: 'Plain-language clarification',
+          body: [
+            'Participants make gestures during Performance Cycles. The protocol distributes allocations across defined tracks when a cycle finalizes. There is no house, no dealer, and no bet.',
+            'CST expresses participation and coordination weight within the protocol. It is not equity, profit share, dividend, or an investment contract. Cosmic Signature makes no representation about token price or future market behavior.',
+          ],
+        },
+        {
+          heading: 'What participation means',
+          body: [
+            'Participation is an interaction with an on-chain art protocol. It does not carry a promise of financial returns, and receiving an allocation does not create equity or dividend rights.',
+            'The positive definition remains the anchor: Cosmic Signature is a procedural on-chain art protocol. Participants make gestures, cycles finalize, deterministic artwork is imprinted, and allocations follow public protocol rules.',
+          ],
+        },
+        {
+          heading: 'How to read allocation language',
+          body: [
+            'Allocation language describes protocol distributions after a cycle finalizes. It does not describe profit share, dividend rights, equity, or promised financial return. Risk disclosures and terms should be read before participating.',
+            'You can read the rules, terms, and risk disclosures without connecting a wallet. Review them before deciding whether to participate.',
+          ],
+        },
+      ],
+    },
+    // lexicon-allow-end
+  },
+} satisfies LearnText;

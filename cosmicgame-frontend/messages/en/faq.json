@@ -1,0 +1,74 @@
+{
+  "hero": {
+    "title": "Cosmic Signature FAQ",
+    "breadcrumb": "FAQ",
+    "subtitle": "Everything you need to know about Cosmic Signature — from getting started to the finer protocol mechanics.",
+    "answerCount": "{count, plural, one {# answer} other {# answers}}",
+    "categoryCount": "{count, plural, one {# category} other {# categories}}"
+  },
+  "search": {
+    "placeholder": "Search questions…",
+    "ariaLabel": "Search frequently asked questions",
+    "clearAria": "Clear search",
+    "noResults": "No questions found. Try a different search term.",
+    "resultCount": "Showing {resultCount} of {totalCount} questions"
+  },
+  "navigation": {
+    "ariaLabel": "FAQ categories",
+    "heading": "On this page"
+  },
+  "category": {
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "expandAllAria": "Expand all questions in {category}",
+    "collapseAllAria": "Collapse all questions in {category}",
+    "copyLink": "Copy link",
+    "copied": "Copied",
+    "copyLinkAria": "Copy link to “{question}”",
+    "linkCopied": "Link copied"
+  },
+  "popular": {
+    "heading": "Popular questions"
+  },
+  "empty": {
+    "heading": "No questions found",
+    "description": "Try another word, or clear the search to see every question.",
+    "clearAction": "Clear the search"
+  },
+  "glossary": {
+    "title": "Glossary",
+    "description": "The coined terms used across Cosmic Signature, each defined once."
+  },
+  "contact": {
+    "heading": "Still have a question?",
+    "description": "Ask in Discord or on X. The community and the team read both.",
+    "x": "X (Twitter)",
+    "discord": "Discord"
+  },
+  "tooltips": {
+    "erc20": {
+      "term": "ERC-20",
+      "content": "A widely used Ethereum token standard for fungible (interchangeable) tokens."
+    },
+    "erc721": {
+      "term": "ERC-721",
+      "content": "The Ethereum token standard for non-fungible tokens (NFTs) — each token is unique."
+    },
+    "layer2": {
+      "term": "Layer 2",
+      "content": "A secondary protocol built on top of Ethereum that processes transactions faster and cheaper while inheriting Ethereum’s security."
+    },
+    "rollup": {
+      "term": "rollup",
+      "content": "A Layer 2 technique that bundles many transactions into one, dramatically reducing costs while keeping Ethereum-level security."
+    },
+    "randomWalkNft": {
+      "term": "Random Walk NFT",
+      "content": "A sister NFT collection. Attaching one to an ETH gesture grants a one-time 50% ETH Gesture Cost reduction."
+    },
+    "renounceOwnership": {
+      "term": "renouncing ownership",
+      "content": "An irreversible smart-contract action that permanently gives up the team’s ability to change protocol parameters."
+    }
+  }
+}

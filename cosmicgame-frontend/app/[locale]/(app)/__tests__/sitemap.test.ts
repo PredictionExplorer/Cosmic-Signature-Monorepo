@@ -1,0 +1,268 @@
+import sitemap from '@/app/sitemap';
+import { expectedLanguageAlternates } from '@/test-utils/i18n';
+
+import { routing, TRANSLATED_LOCALES } from '@/i18n/routing';
+
+let mockHost = 'app.cosmicsignature.com';
+
+jest.mock('next/headers', () => ({
+  headers: async () => ({
+    get: (name: string) => {
+      if (name === 'x-forwarded-host' || name === 'host') return mockHost;
+      return null;
+    },
+  }),
+}));
+
+describe('sitemap (host-aware)', () => {
+  describe('on landing host', () => {
+    beforeEach(() => {
+      mockHost = 'cosmicsignature.com';
+    });
+
+    it('returns a content sitemap for the apex landing host', async () => {
+      const entries = await sitemap();
+      expect(Array.isArray(entries)).toBe(true);
+      expect(entries.length).toBeGreaterThan(10);
+      const urls = entries.map((entry) => entry.url);
+      expect(urls).toContain('https://cosmicsignature.com');
+      expect(urls).toContain('https://cosmicsignature.com/about');
+      expect(urls).toContain('https://cosmicsignature.com/learn');
+      expect(urls).toContain('https://cosmicsignature.com/learn/what-is-cosmic-signature');
+    });
+
+    it('root uses landing base URL', async () => {
+      const entries = await sitemap();
+      expect(entries[0]!.url).toBe('https://cosmicsignature.com');
+    });
+
+    it('adds one alternate per locale plus x-default on the landing host', async () => {
+      const entries = await sitemap();
+      const learn = entries.find((entry) => entry.url === 'https://cosmicsignature.com/learn');
+      expect(learn?.alternates?.languages).toEqual(
+        expectedLanguageAlternates('https://cosmicsignature.com', '/learn'),
+      );
+
+      for (const entry of entries) {
+        for (const locale of TRANSLATED_LOCALES) {
+          expect(entry.alternates?.languages?.[locale]).toMatch(
+            new RegExp(`^https://cosmicsignature\\.com/${locale}(?:/|$)`),
+          );
+        }
+      }
+    });
+
+    it('emits reciprocal loc entries for every locale on the landing host', async () => {
+      const entries = await sitemap();
+      const urls = new Set(entries.map((entry) => entry.url));
+
+      for (const locale of TRANSLATED_LOCALES) {
+        expect(urls).toContain(`https://cosmicsignature.com/${locale}`);
+        expect(urls).toContain(`https://cosmicsignature.com/${locale}/about`);
+        expect(urls).toContain(`https://cosmicsignature.com/${locale}/learn`);
+      }
+
+      for (const entry of entries) {
+        const languages = entry.alternates?.languages;
+        for (const locale of routing.locales) expect(urls).toContain(languages?.[locale]);
+        expect(languages?.['x-default']).toBe(languages?.[routing.defaultLocale]);
+      }
+    });
+  });
+
+  describe('on app host', () => {
+    beforeEach(() => {
+      mockHost = 'app.cosmicsignature.com';
+    });
+
+    it('returns a full dApp sitemap', async () => {
+      const entries = await sitemap();
+      expect(Array.isArray(entries)).toBe(true);
+      expect(entries.length).toBeGreaterThan(20);
+    });
+
+    it('each entry has url, lastModified, changeFrequency, and priority', async () => {
+      const entries = await sitemap();
+      for (const entry of entries) {
+        expect(entry).toHaveProperty('url');
+        expect(entry).toHaveProperty('lastModified');
+        expect(entry).toHaveProperty('changeFrequency');
+        expect(entry).toHaveProperty('priority');
+        expect(entry.alternates?.languages).toEqual(
+          expect.objectContaining({
+            en: expect.stringMatching(/^https:\/\/app\.cosmicsignature\.com/),
+            'x-default': expect.stringMatching(/^https:\/\/app\.cosmicsignature\.com/),
+            ...Object.fromEntries(
+              TRANSLATED_LOCALES.map((locale) => [
+                locale,
+                expect.stringMatching(
+                  new RegExp(`^https://app\\.cosmicsignature\\.com/${locale}(?:/|$)`),
+                ),
+              ]),
+            ),
+          }),
+        );
+      }
+    });
+
+    it('uses locale-correct alternates for app routes', async () => {
+      const entries = await sitemap();
+      const gallery = entries.find(
+        (entry) => entry.url === 'https://app.cosmicsignature.com/gallery',
+      );
+      expect(gallery?.alternates?.languages).toEqual(
+        expectedLanguageAlternates('https://app.cosmicsignature.com', '/gallery'),
+      );
+    });
+
+    it('emits reciprocal loc entries for every locale on the app host', async () => {
+      const entries = await sitemap();
+      const urls = new Set(entries.map((entry) => entry.url));
+
+      for (const locale of TRANSLATED_LOCALES) {
+        expect(urls).toContain(`https://app.cosmicsignature.com/${locale}`);
+        expect(urls).toContain(`https://app.cosmicsignature.com/${locale}/gallery`);
+        expect(urls).toContain(`https://app.cosmicsignature.com/${locale}/statistics`);
+      }
+
+      for (const entry of entries) {
+        const languages = entry.alternates?.languages;
+        for (const locale of routing.locales) expect(urls).toContain(languages?.[locale]);
+        expect(languages?.['x-default']).toBe(languages?.[routing.defaultLocale]);
+      }
+    });
+
+    it('all URLs start with the app base URL', async () => {
+      const entries = await sitemap();
+      const baseUrl = 'https://app.cosmicsignature.com';
+      for (const entry of entries) {
+        expect(entry.url).toMatch(new RegExp(`^${baseUrl}`));
+      }
+    });
+
+    it('contains the home page', async () => {
+      const entries = await sitemap();
+      const urls = entries.map((e) => e.url);
+      expect(urls).toContain('https://app.cosmicsignature.com');
+    });
+
+    it('contains only cosmic-lexicon paths (no legacy URLs)', async () => {
+      const entries = await sitemap();
+      const urls = entries.map((e) => e.url);
+      // Cosmic-lexicon paths are present.
+      expect(urls).toContain('https://app.cosmicsignature.com/current-cycle');
+      expect(urls).toContain('https://app.cosmicsignature.com/anchoring');
+      expect(urls).toContain('https://app.cosmicsignature.com/allocation');
+      expect(urls).toContain('https://app.cosmicsignature.com/allocation-finalized');
+      expect(urls).toContain('https://app.cosmicsignature.com/coordination-changes');
+      expect(urls).toContain('https://app.cosmicsignature.com/eth-contribution');
+      expect(urls).toContain('https://app.cosmicsignature.com/public-goods-contributions-cg');
+      expect(urls).toContain(
+        'https://app.cosmicsignature.com/public-goods-contributions-voluntary',
+      );
+      expect(urls).toContain('https://app.cosmicsignature.com/public-goods-retrievals');
+      expect(urls).not.toContain('https://app.cosmicsignature.com/recipient-history');
+
+      // Legacy (pre-migration) paths are absent.
+      // lexicon-allow-start: legacy URL paths must literally appear here to verify they're absent from the sitemap
+      const legacyPaths = [
+        '/current-round',
+        '/staking',
+        '/prize',
+        '/my-winnings',
+        '/my-staking',
+        '/winning-history',
+        '/prize-claimed',
+        '/changed-parameters',
+        '/eth-donation',
+        '/charity-deposits-cg',
+        '/charity-deposits-voluntary',
+        '/charity-withdrawals',
+      ];
+      // lexicon-allow-end
+      for (const legacy of legacyPaths) {
+        expect(urls).not.toContain(`https://app.cosmicsignature.com${legacy}`);
+      }
+    });
+
+    it('does not include user-scoped routes (they are per-wallet, not crawlable)', async () => {
+      const entries = await sitemap();
+      const urls = entries.map((e) => e.url);
+      // These are per-user pages; they should not appear in a public sitemap.
+      expect(urls).not.toContain('https://app.cosmicsignature.com/my-allocations');
+      expect(urls).not.toContain('https://app.cosmicsignature.com/my-anchors');
+      expect(urls).not.toContain('https://app.cosmicsignature.com/my-tokens');
+      expect(urls).not.toContain('https://app.cosmicsignature.com/my-statistics');
+    });
+
+    it('contains expected static pages', async () => {
+      const entries = await sitemap();
+      const urls = entries.map((e) => e.url);
+      expect(urls).toContain('https://app.cosmicsignature.com/gallery');
+      expect(urls).toContain('https://app.cosmicsignature.com/faq');
+      expect(urls).toContain('https://app.cosmicsignature.com/statistics');
+      expect(urls).toContain('https://app.cosmicsignature.com/contracts');
+      expect(urls).toContain('https://app.cosmicsignature.com/security');
+      expect(urls).toContain('https://app.cosmicsignature.com/audits');
+      expect(urls).toContain('https://app.cosmicsignature.com/risk-disclosures');
+      expect(urls).toContain('https://app.cosmicsignature.com/terms');
+      expect(urls).toContain('https://app.cosmicsignature.com/privacy');
+      expect(urls).not.toContain('https://app.cosmicsignature.com/source-code');
+    });
+
+    it('home page has highest priority', async () => {
+      const entries = await sitemap();
+      const home = entries.find((e) => e.url === 'https://app.cosmicsignature.com');
+      expect(home?.priority).toBe(1.0);
+    });
+
+    it('key content pages have high priority', async () => {
+      const entries = await sitemap();
+      const gallery = entries.find((e) => e.url === 'https://app.cosmicsignature.com/gallery');
+      const faq = entries.find((e) => e.url === 'https://app.cosmicsignature.com/faq');
+      const howToPlay = entries.find(
+        (e) => e.url === 'https://app.cosmicsignature.com/how-it-works',
+      );
+
+      expect(gallery?.priority).toBeGreaterThanOrEqual(0.8);
+      expect(faq?.priority).toBeGreaterThanOrEqual(0.8);
+      expect(howToPlay?.priority).toBeGreaterThanOrEqual(0.8);
+    });
+
+    it('uses variable change frequencies', async () => {
+      const entries = await sitemap();
+      const frequencies = new Set(entries.map((e) => e.changeFrequency));
+      expect(frequencies.size).toBeGreaterThan(1);
+    });
+
+    it('live data pages use hourly frequency', async () => {
+      const entries = await sitemap();
+      const home = entries.find((e) => e.url === 'https://app.cosmicsignature.com');
+      const gallery = entries.find((e) => e.url === 'https://app.cosmicsignature.com/gallery');
+      expect(home?.changeFrequency).toBe('hourly');
+      expect(gallery?.changeFrequency).toBe('hourly');
+    });
+
+    it('all entries have a Date for lastModified', async () => {
+      const entries = await sitemap();
+      for (const entry of entries) {
+        expect(entry.lastModified).toBeInstanceOf(Date);
+      }
+    });
+
+    it('priorities are between 0 and 1', async () => {
+      const entries = await sitemap();
+      for (const entry of entries) {
+        expect(entry.priority).toBeGreaterThanOrEqual(0);
+        expect(entry.priority).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it('uses route policy dates instead of request time for lastModified', async () => {
+      const entries = await sitemap();
+      for (const entry of entries) {
+        expect((entry.lastModified as Date).toISOString()).toBe('2026-07-20T00:00:00.000Z');
+      }
+    });
+  });
+});

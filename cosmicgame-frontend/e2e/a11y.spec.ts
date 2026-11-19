@@ -1,0 +1,280 @@
+import { test, expect, type Page } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+import { LOCALE_CHROME } from './locale-fixtures';
+import { mockZhQualityApi } from './zh-quality-mocks';
+
+/**
+ * Live-route a11y smoke check.
+ *
+ * Complements the jest-axe coverage at the component level (393 assertions,
+ * per the audit) by running the real page in a real browser — catches issues
+ * only visible after hydration: focus trap regressions, missing skip-link
+ * targets, ARIA live regions that only mount client-side.
+ *
+ * English coverage stays focused on high-traffic pages. Sprint 8 adds one
+ * deterministic Chinese page from every route cluster, plus translated-name
+ * assertions, while jest-axe continues to cover component primitives.
+ */
+
+const routes = [
+  { path: '/', label: 'Home' },
+  {
+    path: '/experimental-ui?uxScenario=live-mid-cycle',
+    label: 'Observatory art view',
+  },
+  { path: '/allocation', label: 'Allocation' },
+  { path: '/gallery', label: 'Gallery' },
+  { path: '/statistics', label: 'Statistics' },
+  { path: '/how-it-works', label: 'How it works' },
+  { path: '/faq', label: 'FAQ' },
+  { path: '/terms', label: 'Terms' },
+  { path: '/privacy', label: 'Privacy' },
+];
+
+// Rules we're tracking but not failing on today. Remove entries as Phase 3+
+// pages land redesigned. Keeping the list short + explicit avoids the trap
+// of a silent exclusion baseline.
+const disabledRules = [
+  'color-contrast', // MUI-era palette has a few edge cases; full audit in Phase 7
+];
+
+const LANDING_HEADERS = { 'X-Forwarded-Host': 'cosmicsignature.com' };
+const zhRoutes: ReadonlyArray<{
+  path: string;
+  label: string;
+  landing?: boolean;
+  assertAccessibleName: (page: Page) => Promise<void>;
+}> = [
+  {
+    path: '/zh/site-map',
+    label: 'global utility',
+    assertAccessibleName: async (page) =>
+      expect(page.getByRole('heading', { name: '网站地图' })).toBeVisible(),
+  },
+  {
+    path: '/zh/learn',
+    label: 'landing and Learn',
+    landing: true,
+    assertAccessibleName: async (page) =>
+      expect(page.getByRole('heading', { name: '了解 Cosmic Signature' })).toBeVisible(),
+  },
+  {
+    path: '/zh/gallery',
+    label: 'core dApp',
+    assertAccessibleName: async (page) =>
+      expect(page.getByRole('searchbox', { name: '搜索 NFT' })).toBeVisible(),
+  },
+  {
+    path: '/zh/anchoring',
+    label: 'transactions',
+    assertAccessibleName: async (page) =>
+      expect(page.getByRole('heading', { name: '锚定运作原理' })).toBeVisible(),
+  },
+  {
+    path: '/zh/statistics',
+    label: 'statistics',
+    assertAccessibleName: async (page) =>
+      expect(page.getByRole('heading', { name: '协议统计' })).toBeVisible(),
+  },
+  {
+    path: '/zh/faq',
+    label: 'FAQ and trust',
+    assertAccessibleName: async (page) =>
+      expect(page.getByRole('searchbox', { name: '搜索常见问题' })).toBeVisible(),
+  },
+  {
+    path: '/zh/eth-contribution',
+    label: 'long-tail contribution',
+    assertAccessibleName: async (page) =>
+      expect(page.getByRole('heading', { level: 1, name: '直接 ETH 贡献' })).toBeVisible(),
+  },
+];
+
+test.describe('A11y smoke (WCAG 2.1 AA)', () => {
+  for (const route of routes) {
+    test(`${route.label} has no serious/critical violations`, async ({ page }) => {
+      await page.goto(route.path, { waitUntil: 'domcontentloaded' });
+      // Wait for network-driven content so axe evaluates the post-hydrate DOM.
+      await page.waitForLoadState('networkidle').catch(() => {
+        /* some routes keep polling; swallow the timeout */
+      });
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .disableRules(disabledRules)
+        .analyze();
+
+      const seriousOrCritical = results.violations.filter(
+        (v) => v.impact === 'serious' || v.impact === 'critical',
+      );
+      expect(seriousOrCritical, JSON.stringify(seriousOrCritical, null, 2)).toEqual([]);
+    });
+  }
+
+  test('site chrome landmarks sit at the top level on both hosts and the 404', async ({
+    page,
+    context,
+  }) => {
+    // The landing header and footer once rendered inside <main>; the shells
+    // now own them on every page, the home and the 404 included.
+    for (const { path, landing } of [
+      { path: '/', landing: true },
+      { path: '/about', landing: true },
+      { path: '/learn/quality-assurance-not-found', landing: true },
+      { path: '/', landing: false },
+      { path: '/quality-assurance-route-not-found', landing: false },
+    ]) {
+      await context.setExtraHTTPHeaders(landing ? LANDING_HEADERS : {});
+      await page.goto(path, { waitUntil: 'domcontentloaded' });
+      await expect(page.getByRole('main')).toHaveCount(1);
+      const results = await new AxeBuilder({ page })
+        .withRules([
+          'landmark-banner-is-top-level',
+          'landmark-contentinfo-is-top-level',
+          'landmark-main-is-top-level',
+          'landmark-no-duplicate-banner',
+          'landmark-no-duplicate-contentinfo',
+          'landmark-no-duplicate-main',
+        ])
+        .analyze();
+      expect(
+        results.violations,
+        `${landing ? 'landing' : 'app'} ${path}: ${JSON.stringify(results.violations, null, 2)}`,
+      ).toEqual([]);
+    }
+  });
+
+  test('skip link jumps to #main on Tab+Enter', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    // First Tab focuses the skip link (it's the first focusable in the tree).
+    await page.keyboard.press('Tab');
+    const skipLink = page.getByRole('link', { name: /skip to main/i });
+    await expect(skipLink).toBeFocused();
+    // Activating it should move focus to #main.
+    await page.keyboard.press('Enter');
+    const main = page.locator('#main:visible').first();
+    await expect(main).toBeVisible();
+  });
+
+  for (const route of zhRoutes) {
+    test(`Chinese ${route.label} page has no serious/critical violations`, async ({
+      context,
+      page,
+    }) => {
+      await context.setExtraHTTPHeaders(route.landing ? LANDING_HEADERS : {});
+      await mockZhQualityApi(page);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto(route.path, { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
+      await route.assertAccessibleName(page);
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .disableRules(disabledRules)
+        .analyze();
+      const seriousOrCritical = results.violations.filter(
+        (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+      );
+      expect(seriousOrCritical, JSON.stringify(seriousOrCritical, null, 2)).toEqual([]);
+    });
+  }
+
+  test('Chinese skip link exposes its translated accessible name', async ({ page }) => {
+    await mockZhQualityApi(page);
+    await page.goto('/zh/faq', { waitUntil: 'domcontentloaded' });
+    await page.keyboard.press('Tab');
+    const skipLink = page.getByRole('link', { name: '跳至主要内容' });
+    await expect(skipLink).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#main:visible').first()).toBeVisible();
+  });
+
+  const ukRoutes: ReadonlyArray<{
+    path: string;
+    label: string;
+    landing?: boolean;
+    assertAccessibleName: (page: Page) => Promise<void>;
+  }> = [
+    {
+      path: '/uk/site-map',
+      label: 'global utility',
+      assertAccessibleName: async (page) =>
+        expect(page.getByRole('heading', { name: LOCALE_CHROME.uk.siteMap.heading })).toBeVisible(),
+    },
+    {
+      path: '/uk/learn',
+      label: 'landing and Learn',
+      landing: true,
+      assertAccessibleName: async (page) =>
+        expect(
+          page.getByRole('heading', { name: 'Дізнайтеся, як працює Cosmic Signature' }),
+        ).toBeVisible(),
+    },
+    {
+      path: '/uk/gallery',
+      label: 'core dApp',
+      assertAccessibleName: async (page) =>
+        expect(page.getByRole('searchbox', { name: 'Пошук NFT' })).toBeVisible(),
+    },
+    {
+      path: '/uk/anchoring',
+      label: 'transactions',
+      assertAccessibleName: async (page) =>
+        expect(page.getByRole('heading', { name: 'Як працює закріплення' })).toBeVisible(),
+    },
+    {
+      path: '/uk/statistics',
+      label: 'statistics',
+      assertAccessibleName: async (page) =>
+        expect(page.getByRole('heading', { name: 'Статистика протоколу' })).toBeVisible(),
+    },
+    {
+      path: '/uk/faq',
+      label: 'FAQ and trust',
+      assertAccessibleName: async (page) =>
+        expect(
+          page.getByRole('searchbox', { name: 'Пошук серед поширених запитань' }),
+        ).toBeVisible(),
+    },
+    {
+      path: '/uk/eth-contribution',
+      label: 'long-tail contribution',
+      assertAccessibleName: async (page) =>
+        expect(page.getByRole('heading', { level: 1, name: 'Прямі внески ETH' })).toBeVisible(),
+    },
+  ];
+
+  for (const route of ukRoutes) {
+    test(`Ukrainian ${route.label} page has no serious/critical violations`, async ({
+      context,
+      page,
+    }) => {
+      await context.setExtraHTTPHeaders(route.landing ? LANDING_HEADERS : {});
+      await mockZhQualityApi(page);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto(route.path, { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('html')).toHaveAttribute('lang', 'uk');
+      await route.assertAccessibleName(page);
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .disableRules(disabledRules)
+        .analyze();
+      const seriousOrCritical = results.violations.filter(
+        (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+      );
+      expect(seriousOrCritical, JSON.stringify(seriousOrCritical, null, 2)).toEqual([]);
+    });
+  }
+
+  test('Ukrainian skip link exposes its translated accessible name', async ({ page }) => {
+    await mockZhQualityApi(page);
+    await page.goto('/uk/faq', { waitUntil: 'domcontentloaded' });
+    await page.keyboard.press('Tab');
+    const skipLink = page.getByRole('link', { name: LOCALE_CHROME.uk.skipLink });
+    await expect(skipLink).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#main:visible').first()).toBeVisible();
+  });
+});

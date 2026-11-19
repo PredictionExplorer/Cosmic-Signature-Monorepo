@@ -1,0 +1,81 @@
+{
+  "tools": {
+    "label": "營運工具",
+    "moderation": "留言審核",
+    "settings": "合約設定",
+    "outreachTransfer": "推廣轉帳"
+  },
+  "wallet": {
+    "connected": "已連接錢包",
+    "notConnected": "未連接錢包",
+    "restoring": "正在恢復錢包連接…",
+    "rolesLabel": "此錢包的鏈上角色",
+    "rolesError": "未能讀取其鏈上角色。",
+    "rolesPartial": "部分鏈上角色未能讀取。",
+    "roles": {
+      "protocolOwner": "協議所有者",
+      "outreachOwner": "推廣儲備所有者",
+      "outreachTreasurer": "推廣儲備財務執行人",
+      "none": "沒有鏈上角色"
+    }
+  },
+  "moderation": {
+    "title": "落筆留言審核",
+    "subtitle": "在本站隱藏或恢復落筆留言。隱藏的留言仍保留在鏈上，只是本站不再顯示。",
+    "heading": "落筆留言",
+    "description": "所有附帶留言的落筆。可按可見性、週期或文字篩選。",
+    "readOnly": "只讀。連接審核員錢包後即可隱藏或恢復留言。",
+    "noRole": "此錢包沒有鏈上營運角色，因此無法隱藏或恢復留言。請連接營運錢包後再審核留言。",
+    "loadError": "未能載入落筆留言。",
+    "clearSearch": "清除搜尋"
+  },
+  "settings": {
+    "title": "合約設定",
+    "subtitle": "控制面板提供的協議合約地址與參數。只讀：只有協議所有者能在鏈上更改這些數值。",
+    "loadError": "未能載入合約設定。",
+    "contractsDescription": "每個協議合約，附 Arbiscan 上的地址；已驗證的合約另附 Sourcify 上的源代碼。",
+    "groups": {
+      "contracts": "合約",
+      "cost": "落筆價格"
+    },
+    "values": {
+      "divisorPercent": "{percent}（除數 {divisor}）"
+    },
+    "status": {
+      "active": "已啟用",
+      "scheduled": "待啟用"
+    },
+    "fields": {
+      "timeIncrease": "時間增量的每週期增幅",
+      "activationTime": "啟用時間",
+      "calibrationWindowLength": "週期開啟時 CST 校準窗口時長"
+    }
+  },
+  "outreachTransfer": {
+    "title": "CST 推廣轉帳",
+    "subtitle": "從推廣儲備向參與者轉出 CST。只有推廣儲備的財務執行人錢包可以轉出。",
+    "treasurer": "財務執行人",
+    "owner": "所有者",
+    "walletRequiredTitle": "連接財務執行人錢包以轉出 CST",
+    "walletRequiredDescription": "連接後，此頁會顯示推廣儲備的餘額；如屬財務執行人，更會顯示轉出 CST 的表格。",
+    "walletUnavailableTitle": "推廣儲備地址暫不可用",
+    "walletUnavailableDescription": "控制面板尚未提供推廣儲備的地址，請稍後重新載入頁面。",
+    "rolesErrorTitle": "未能讀取推廣儲備的角色",
+    "rolesErrorDescription": "沒有財務執行人的地址，本頁無法判斷此錢包能否轉出。",
+    "restrictedTitle": "此錢包不是財務執行人",
+    "restrictedDescription": "只有推廣儲備的財務執行人才能從中轉出 CST。請連接財務執行人錢包後繼續。",
+    "form": {
+      "title": "轉出 CST",
+      "description": "一筆交易即把該數額從推廣儲備轉給接收方，而且無法撤銷。",
+      "submit": "轉出 CST",
+      "reserveHeading": "推廣儲備",
+      "reserve": "儲備地址",
+      "balance": "CST 餘額",
+      "history": "推廣儲備轉帳記錄",
+      "balanceError": "未能讀取推廣儲備的 CST 餘額。",
+      "confirmed": "已從推廣儲備轉出 CST。",
+      "failed": "CST 未能轉出。請檢查錢包後再試。",
+      "sendAmount": "轉出 {amount}"
+    }
+  }
+}

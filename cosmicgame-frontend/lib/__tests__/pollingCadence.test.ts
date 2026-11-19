@@ -1,0 +1,79 @@
+import {
+  FINAL_SPRINT_INTERVAL_MS,
+  PAST_DEADLINE_FAST_WINDOW_MS,
+  getLiveDataPollIntervalMs,
+  getRemainingMsFromServerClock,
+  getRemainingMsToAllocationTime,
+} from '../pollingCadence';
+
+describe('getLiveDataPollIntervalMs', () => {
+  const BASE = 12_000;
+
+  it('uses the base cadence when no deadline is known', () => {
+    expect(getLiveDataPollIntervalMs(null, BASE)).toBe(BASE);
+    expect(getLiveDataPollIntervalMs(undefined, BASE)).toBe(BASE);
+    expect(getLiveDataPollIntervalMs(Number.NaN, BASE)).toBe(BASE);
+  });
+
+  it('uses the base cadence far from the deadline', () => {
+    expect(getLiveDataPollIntervalMs(11 * 60_000, BASE)).toBe(BASE);
+    expect(getLiveDataPollIntervalMs(24 * 60 * 60_000, BASE)).toBe(BASE);
+  });
+
+  it('ramps up as the deadline approaches', () => {
+    expect(getLiveDataPollIntervalMs(9 * 60_000, BASE)).toBe(6_000);
+    expect(getLiveDataPollIntervalMs(90_000, BASE)).toBe(3_000);
+    expect(getLiveDataPollIntervalMs(20_000, BASE)).toBe(FINAL_SPRINT_INTERVAL_MS);
+    expect(getLiveDataPollIntervalMs(1_000, BASE)).toBe(FINAL_SPRINT_INTERVAL_MS);
+  });
+
+  it('stays fast briefly after the deadline, then relaxes', () => {
+    expect(getLiveDataPollIntervalMs(0, BASE)).toBe(FINAL_SPRINT_INTERVAL_MS);
+    expect(getLiveDataPollIntervalMs(-30_000, BASE)).toBe(FINAL_SPRINT_INTERVAL_MS);
+    expect(getLiveDataPollIntervalMs(-(PAST_DEADLINE_FAST_WINDOW_MS + 1), BASE)).toBe(BASE);
+  });
+
+  it('never polls slower than the base cadence', () => {
+    expect(getLiveDataPollIntervalMs(9 * 60_000, 2_000)).toBe(2_000);
+  });
+});
+
+describe('getRemainingMsFromServerClock', () => {
+  it('ignores host/chain epoch skew and subtracts elapsed receipt time', () => {
+    expect(
+      getRemainingMsFromServerClock({
+        targetServerTimeSec: 200_030,
+        currentServerTimeSec: 200_000,
+        sampledAtMs: 1_000,
+        nowMs: 6_000,
+      }),
+    ).toBe(25_000);
+  });
+
+  it('returns null when either server timestamp is unavailable', () => {
+    expect(
+      getRemainingMsFromServerClock({
+        targetServerTimeSec: 200_030,
+        currentServerTimeSec: undefined,
+        sampledAtMs: 1_000,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe('getRemainingMsToAllocationTime', () => {
+  const NOW = 1_700_000_000_000;
+
+  it('converts an epoch-seconds allocation time to remaining milliseconds', () => {
+    expect(getRemainingMsToAllocationTime(NOW / 1000 + 90, NOW)).toBe(90_000);
+    expect(getRemainingMsToAllocationTime(NOW / 1000 - 5, NOW)).toBe(-5_000);
+  });
+
+  it('returns null for absent or invalid values', () => {
+    expect(getRemainingMsToAllocationTime(undefined, NOW)).toBeNull();
+    expect(getRemainingMsToAllocationTime(null, NOW)).toBeNull();
+    expect(getRemainingMsToAllocationTime(0, NOW)).toBeNull();
+    expect(getRemainingMsToAllocationTime('123', NOW)).toBeNull();
+    expect(getRemainingMsToAllocationTime(Number.NaN, NOW)).toBeNull();
+  });
+});

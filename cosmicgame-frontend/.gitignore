@@ -1,0 +1,64 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# Yarn Berry
+.yarn/cache
+.yarn/install-state.gz
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+.vercel
+
+# contract type generation
+/contracts/types
+
+# typescript
+tsconfig.tsbuildinfo
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+
+# local game-state harness runtime (logs, pids, generated configs, deploy report)
+/.harness/
+
+# AI tooling
+.claude/
+
+# marketing assets — local only
+/marketing/
+
+# SWC compiler cache
+.swc/
+
+# IDE
+.vscode/
+.idea/

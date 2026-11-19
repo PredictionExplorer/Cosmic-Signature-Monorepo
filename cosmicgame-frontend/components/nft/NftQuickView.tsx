@@ -1,0 +1,256 @@
+'use client';
+
+import { useMemo, useRef, type KeyboardEvent } from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+
+import { getSpectralSweepUrl } from '@/utils/urls';
+import { formatCount } from '@/utils/format';
+import { formatId } from '@/utils/format/ids';
+import type { CollectionTraits } from '@/hooks/useNftTraits';
+import type { CategoricalTraitKey } from '@/lib/nftMetadata';
+import { AnchoringIcon } from '@/lib/conceptIcons';
+import { Link } from '@/i18n/navigation';
+import { WallLabelMeta } from '@/components/ui/art-frame';
+import { signatureMedia, useSignatureAlt } from '@/components/nft/signatureArt';
+import { useSignatureArtLabel } from '@/components/nft/useSignatureArtLabel';
+import { SignatureViewer } from '@/components/nft/SignatureViewer';
+import { TraitSheet } from '@/components/nft/traits';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+
+/** The list fields the quick view needs for one token. */
+export interface NftQuickViewItem {
+  TokenId: number;
+  Seed?: string | number;
+  TokenName?: string;
+  /** Anchored right now: a quiet tag in the label. */
+  Staked?: boolean;
+  /** Imprint time (unix seconds), for the "Rendering" state of a fresh token. */
+  TimeStamp?: number;
+}
+
+/**
+ * Where the arrow keys belong to the focused control rather than to the
+ * dialog's previous / next: the media controls, fields, sliders and
+ * composite widgets that move their own selection.
+ */
+const ARROW_OWNING_SELECTOR = [
+  'video',
+  'audio',
+  'input',
+  'textarea',
+  'select',
+  '[contenteditable]:not([contenteditable="false"])',
+  '[role="slider"]',
+  '[role="radiogroup"]',
+  '[role="tablist"]',
+  '[role="listbox"]',
+  '[role="menu"]',
+].join(',');
+
+/** Props for {@link NftQuickView}. */
+export interface NftQuickViewProps {
+  /** Token to show; `null` keeps the dialog closed. */
+  tokenId: number | null;
+  /** Tokens reachable with the previous / next controls (usually the visible page). */
+  items: readonly NftQuickViewItem[];
+  onOpenChange: (open: boolean) => void;
+  onNavigate: (tokenId: number) => void;
+  /** `undefined` while the trait index loads, `null` when unavailable. */
+  collectionTraits: CollectionTraits | null | undefined;
+  /** Filter the gallery by a trait value (the dialog closes itself first). */
+  onSelectTrait?: (key: CategoricalTraitKey, value: string) => void;
+}
+
+/**
+ * NftQuickView — a Signature in focus without leaving the gallery. From `lg`
+ * the art hangs centred on the black ground of its own column (the plate
+ * never scrolls away), with the shared edition and media controls and previous /
+ * next beneath it; the label column scrolls on its own: the name, a caption
+ * (number, rarity, anchored), the way to the full page, and the same trait
+ * sheet the detail page shows. Below `lg` (where the trait tiles would be
+ * cramped beside the art) the two stack and the dialog scrolls. Arrow keys move through the current page; the sweep video is
+ * opt-in.
+ */
+export function NftQuickView({
+  tokenId,
+  items,
+  onOpenChange,
+  onNavigate,
+  collectionTraits,
+  onSelectTrait,
+}: NftQuickViewProps) {
+  const t = useTranslations('traits');
+  const locale = useLocale();
+  const signatureAlt = useSignatureAlt();
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  const index = useMemo(
+    () => items.findIndex((item) => item.TokenId === tokenId),
+    [items, tokenId],
+  );
+  const item = index >= 0 ? items[index] : undefined;
+  const previous = index > 0 ? items[index - 1] : undefined;
+  const next = index >= 0 && index < items.length - 1 ? items[index + 1] : undefined;
+
+  const open = tokenId !== null && item !== undefined;
+  const id = item ? formatId(item.TokenId) : '';
+  const name = item?.TokenName?.trim() || null;
+  const seed = item?.Seed ?? '';
+  const entry = collectionTraits?.byId.get(item?.TokenId ?? -1) ?? null;
+  const rarity = collectionTraits?.rarity.byId.get(item?.TokenId ?? -1) ?? null;
+  const rarityTotal = collectionTraits?.rarity.total ?? 0;
+  const media = signatureMedia(seed);
+  const alt = signatureAlt({ id, name, entry });
+  const { label: unavailableLabel, renderPending } = useSignatureArtLabel(item?.TimeStamp);
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const target = event.target;
+    if (target instanceof Element && target.closest('[role="dialog"]') !== event.currentTarget)
+      return;
+    if (target instanceof Element && target.closest(ARROW_OWNING_SELECTOR)) return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (event.key === 'ArrowLeft' && previous) {
+      event.preventDefault();
+      onNavigate(previous.TokenId);
+    } else if (event.key === 'ArrowRight' && next) {
+      event.preventDefault();
+      onNavigate(next.TokenId);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        onOpenAutoFocus={() => {
+          // This controlled dialog has gallery buttons outside DialogTrigger.
+          // Capture their focus before Radix moves it into the quick view.
+          returnFocusRef.current =
+            document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        }}
+        onCloseAutoFocus={(event) => {
+          if (!returnFocusRef.current?.isConnected) return;
+          event.preventDefault();
+          returnFocusRef.current.focus();
+        }}
+        onKeyDown={handleKeyDown}
+        className="flex max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-5xl flex-col gap-0 overflow-y-auto overscroll-contain border-rule bg-surface-raised p-0 shadow-float sm:rounded-surface lg:grid lg:h-[min(92dvh,46rem)] lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:overflow-hidden"
+        data-testid="nft-quick-view"
+      >
+        {item ? (
+          <>
+            <div className="flex min-w-0 flex-col justify-center gap-4 bg-surface p-3 sm:p-4 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain">
+              <SignatureViewer
+                key={item.TokenId}
+                tokenId={item.TokenId}
+                seed={seed}
+                media={media}
+                subject={name ?? t('quickView.title', { id })}
+                alt={alt}
+                tokenLabel={id}
+                unavailableLabel={unavailableLabel}
+                renderPending={renderPending}
+                sizes="(max-width: 1023px) 100vw, 36rem"
+                spectralSweepUrl={seed ? getSpectralSweepUrl(seed) : undefined}
+              />
+              <div className="flex items-center justify-end gap-1 border-t border-rule-faint pt-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={!previous}
+                  onClick={() => previous && onNavigate(previous.TokenId)}
+                  aria-label={t('quickView.previous')}
+                >
+                  <ArrowLeft aria-hidden className="rtl:-scale-x-100" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  disabled={!next}
+                  onClick={() => next && onNavigate(next.TokenId)}
+                  aria-label={t('quickView.next')}
+                >
+                  <ArrowRight aria-hidden className="rtl:-scale-x-100" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-6 p-5 sm:p-6 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain">
+              <div className="pe-10">
+                {/* The Radix title itself: the shadcn wrapper's text-lg / font-semibold
+                    defaults would outrank the display type (Clash at 24px, never bold). */}
+                <DialogPrimitive.Title className="type-heading-2 text-foreground [overflow-wrap:anywhere]">
+                  {name ?? t('quickView.title', { id })}
+                </DialogPrimitive.Title>
+                <DialogDescription className="sr-only">
+                  {t('quickView.description')}
+                </DialogDescription>
+                <WallLabelMeta
+                  className="mt-2"
+                  items={[
+                    // An unnamed Signature already carries its number in the title.
+                    name ? <span className="tabular-nums">{id}</span> : null,
+                    rarity && rarityTotal > 0 ? (
+                      <span className="tabular-nums" data-testid="quick-view-rank">
+                        {t('rarity.rankOf', {
+                          rank: formatCount(rarity.rank, locale),
+                          total: formatCount(rarityTotal, locale),
+                        })}
+                      </span>
+                    ) : null,
+                    item.Staked ? (
+                      <span className="inline-flex items-center gap-1">
+                        <AnchoringIcon aria-hidden className="size-3.5" />
+                        {t('card.anchoredState')}
+                      </span>
+                    ) : null,
+                  ]}
+                />
+                <Link
+                  href={`/detail/${item.TokenId}`}
+                  className={buttonVariants({ variant: 'outline', size: 'sm', className: 'mt-4' })}
+                >
+                  {t('quickView.openDetail')}
+                  <ArrowRight aria-hidden className="rtl:-scale-x-100" />
+                </Link>
+              </div>
+
+              {collectionTraits === undefined ? (
+                <div
+                  role="status"
+                  className="space-y-3"
+                  aria-busy="true"
+                  aria-label={t('quickView.loading')}
+                >
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : entry?.hasArtTraits ? (
+                <TraitSheet
+                  entry={entry}
+                  facets={collectionTraits?.facets ?? null}
+                  total={rarityTotal}
+                  dense
+                  onSelectTrait={
+                    onSelectTrait
+                      ? (key, value) => {
+                          onOpenChange(false);
+                          onSelectTrait(key, value);
+                        }
+                      : undefined
+                  }
+                />
+              ) : (
+                <p className="type-body-sm text-muted-foreground">{t('panel.unavailable')}</p>
+              )}
+            </div>
+          </>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}

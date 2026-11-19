@@ -1,0 +1,357 @@
+/**
+ * Full-stack specs against the local harness: real contracts on a local
+ * chain, the real indexer/API, and the testing-mode frontend. One serial
+ * file — the game world is shared, so each section drives the state it
+ * needs (never assuming leftovers) and waits on explicit chain/indexer
+ * conditions instead of wall-clock guesses.
+ */
+
+import { expect, test, type Page } from '@playwright/test';
+
+import {
+  awaitCycleState,
+  awaitIndexed,
+  control,
+  controlStatus,
+  dashboardShowsOpenedCycle,
+  dashboardShowsUnopenedActiveCycle,
+  readDashboard,
+  switchScenario,
+} from './support/control';
+import { readStackState, webUrl } from './support/stack';
+
+test.describe.configure({ mode: 'serial' });
+
+function appUrl(path = '/'): string {
+  const state = readStackState();
+  if (!state) throw new Error('Harness stack state missing');
+  return `${webUrl(state)}${path}`;
+}
+
+async function openHome(page: Page): Promise<void> {
+  await page.goto(appUrl('/'), { waitUntil: 'domcontentloaded' });
+  await expect(page.getByTestId('cycle-clock')).toBeVisible({ timeout: 30_000 });
+}
+
+async function openExperimentalUi(page: Page): Promise<void> {
+  await page.goto(appUrl('/experimental-ui'), { waitUntil: 'domcontentloaded' });
+  await expect(page.getByTestId('cycle-monument')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId('home-deck-layout')).toBeVisible();
+}
+
+test.beforeAll(async () => {
+  // Specs own all activity; the setup project already pinned `quiet`.
+  await switchScenario('quiet');
+});
+
+test('seeded history reaches the indexer and the app boots on it', async ({ page }) => {
+  const dashboard = await awaitIndexed(
+    'seeded cycles to be indexed',
+    (d) => (d.CurRoundNum ?? 0) >= 2,
+  );
+  expect(dashboard.CurRoundNum ?? 0).toBeGreaterThanOrEqual(2);
+
+  await openHome(page);
+  await expect(page.getByTestId('gesture-message-chat')).toBeVisible();
+  await expect(page.getByTestId('allocation-ledger')).toBeVisible();
+});
+
+test('phase rendering follows the driven chain state', async ({ page }) => {
+  test.setTimeout(8 * 60_000);
+
+  await control('/phase', { name: 'waiting-first-gesture' });
+  await awaitCycleState('cycle active with no gestures', (s) => s.cycle.active && !s.cycle.opened);
+  // The dashboard API refreshes live reads on its own cadence; the UI can
+  // only follow once the API has observed the new chain state.
+  await awaitIndexed('the API to observe the unopened cycle', dashboardShowsUnopenedActiveCycle);
+  await openHome(page);
+  await expect(page.getByTestId('cycle-clock')).toHaveAttribute(
+    'data-phase',
+    'waiting-first-gesture',
+    { timeout: 60_000 },
+  );
+
+  await control('/phase', { name: 'final-minute' });
+  await awaitCycleState(
+    'countdown inside the final minute',
+    (s) => s.cycle.opened && Number(s.cycle.secondsUntilFinalization) > 0,
+  );
+  await awaitIndexed('the API to observe the opening gesture', dashboardShowsOpenedCycle);
+  await openHome(page);
+  await expect(page.getByTestId('cycle-clock')).toHaveAttribute(
+    'data-phase',
+    /final-minute|final-ten|confirming|ready-to-finalize/,
+    { timeout: 60_000 },
+  );
+
+  await switchScenario('ready-to-finalize');
+  await awaitCycleState(
+    'the pinned zero-cross state',
+    (status) =>
+      status.scenario === 'ready-to-finalize' &&
+      status.phase === 'ready-to-finalize' &&
+      status.transition.state === 'running',
+  );
+  await switchScenario('exclusivity-expired');
+  await awaitCycleState(
+    'the pinned post-exclusivity state',
+    (status) =>
+      status.scenario === 'exclusivity-expired' &&
+      status.phase === 'exclusivity-expired' &&
+      status.transition.target === 'exclusivity-expired' &&
+      status.transition.state === 'running',
+  );
+  await switchScenario('ready-to-finalize');
+  await awaitCycleState(
+    'ready-to-finalize to self-heal from post-exclusivity',
+    (status) =>
+      status.scenario === 'ready-to-finalize' &&
+      status.phase === 'ready-to-finalize' &&
+      status.transition.state === 'running',
+  );
+});
+
+test('a gesture lands on chain, in the indexer, and in the chat', async ({ page }) => {
+  test.setTimeout(8 * 60_000);
+
+  await control('/phase', { name: 'waiting-first-gesture' });
+  await awaitCycleState('a fresh open cycle', (s) => s.cycle.active && !s.cycle.opened);
+
+  const before = await readDashboard();
+  const message = `Playwright roundtrip mark ${Date.now()}`;
+  await control('/gesture', { persona: 'Nova', kind: 'eth', message });
+
+  await awaitCycleState('the gesture to register on chain', (s) => s.cycle.opened);
+  await awaitIndexed(
+    'the gesture to reach the indexer',
+    (d) =>
+      (d.CurNumBids ?? 0) > (before.CurNumBids ?? 0) ||
+      (d.CurRoundNum ?? 0) > (before.CurRoundNum ?? 0),
+  );
+
+  await openHome(page);
+  await expect(page.getByTestId('latest-participant-gesture-details')).toBeVisible({
+    timeout: 60_000,
+  });
+  await expect(page.getByTestId('latest-participant-message')).toContainText(message);
+  await expect(page.getByTestId('gesture-message-chat')).toContainText(message, {
+    timeout: 60_000,
+  });
+});
+
+test('burner wallet and dev panel drive the game from the browser', async ({ page }) => {
+  test.setTimeout(8 * 60_000);
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openHome(page);
+
+  // The panel exists only in testing mode; opening it connects the burner.
+  await page.getByTestId('harness-open').click();
+  await expect(page.getByTestId('harness-panel')).toBeVisible();
+  await expect(page.getByTestId('harness-cycle-index')).not.toHaveText('…', { timeout: 30_000 });
+
+  // Burner connection flips the gesture panel from its connect prompt to the form.
+  await expect(page.getByTestId('gesture-message-input').first()).toBeVisible({ timeout: 30_000 });
+
+  // Connected controls are taller than the observer preview; even that
+  // participant state must keep the complete allocation ledger in view.
+  const ledgerBox = await page.getByTestId('allocation-ledger').boundingBox();
+  expect(ledgerBox).not.toBeNull();
+  expect(ledgerBox!.y + ledgerBox!.height).toBeLessThanOrEqual(900);
+
+  const before = await readDashboard();
+  await page.getByTestId('harness-persona-select').selectOption('Lyra');
+  await page.getByTestId('harness-gesture-eth').click();
+  await awaitIndexed(
+    'the panel-triggered gesture to be indexed',
+    (d) => (d.CurNumBids ?? 0) > (before.CurNumBids ?? 0),
+  );
+});
+
+test('experimental UI submits a real gesture and receives the indexed chat message', async ({
+  page,
+}) => {
+  test.setTimeout(8 * 60_000);
+
+  await switchScenario('live');
+  await awaitCycleState(
+    'an open cycle for the experimental UI',
+    (status) => status.cycle.opened && Number(status.cycle.secondsUntilFinalization) > 0,
+  );
+  await awaitIndexed('the experimental cycle to reach the API', dashboardShowsOpenedCycle);
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openExperimentalUi(page);
+  await page.getByTestId('harness-open').click();
+  await expect(page.getByTestId('harness-panel')).toBeVisible();
+  await page.getByTestId('harness-persona-select').selectOption('Lyra');
+  await page.getByRole('button', { name: 'Close harness panel' }).click();
+
+  // The page's own Gesture console (the phone sheet holds a second copy).
+  const gestureConsole = page.locator('#make-gesture');
+  const composer = gestureConsole.getByTestId('gesture-message-input');
+  await expect(composer).toBeVisible({ timeout: 30_000 });
+  const message = `Experimental UI roundtrip ${Date.now()}`;
+  await composer.fill(message);
+  const submit = gestureConsole.getByTestId('gesture-submit');
+  await expect(submit).toBeVisible({ timeout: 30_000 });
+  await submit.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+
+  const before = await readDashboard();
+  await submit.click({ timeout: 30_000 });
+  await awaitIndexed(
+    'the experimental UI gesture to be indexed',
+    (dashboard) => (dashboard.CurNumBids ?? 0) > (before.CurNumBids ?? 0),
+  );
+
+  await expect(page.getByTestId('gesture-message-chat')).toContainText(message, {
+    timeout: 60_000,
+  });
+});
+
+test('browser phase controls switch repeatedly and reflow inactive desktop state', async ({
+  page,
+}) => {
+  test.setTimeout(8 * 60_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openHome(page);
+  await page.getByTestId('harness-open').click();
+
+  await page.getByTestId('harness-phase-select').selectOption('live');
+  const live = await awaitCycleState(
+    'the browser-selected live phase',
+    (status) =>
+      status.scenario === 'live' &&
+      status.phase === 'live' &&
+      status.transition.state === 'running',
+  );
+  await awaitIndexed(
+    'the live phase cycle to be indexed',
+    (dashboard) =>
+      (dashboard.CurRoundNum ?? 0) >= Number(live.cycle.index) &&
+      dashboardShowsOpenedCycle(dashboard),
+  );
+  await expect(page.getByTestId('cycle-clock')).toHaveAttribute('data-phase', 'live', {
+    timeout: 90_000,
+  });
+
+  // Regression: replacing a 13-hour live target must fast-forward/cancel,
+  // never leave the panel waiting for that countdown in wall-clock time.
+  await page.getByTestId('harness-phase-select').selectOption('final-minute');
+  const finalMinute = await awaitCycleState(
+    'a rapid live-to-final-minute switch',
+    (status) =>
+      status.scenario === 'final-minute' &&
+      status.phase === 'final-minute' &&
+      status.transition.state === 'running',
+  );
+  await awaitIndexed(
+    'the final-minute cycle to be indexed',
+    (dashboard) =>
+      (dashboard.CurRoundNum ?? 0) >= Number(finalMinute.cycle.index) &&
+      dashboardShowsOpenedCycle(dashboard),
+  );
+  await expect(page.getByTestId('cycle-clock')).toHaveAttribute('data-phase', 'final-minute', {
+    timeout: 90_000,
+  });
+
+  await page.getByTestId('harness-phase-select').selectOption('opening-soon');
+  const openingSoon = await awaitCycleState(
+    'the browser-selected opening-soon phase',
+    (status) =>
+      status.scenario === 'opening-soon' &&
+      status.phase === 'opening-soon' &&
+      status.transition.state === 'running',
+  );
+  await awaitIndexed(
+    'the opening-soon cycle to be indexed',
+    (dashboard) =>
+      (dashboard.CurRoundNum ?? 0) >= Number(openingSoon.cycle.index) &&
+      !dashboardShowsOpenedCycle(dashboard),
+  );
+  await expect(page.getByTestId('cycle-clock')).toHaveAttribute('data-phase', 'opening-soon', {
+    timeout: 90_000,
+  });
+  await expect(page.getByTestId('home-deck-header')).toContainText(
+    `Cycle ${openingSoon.cycle.index}`,
+    {
+      timeout: 90_000,
+    },
+  );
+  await expect(page.getByTestId('control-desk-gesture')).toHaveCount(0);
+  await expect(page.getByTestId('clock-finalize')).toHaveCount(0);
+  await expect(page.getByTestId('latest-participant-intel')).toHaveAttribute('data-empty', 'true');
+
+  const [gridBox, latestBox] = await Promise.all([
+    page.getByTestId('control-desk-grid').boundingBox(),
+    page.getByTestId('control-desk-standings').boundingBox(),
+  ]);
+  expect(gridBox).not.toBeNull();
+  expect(latestBox).not.toBeNull();
+  expect(Math.abs(gridBox!.x + gridBox!.width - (latestBox!.x + latestBox!.width))).toBeLessThan(2);
+
+  // Latest selection wins even when three requests overlap; an intermediate
+  // queued target must never start after a newer target supersedes it.
+  await page.getByTestId('harness-phase-select').selectOption('live');
+  await page.getByTestId('harness-phase-select').selectOption('final-minute');
+  await page.getByTestId('harness-phase-select').selectOption('waiting-first-gesture');
+  const latestSelection = await awaitCycleState(
+    'the latest rapid phase selection',
+    (status) =>
+      status.scenario === 'waiting-first-gesture' &&
+      status.phase === 'waiting-first-gesture' &&
+      status.transition.state === 'running' &&
+      status.transition.error === null,
+  );
+  expect(Number(latestSelection.cycle.index)).toBeLessThanOrEqual(
+    Number(openingSoon.cycle.index) + 1,
+  );
+});
+
+test('endgame: finalization pays out and the next cycle opens', async ({ page }) => {
+  test.setTimeout(10 * 60_000);
+
+  await control('/phase', { name: 'ready-to-finalize' });
+  const readyStatus = await awaitCycleState(
+    'the countdown to expire',
+    (s) => s.cycle.opened && Number(s.cycle.secondsUntilFinalization) === 0,
+  );
+  const cycleBefore = Number(readyStatus.cycle.index);
+
+  await awaitIndexed(
+    'the API to observe the expired countdown',
+    (d) =>
+      dashboardShowsOpenedCycle(d) &&
+      (d.PrizeClaimTs ?? Infinity) <=
+        (typeof d.CurrentChainTime === 'number'
+          ? d.CurrentChainTime
+          : Math.floor(Date.now() / 1000)),
+  );
+  await openHome(page);
+  await expect(page.getByTestId('cycle-clock')).toHaveAttribute(
+    'data-phase',
+    /confirming|ready-to-finalize/,
+    { timeout: 60_000 },
+  );
+
+  await control('/finalize', {});
+  await awaitCycleState(
+    'the next cycle to begin',
+    (s) => Number(s.cycle.index) === cycleBefore + 1,
+  );
+  await awaitIndexed(
+    'the finalized cycle to reach the indexer',
+    (d) => (d.CurRoundNum ?? 0) >= cycleBefore + 1,
+  );
+
+  // The UI rolls over: the clock leaves the endgame phases.
+  await openHome(page);
+  await expect(page.getByTestId('cycle-clock')).toHaveAttribute(
+    'data-phase',
+    /opening-soon|waiting-first-gesture|live|approach/,
+    { timeout: 90_000 },
+  );
+
+  const status = await controlStatus();
+  expect(Number(status.cycle.index)).toBe(cycleBefore + 1);
+});

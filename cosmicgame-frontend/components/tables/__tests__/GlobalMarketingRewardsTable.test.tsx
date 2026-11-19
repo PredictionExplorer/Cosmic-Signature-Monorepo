@@ -1,0 +1,90 @@
+import '@testing-library/jest-dom';
+
+import { GlobalMarketingRewardsTable } from '@/components/tables/GlobalMarketingRewardsTable';
+
+import { checkA11y, render, screen } from '@/test-utils';
+
+const createReward = (overrides = {}) => ({
+  EvtLogId: 1,
+  TxHash: '0xabc123def456abc123def456abc123def456abc123def456abc123def456abc1',
+  TimeStamp: 1701346718,
+  MarketerAddr: '0x1234567890abcdef1234567890abcdef12345678',
+  AmountEth: 150.5,
+  ...overrides,
+});
+
+describe('GlobalMarketingRewardsTable', () => {
+  it('renders empty state when list is empty', () => {
+    render(<GlobalMarketingRewardsTable list={[]} />);
+    expect(screen.getByText('tables.empty.outreachAllocations')).toBeInTheDocument();
+  });
+
+  it('renders table headers', () => {
+    render(<GlobalMarketingRewardsTable list={[createReward()]} />);
+    expect(screen.getAllByText('tables.columns.datetime').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('tables.columns.outreachContributor').length).toBeGreaterThanOrEqual(
+      1,
+    );
+    // The unit is in the header, as on a contributor's own ledger.
+    expect(screen.getAllByText('tables.columns.amountCst').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders datetime from TxHash as explorer link', () => {
+    const reward = createReward();
+    render(<GlobalMarketingRewardsTable list={[reward]} />);
+    const datetime = screen.getByText('Nov 30, 2023, 12:18');
+    expect(datetime.closest('a')).toHaveAttribute('target', '_blank');
+    expect(datetime.closest('a')).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('formats amount to 2 decimal places under a header that names the unit', () => {
+    render(<GlobalMarketingRewardsTable list={[createReward({ AmountEth: 100.1 })]} />);
+    expect(screen.getByText('100.10').textContent).toBe('100.10');
+  });
+
+  it('mutes dust like every ledger and explains it beside the row range', () => {
+    render(
+      <GlobalMarketingRewardsTable
+        list={[
+          createReward({ EvtLogId: 1, AmountEth: 400 }),
+          createReward({ EvtLogId: 2, AmountEth: 3e-15 }),
+          createReward({ EvtLogId: 3, AmountEth: 0 }),
+        ]}
+      />,
+    );
+    expect(screen.getByText('<0.01')).toHaveClass('text-subtle');
+    expect(screen.getByText('400.00')).not.toHaveClass('text-subtle');
+    // A true zero is not dust.
+    expect(screen.getByText('0.00')).not.toHaveClass('text-subtle');
+    expect(screen.getByText(/tables\.outreach\.dustNote/)).toBeInTheDocument();
+  });
+
+  it('says nothing about dust when there is none', () => {
+    render(<GlobalMarketingRewardsTable list={[createReward()]} />);
+    expect(screen.queryByText(/tables\.outreach\.dustNote/)).not.toBeInTheDocument();
+  });
+
+  it('sets rel="noopener noreferrer" on all target="_blank" links', () => {
+    render(<GlobalMarketingRewardsTable list={[createReward()]} />);
+    const links = screen.getAllByRole('link');
+    for (const link of links) {
+      if (link.getAttribute('target') === '_blank') {
+        expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+      }
+    }
+  });
+
+  it('shows 20 rows a page with the row range', () => {
+    const list = Array.from({ length: 25 }, (_, i) =>
+      createReward({ EvtLogId: i, AmountEth: (i + 1) * 100 }),
+    );
+    const { container } = render(<GlobalMarketingRewardsTable list={list} />);
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(20);
+    expect(screen.getByText('tables.pagination.range(from=1,to=20,total=25)')).toBeInTheDocument();
+  });
+
+  it('has no accessibility violations', async () => {
+    const { container } = render(<GlobalMarketingRewardsTable list={[]} />);
+    await checkA11y(container);
+  });
+});

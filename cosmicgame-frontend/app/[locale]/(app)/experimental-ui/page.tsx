@@ -1,0 +1,126 @@
+import type { Metadata, ResolvingMetadata } from 'next';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+
+import { PageMessages } from '@/components/i18n/PageMessages';
+import { APP_ORIGIN, localeHref } from '@/lib/hostRouting';
+import {
+  getCstInfoSeed,
+  getCurrentSpecialRecipientsSeed,
+  getDashboardInfoSeed,
+  getHomeTimingSeed,
+  getLatestGestureSeed,
+  getServerRenderTimeMs,
+} from '@/services/api/server';
+import type { CSTTokenInfo, DashboardInfo, GestureInfo } from '@/services/api';
+import { JsonLd, breadcrumbJsonLd, jsonLdInLanguage, webPageJsonLd } from '@/utils/jsonLd';
+import { createPageMetadata } from '@/utils/seo';
+
+import ExperimentalHomePage from './ExperimentalHomePage';
+
+export const revalidate = 15;
+
+interface PageProps {
+  params: Promise<{ locale: string }>;
+}
+
+interface InitialBannerToken {
+  id: number;
+  info: CSTTokenInfo;
+}
+
+async function pickInitialBannerToken(
+  dashboard: DashboardInfo | null,
+): Promise<InitialBannerToken | null> {
+  const imprintedCount = dashboard?.MainStats?.NumCSTokenMints ?? 0;
+  if (!Number.isFinite(imprintedCount) || imprintedCount <= 0) return null;
+
+  const id = Math.floor(Math.random() * imprintedCount);
+  const info = await getCstInfoSeed(id);
+  return info?.Seed ? { id, info } : null;
+}
+
+export async function generateMetadata(
+  { params }: PageProps,
+  parent: ResolvingMetadata,
+): Promise<Metadata> {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: 'meta' });
+
+  return createPageMetadata(
+    parent,
+    t('experimentalUi.title'),
+    t('experimentalUi.description'),
+    undefined,
+    '/experimental-ui',
+    { index: false, locale },
+  );
+}
+
+export default async function Page({ params }: PageProps) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const initialRenderAtMs = getServerRenderTimeMs();
+
+  // The same seed snapshot as the Observatory, so the clock, standings and
+  // latest Gesture are complete in the server HTML rather than 0s.
+  const [initialDashboardData, initialTimingSample] = await Promise.all([
+    getDashboardInfoSeed(),
+    getHomeTimingSeed(),
+  ]);
+  const [initialBannerToken, initialLatestGesture, initialSpecialRecipients] = await Promise.all([
+    pickInitialBannerToken(initialDashboardData),
+    initialDashboardData
+      ? getLatestGestureSeed(initialDashboardData.CurRoundNum)
+      : Promise.resolve<GestureInfo | null>(null),
+    getCurrentSpecialRecipientsSeed(),
+  ]);
+  const [meta, experiment] = await Promise.all([
+    getTranslations({ locale, namespace: 'meta' }),
+    getTranslations({ locale, namespace: 'home' }),
+  ]);
+  const description = meta('experimentalUi.description');
+  const pageUrl = localeHref(APP_ORIGIN, '/experimental-ui', locale);
+  const localizedOrigin = localeHref(APP_ORIGIN, '/', locale);
+
+  return (
+    <PageMessages
+      namespaces={[
+        'currentCycle',
+        'detail',
+        'gesture',
+        'glossary',
+        'home',
+        'statistics',
+        'tables',
+        'traits',
+      ]}
+    >
+      <JsonLd
+        data={[
+          webPageJsonLd({
+            name: meta('experimentalUi.title'),
+            description,
+            url: pageUrl,
+            inLanguage: jsonLdInLanguage(locale),
+          }),
+          breadcrumbJsonLd(
+            [
+              { name: 'Cosmic Signature', path: '/' },
+              { name: experiment('deck.artViewTitle'), path: '/experimental-ui' },
+            ],
+            localizedOrigin,
+          ),
+        ]}
+      />
+      <ExperimentalHomePage
+        initialDashboardData={initialDashboardData}
+        initialBannerToken={initialBannerToken}
+        initialLatestGesture={initialLatestGesture}
+        initialSpecialRecipients={initialSpecialRecipients}
+        initialTimingSample={initialTimingSample}
+        initialRenderAtMs={initialRenderAtMs}
+      />
+    </PageMessages>
+  );
+}

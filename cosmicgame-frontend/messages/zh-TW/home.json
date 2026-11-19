@@ -1,0 +1,732 @@
+{
+  "error": {
+    "title": "暫時無法取得目前週期數據",
+    "message": "無法連線至協議資料服務，因此無法顯示目前週期。請稍後再試。"
+  },
+  "hero": {
+    "cycleFallback": "演繹週期",
+    "cycleNumber": "第 {number} 個週期",
+    "phase": {
+      "openingSoon": {
+        "badge": "即將開啟",
+        "headline": "下一週期即將開啟",
+        "body": "{cycleLabel}正待開啟。何時可以落筆，看下方的倒數便知。",
+        "cta": "檢視週期詳情"
+      },
+      "waitingFirstGesture": {
+        "badge": "等待第一筆",
+        "headline": "{cycleLabel}已開啟",
+        "body": "落下第一筆，收官倒數便會啟動，這一週期的簽名也將由此成形。",
+        "cta": "落下第一筆"
+      },
+      "confirming": {
+        "badge": "鏈上驗證中",
+        "headline": "正在確認收官時刻",
+        "body": "倒數已歸零。正在鏈上驗證最後一刻是否有新落筆延長週期。",
+        "cta": "檢視週期詳情"
+      },
+      "readyToFinalize": {
+        "badge": "已可收官",
+        "headline": "週期已可收官",
+        "body": "收官倒數已歸零，週期即可收官，儲備也將隨之在鏈上發放。",
+        "cta": "收官"
+      },
+      "finalWindow": {
+        "badge": "最後窗口",
+        "headline": "最後窗口已開啟",
+        "body": "此刻的主角是收官倒數。新的一筆仍能延長時間，改寫結局。",
+        "cta": "落筆"
+      },
+      "loading": {
+        "badge": "同步週期狀態",
+        "headline": "正在同步週期",
+        "body": "正在讀取協議時間與目前週期數據，稍後即可呈現即時狀態。",
+        "cta": "檢視週期詳情"
+      },
+      "unavailable": {
+        "badge": "時鐘暫不可用",
+        "headline": "週期狀態暫不可用",
+        "body": "應用程式暫時無法連線至即時週期時鐘。週期詳情頁可能仍會顯示最新的已索引資料。",
+        "cta": "檢視週期詳情"
+      },
+      "live": {
+        "badge": "即時運作於 Arbitrum",
+        "headline": "塑造下一幅 Cosmic Signature",
+        "body": "Cosmic Signature 的演繹週期即時展開：每一筆都留下可見的痕跡，可能銘刻參與 CST，並讓協議儲備流向以太坊賴以運作的公共財。",
+        "cta": "落筆"
+      }
+    },
+    "story": {
+      "gestures": {
+        "title": "落筆塑造藝術",
+        "body": "每一筆，都在將演繹週期推向最終的鏈上簽名。"
+      },
+      "cst": {
+        "title": "CST 紀錄參與",
+        "body": "參與 CST 承載著你共同塑造的週期印記。"
+      },
+      "publicGoods": {
+        "title": "分配資助公共財",
+        "body": "協議儲備沿分配軌道流轉，其中一條通向 Protocol Guild。"
+      }
+    },
+    "artUnavailable": {
+      "eyebrow": "等待簽名生成",
+      "body": "索引到代幣後設資料後，真實的 Cosmic Signature 作品會隨即在此呈現。"
+    },
+    "console": {
+      "ariaLabel": "目前週期觀測台",
+      "eyebrow": "觀測控制台",
+      "parameters": "參數",
+      "artworkAlt": "Cosmic Signature 作品 {id}",
+      "stats": {
+        "gestures": "落筆次數",
+        "signature": "簽名分配",
+        "publicGoods": "公共財"
+      },
+      "previousAllocations": "第 {number} 個週期的分配"
+    }
+  },
+  "notifications": {
+    "finalizationSoonTitle": "週期即將可以收官",
+    "finalizationSoonBody": "距週期收官時間還有 {minutes, plural, other {# 分鐘}}。新的一筆仍能延後截止時間。"
+  },
+  "chrono": {
+    "sectionAria": "週期收官時間",
+    "timerAria": "{label}。{status}",
+    "phase": {
+      "loading": {
+        "eyebrow": "週期時鐘同步中",
+        "label": "同步中",
+        "status": "正在讀取即時週期時鐘。",
+        "tooltip": "應用程式正在與協議時間同步，隨後會顯示目前週期狀態。",
+        "display": "同步中"
+      },
+      "unavailable": {
+        "eyebrow": "週期時鐘暫不可用",
+        "label": "時鐘暫不可用",
+        "status": "即時時鐘暫不可用。",
+        "tooltip": "暫時無法連線至即時週期時鐘。可開啟週期詳情，檢視最新的已索引狀態。",
+        "display": "同步中"
+      },
+      "openingSoon": {
+        "eyebrow": "下一週期開啟倒數",
+        "label": "即將開啟",
+        "status": "正在等待下一週期。倒數歸零後，即可落筆。",
+        "tooltip": "這是週期開啟倒數。歸零後，第一筆即可啟動收官倒數。"
+      },
+      "waitingFirstGesture": {
+        "eyebrow": "週期已開啟",
+        "label": "等待第一筆",
+        "status": "落下第一筆，收官倒數隨之啟動。",
+        "tooltip": "收官倒數尚未啟動。第一筆會啟動週期時鐘，這幅簽名也由此開始成形。",
+        "display": "等待第一筆"
+      },
+      "approach": {
+        "eyebrow": "週期收官倒數",
+        "label": "不足 12 小時",
+        "status": "每一筆都可能延長收官倒數。",
+        "tooltip": "這是週期收官時間。歸零後，最新落筆者即可收官。"
+      },
+      "finalHour": {
+        "eyebrow": "最後一小時",
+        "label": "最後一小時",
+        "status": "距週期可收官已不足一小時。",
+        "tooltip": "收官倒數已不足一小時。新的落筆仍可延長倒數。"
+      },
+      "finalTen": {
+        "eyebrow": "最後 10 分鐘",
+        "label": "最後 10 分鐘",
+        "status": "最後幾分鐘。每一筆都還能改寫結局。",
+        "tooltip": "週期已進入最後十分鐘。時間緊迫，但新的一筆仍能延長倒數。"
+      },
+      "finalMinute": {
+        "eyebrow": "最後一分鐘",
+        "label": "最後一分鐘",
+        "status": "剩餘不到一分鐘。新的一筆仍能延長倒數。",
+        "tooltip": "收官倒數已進入最後一分鐘。一旦歸零，週期即進入可收官狀態。"
+      },
+      "confirming": {
+        "eyebrow": "鏈上驗證中",
+        "label": "確認中",
+        "status": "倒數已歸零。正在鏈上確認最後一刻沒有新落筆延長週期。",
+        "tooltip": "本裝置上的倒數已歸零。在顯示週期可收官之前，應用程式會直接向區塊鏈驗證截止時間確已過去——最後幾秒的落筆仍可能延長了週期。",
+        "display": "00:00"
+      },
+      "readyToFinalize": {
+        "eyebrow": "週期已可收官",
+        "label": "已可收官",
+        "status": "已可收官。新的一筆仍能延長週期。",
+        "tooltip": "收官倒數已歸零。最新落筆者可率先收官；專屬窗口結束後，任何人都可收官，並獲得簽名分配。在收官執行前，仍可繼續落筆。",
+        "display": "00:00"
+      },
+      "live": {
+        "eyebrow": "週期收官倒數",
+        "label": "週期進行中",
+        "status": "每一筆都可能延長收官倒數。",
+        "tooltip": "這是週期收官時間。歸零後，最新落筆者即可收官。"
+      }
+    },
+    "cta": {
+      "viewCycle": "檢視週期"
+    }
+  },
+  "phaseGuide": {
+    "eyebrow": "週期階段",
+    "title": "演繹週期此刻走到了哪一步",
+    "howItWorks": "運作原理",
+    "timelineAria": "演繹週期階段",
+    "stepState": {
+      "now": "目前",
+      "passed": "已過",
+      "next": "接下來"
+    },
+    "steps": {
+      "openingSoon": {
+        "label": "開啟",
+        "detail": "每個週期都在排定的時間開啟。"
+      },
+      "firstGesture": {
+        "label": "第一筆",
+        "detail": "第一筆啟動收官倒數。"
+      },
+      "open": {
+        "label": "週期進行中",
+        "detail": "每一筆都讓落筆者成為最新落筆者，並可能延長倒數。"
+      },
+      "finalWindow": {
+        "label": "最後窗口",
+        "detail": "倒數接近歸零，新的一筆仍能延長時間。"
+      },
+      "finalization": {
+        "label": "收官",
+        "detail": "歸零後，最新落筆者可收官並獲得簽名分配；短暫窗口過後，任何人都可收官。"
+      },
+      "allocation": {
+        "label": "分配",
+        "detail": "儲備沿各條分配軌道發放。"
+      }
+    },
+    "explainer": {
+      "title": "初來乍到？30 秒讀懂週期。",
+      "body": "週期開啟後即可落筆，並留意收官倒數。每一筆都在塑造最終簽名，可能延長時間，也會更新有望獲配的人選。倒數歸零後就能收官；收官完成後，儲備會在鏈上發放。",
+      "faqLink": "閱讀常見問題",
+      "walkthroughLink": "檢視完整流程"
+    }
+  },
+  "status": {
+    "opensAt": "第 {cycle} 個週期將於 {dateTime} 開啟",
+    "readyToFinalize": "週期已可收官",
+    "metrics": {
+      "signatureTooltip": {
+        "base": "簽名分配中的 ETH 部分；獲配者還將獲得 1,000 CST 與{cscNftCount, number} 枚 Cosmic Signature NFT。",
+        "withNft": "簽名分配中的 ETH 部分；獲配者還將獲得 1,000 CST、{cscNftCount, number} 枚 Cosmic Signature NFT，以及 {nftCount, number} 枚已附加 NFT。",
+        "withErc20": "簽名分配中的 ETH 部分；獲配者還將獲得 1,000 CST、{cscNftCount, number} 枚 Cosmic Signature NFT，以及 {erc20Count, number} 筆已附加的 ERC-20 代幣存入。",
+        "withBoth": "簽名分配中的 ETH 部分；獲配者還將獲得 1,000 CST、{cscNftCount, number} 枚 Cosmic Signature NFT，以及 {nftCount, number} 枚已附加 NFT 與 {erc20Count, number} 筆已附加的 ERC-20 代幣存入。"
+      },
+      "cstGesture": "CST 落筆",
+      "free": "0 CST",
+      "cstWindow": "CST 窗口",
+      "duration": "時長 {duration}"
+    },
+    "standing": {
+      "title": "你在本週期的位置",
+      "tooltip": "顯示你目前是否處於收官之筆位置，以及依據本週期落筆計算的星選入選頻次。",
+      "leader": {
+        "base": "最新一筆由你寫下。若時鐘歸零前無人再落筆，你收官後即可獲得簽名分配（{amount} ETH、1,000 CST、{cscNftCount, number} 枚 Cosmic Signature NFT）。",
+        "withNft": "最新一筆由你寫下。若時鐘歸零前無人再落筆，你收官後即可獲得簽名分配（{amount} ETH、1,000 CST、{cscNftCount, number} 枚 Cosmic Signature NFT，外加下方展示的 {nftCount, number} 枚已附加 NFT）。",
+        "withErc20": "最新一筆由你寫下。若時鐘歸零前無人再落筆，你收官後即可獲得簽名分配（{amount} ETH、1,000 CST、{cscNftCount, number} 枚 Cosmic Signature NFT，外加下方展示的 {erc20Count, number} 筆已附加的 ERC-20 代幣存入）。",
+        "withBoth": "最新一筆由你寫下。若時鐘歸零前無人再落筆，你收官後即可獲得簽名分配（{amount} ETH、1,000 CST、{cscNftCount, number} 枚 Cosmic Signature NFT，外加下方展示的 {nftCount, number} 枚已附加 NFT 與 {erc20Count, number} 筆 ERC-20 代幣存入）。"
+      },
+      "ethStellar": "ETH 星選",
+      "nftStellar": "NFT 星選"
+    }
+  },
+  "ticker": {
+    "age": {
+      "justNow": "剛剛",
+      "seconds": "{count} 秒前",
+      "minutes": "{count} 分鐘前",
+      "hours": "{count} 小時前",
+      "days": "{count} 天前"
+    }
+  },
+  "form": {
+    "title": "寫下你的一筆",
+    "subtitle": "選擇落筆方式，參與目前週期。",
+    "loadingAria": "正在載入落筆表單",
+    "methodLabel": "落筆方式",
+    "method": {
+      "eth": {
+        "label": "ETH",
+        "desc": "以 ETH 支付"
+      },
+      "randomWalk": {
+        "label": "ETH + Random Walk",
+        "desc": "ETH + Random Walk 可將 ETH 價格減半，需要一枚未使用過的 Random Walk NFT。"
+      },
+      "cst": {
+        "label": "CST",
+        "desc": "ERC-20"
+      }
+    },
+    "rwlk": {
+      "title": "你的 Random Walk NFT",
+      "connect": "連接錢包後，即可列出其中的 Random Walk NFT。",
+      "error": "無法讀取此錢包的 Random Walk NFT，請稍後再試。",
+      "linkedUnavailable": "Random Walk NFT #{tokenId} 不在此錢包中，或已用於落筆，因此未被選取。",
+      "tooltip": "ETH 落筆附加一枚 Random Walk NFT，落筆價格即減半。每枚 NFT 僅可使用一次。"
+    },
+    "cstTrade": "缺少 CST？可透過 Uniswap 在 Arbitrum 上用 ETH 兌換 CST。",
+    "reward": {
+      "previewTitle": "CST 銘刻預覽",
+      "economicsDescription": "淨 CST 即參與 CST 銘刻量減去目前 CST 落筆價格。",
+      "previewDescription": "這一筆預計銘刻的動態參與 CST。數量取決於距上一筆經過的時間。",
+      "rewardLabel": "銘刻量",
+      "costLabel": "價格",
+      "netLabel": "淨 CST",
+      "cstAmount": "{amount} CST",
+      "netPositive": "這一筆若落下，銘刻的 CST 將多於支出的 CST。",
+      "netNegative": "多數 CST 落筆的支出會多於銘刻量。",
+      "durationMismatch": "API 回傳的時長為 {apiDuration}，此處以鏈上時長（{contractDuration}）為準。",
+      "economicsDescriptionV3": "CST 費用將從你的餘額中扣除。這一筆產生的動態 CST 會全額銘刻給被你超越的參與者；你自己的 CST 會在你保持最新參與者期間持續累積，並在下一筆落筆時銘刻。",
+      "previewDescriptionV3": "這一筆預計產生的動態參與 CST。全部歸被你超越的參與者所有——當有人超越你時，你將獲得下一筆的全部 CST。",
+      "goesToOutbid": "全額支付給被你超越的參與者；當你被超越時，你將獲得下一筆的 CST。"
+    },
+    "preview": "這裡可預覽即時落筆選項。連接錢包後，即可撰寫留言、附加資產，並在 Arbitrum 上提交這一筆。",
+    "advanced": {
+      "title": "進階選項",
+      "messageLabel": "留言",
+      "messageOptionalHint": "（選填，至多 {maxLength} 位元組）",
+      "messageTooltip": "留言會出現在落筆留言板中，與這一筆一同記錄在鏈上，並永久儲存。",
+      "messagePlaceholder": "為這一筆留下一句話…",
+      "attachIntro": "可為這一筆附加代幣或 NFT，也可調整落筆價格的防碰撞設定。",
+      "attachNft": "附加 NFT",
+      "attachToken": "附加代幣",
+      "tokenContractLabel": "合約地址",
+      "tokenAmountLabel": "數量",
+      "nftContractLabel": "NFT 合約地址",
+      "nftIdLabel": "代幣 ID",
+      "nftIdPlaceholder": "代幣 ID",
+      "collision": {
+        "title": "防碰撞",
+        "raiseBy": "上調",
+        "approxCost": "≈ {amount} ETH",
+        "note": "在發送金額上加 {percent}%，這樣即使同一區塊中有其他落筆搶先，本次落筆仍能成功。合約只收取目前落筆價格，其餘部分在同一筆交易中退還；若差額小到不足以抵付 Gas，則不退還。"
+      },
+      "attachLabel": "附加資產",
+      "attachNone": "不附加",
+      "cstFloor": {
+        "title": "CST 銘刻下限",
+        "any": "接受任何數額",
+        "guarded": "要求不低於所示數額（減去容差）",
+        "toleranceLabel": "容差",
+        "toleranceHint": "允許數額在報價與交易上鏈之間有所浮動。",
+        "note": "落筆的 CST 銘刻會支付給被你超越的參與者，因此只有當那位參與者是你自己時，下限才有意義。若其他落筆搶先上鏈，設定下限可能使你的落筆回退。",
+        "autoNote": "已預先選取：你是本週期最新的參與者，這筆落筆的 CST 銘刻將回到你的錢包。"
+      }
+    },
+    "submit": {
+      "eth": "以 ETH 落筆（{cost} ETH）",
+      "randomWalkWithToken": "以 ETH + Random Walk 代幣 {tokenId} 落筆（{cost} ETH）",
+      "randomWalk": "以 ETH + Random Walk 落筆",
+      "cst": "以 CST 落筆（{cost} CST）",
+      "cstFree": "以 CST 落筆（0 CST + Gas 費）",
+      "generic": "以 {method} 落筆",
+      "sendsNote": "約發送 {amount} ETH，含 {percent}% 防碰撞餘量。",
+      "action": {
+        "eth": "以 ETH 落筆",
+        "randomWalk": "以 ETH + Random Walk 落筆",
+        "cst": "以 CST 落筆"
+      }
+    },
+    "processing": "處理中…",
+    "finalGestureMade": "本週期的最新一筆由你寫下。倒數走完後，點選下方的「收官」即可。",
+    "finalize": "收官",
+    "connect": {
+      "title": "連接錢包，提交這一筆",
+      "body": "先在上方檢視即時落筆方式與價格，再連接 MetaMask 或其他錢包，即可在 Arbitrum 上提交。",
+      "cta": "連接錢包以落筆",
+      "ctaShort": "連接錢包"
+    },
+    "message": {
+      "add": "新增留言"
+    },
+    "finalizeAtClock": "最新一筆由你寫下。請在時鐘處收官。",
+    "lateWindow": {
+      "title": "漲價時段",
+      "description": "在最終確認截止前的最後 {duration} 內，ETH 落筆價格每秒上漲——起初緩慢，隨後陡增，最高約為基準價的五倍。CST 落筆價格同樣上漲；時段生效期間，上方報價即時刷新。",
+      "opensIn": "將於 {duration} 後開始",
+      "active": "已生效——落筆價格正在逐秒上漲。",
+      "premium": "目前 ETH 溢價："
+    }
+  },
+  "calibration": {
+    "defaultTitle": "校準窗口",
+    "defaultEndedMessage": "校準窗口已結束。",
+    "firstGestureTitle": "首筆校準窗口",
+    "firstGestureSubtitle": "窗口推進期間，首筆 ETH 落筆的價格會逐步下降。",
+    "cstTitle": "CST 校準窗口",
+    "cstSubtitle": "CST 價格會隨這一動態窗口推進而下降。ETH 落筆使窗口縮短約 {decreasePercent}%；CST 落筆則使其延長約 {increasePercent}%。",
+    "cstEndedMessage": "CST 費用已降至下限（0 CST）；仍需支付網路 Gas 費。",
+    "dynamicDuration": "動態時長",
+    "percentComplete": "已完成 {percent}",
+    "progressAria": "{title}進度",
+    "elapsedLabel": "已經過",
+    "remainingLabel": "剩餘",
+    "costNow": "目前費用",
+    "floor": "0 CST",
+    "reachesFloorIn": "{duration}後降至 0 CST",
+    "windowEndsIn": "{duration}後窗口結束",
+    "windowLengthLabel": "窗口時長",
+    "declineRateLabel": "基礎價格下降速率",
+    "declineRatePerMinute": "{rate} CST/分鐘",
+    "declineRateExplanation": "下降速率表示每分鐘減少的 CST 數額，直到基礎價格降至零。",
+    "floorIn": "{duration}後",
+    "cstSubtitleV3": "CST 基礎價格依即時下降速率降低。ETH 落筆可加快速率，CST 落筆會減慢速率並重設上限；臨近收官溢價另計。"
+  },
+  "allocation": {
+    "title": "分配一覽",
+    "recipientCount": "{count, number} 位獲配者",
+    "amounts": {
+      "eth": "{amount} ETH",
+      "ethEach": "每位 {amount} ETH",
+      "fixedCst": "1,000 CST",
+      "fixedCstEach": "每位 1,000 CST",
+      "nft": "1 枚 Cosmic Signature NFT",
+      "nftEach": "每位 1 枚 Cosmic Signature NFT",
+      "attachedTokens": "已附加代幣（如有）"
+    },
+    "cards": {
+      "signature": {
+        "name": "簽名分配",
+        "tooltip": "倒數歸零後，寫下收官之筆的參與者可取回這份分配：ETH、1,000 CST、{cscNftCount, number} 枚 Cosmic Signature NFT，以及已附加的代幣。"
+      },
+      "publicGoods": {
+        "name": "公共財",
+        "tooltip": "{percent}% 分配至公共財金庫；任何人都能另發一筆交易，將餘額轉給設定的受益方，目前為 Protocol Guild。",
+        "recipientLabel": "Protocol Guild"
+      },
+      "ethStellar": {
+        "name": "ETH 星選",
+        "tooltip": "協議從本週期的星選資格中程序化隨機選出參與者，均分一份 ETH 分配。"
+      },
+      "nftStellar": {
+        "name": "NFT 星選",
+        "tooltip": "協議從本週期的星選資格中程序化隨機選出參與者，每位獲配表彰 CST 與 Cosmic Signature NFT。"
+      },
+      "randomWalkAnchor": {
+        "name": "Random Walk 錨定者",
+        "tooltip": "Random Walk NFT 的錨定者可能獲配表彰 CST 與 Cosmic Signature NFT。"
+      },
+      "cosmicAnchor": {
+        "name": "Cosmic Signature 錨定",
+        "tooltip": "每個週期的錨定配發，由 Cosmic Signature NFT 的錨定者按比例分得。",
+        "recipientLabel": "每枚已錨定 NFT 等分"
+      },
+      "chronoWarrior": {
+        "name": "時之勇士分配",
+        "tooltip": "單次連續保持堅守冠軍位置最久的參與者，將獲配週期儲備的一定比例與一枚 Cosmic Signature NFT。"
+      },
+      "endurance": {
+        "name": "堅守冠軍",
+        "tooltip": "單次連續保持最新落筆者位置最久的參與者，將獲得一次表彰 CST 銘刻（1,000 CST），並獲配一枚 Cosmic Signature NFT。"
+      },
+      "finalCst": {
+        "name": "CST 收官之筆",
+        "tooltip": "本週期最後一次以 CST 落筆的參與者，將獲得一次表彰 CST 銘刻（1,000 CST），並獲配一枚 Cosmic Signature NFT。"
+      }
+    }
+  },
+  "chat": {
+    "title": "落筆留言板",
+    "messagesHeld": {
+      "title": "留言暫不顯示",
+      "description": "無法載入已隱藏留言的清單，載入完成前不顯示留言。"
+    },
+    "joinTooltip": "想在這裡留言？落筆時附上一句話即可。隨落筆提交的留言都會顯示在這裡。",
+    "currentCycle": "目前週期",
+    "cycleNumber": "第 {number} 個週期",
+    "messageCount": "{count, plural, =0 {暫無留言} other {# 條留言}}",
+    "messageAria": "來自 {address} 的落筆留言",
+    "openPositionAria": "檢視第 {position} 次落筆",
+    "badge": {
+      "eth": "{amount} ETH",
+      "ethFallback": "ETH",
+      "ethRwlk": "{amount} ETH + RWLK",
+      "rwlkFallback": "ETH + RWLK",
+      "cst": "{amount} CST",
+      "cstFallback": "CST"
+    },
+    "history": {
+      "loadOlder": "載入更早紀錄",
+      "loadingOlder": "正在載入更早紀錄…",
+      "loading": "正在載入聊天內容…",
+      "error": "無法載入聊天內容。",
+      "olderError": "無法載入更早的訊息。",
+      "retry": "重試",
+      "showing": "最近 {messages, plural, other {# 條留言}}和 {events, plural, other {# 則週期事件}}",
+      "showMore": "顯示更多"
+    },
+    "invite": "留言隨落筆一同上鏈。",
+    "empty": {
+      "title": "暫無留言或事件",
+      "description": "留言和週期重要事件會顯示在這裡，最新的排在最前。",
+      "cta": "落筆",
+      "messagesFirst": "本週期暫無留言。留言隨落筆一同上鏈。"
+    },
+    "system": {
+      "cycleStart": "第 {number} 個週期開始了。第一筆啟動了收官倒數。",
+      "cycleOpen": "第 {number} 個週期開放了。第一筆 ETH 落筆可啟動倒數。",
+      "enduranceGrowing": "{address} 連續保持領先 {duration} 後，開始延長堅守紀錄。",
+      "enduranceRecord": "{address} 結束了長達 {duration} 的破紀錄領先時段。堅守紀錄將保留，直到更長的領先時段將其刷新。",
+      "chronoLead": "{address} 連續擔任堅守冠軍達 {duration}，開始延長時之勇士紀錄。",
+      "chronoReignEnded": "{address} 結束了長達 {duration} 的堅守冠軍在位時段。時之勇士由最長的單次連續在位時長決定。",
+      "finalCstLeader": "{address} 保持 CST 收官之筆的位置。",
+      "newParticipant": "{address} 完成了本週期的首次落筆。",
+      "gestureMilestone": "本週期落筆次數達到 {count} 次。",
+      "cstCalibrationReady": "CST 校準窗口已達價格下限。下一筆 CST 落筆將重啟窗口；交易仍需支付 Gas 費。",
+      "finalWindow": "收官倒數剩餘 {duration}。再次落筆可延後截止時間。",
+      "clockExtended": "{address} 在接近收官時將倒數延長了 {duration}。",
+      "clockReopened": "{address} 在倒數歸零後落筆，將已到期的截止時間向後延長了 {duration}。",
+      "finalizationAvailable": "收官倒數已歸零。{address} 可執行收官；交易確認前仍可落筆。",
+      "cycleFinalized": "第 {number} 個週期已收官。分配獲配者現已確定。"
+    },
+    "pending": {
+      "aria": "你的留言已在鏈上確認，正在索引",
+      "label": "索引中",
+      "stillIndexing": "仍在索引",
+      "viewTransaction": "查看交易"
+    },
+    "eventCount": "{count, plural, =0 {暫無事件} other {# 則事件}}",
+    "you": "你",
+    "viewLabel": "顯示",
+    "view": {
+      "messages": "留言",
+      "all": "全部動態"
+    }
+  },
+  "deck": {
+    "title": "Cosmic Signature 觀測台",
+    "newHere": "初來乍到？了解運作方式",
+    "howItWorks": "了解運作方式",
+    "artViewTitle": "觀測台藝術視圖",
+    "artViewIntro": "這是觀測台的預覽版，以藝術為先：一枚簽名作品陳列在時鐘旁，所有分配軌道逐一列出。時鐘、即時席位與落筆表單使用同樣的即時資料。",
+    "previewBadge": "預覽",
+    "backToObservatory": "返回觀測台",
+    "shareFeedback": "提供回饋",
+    "monument": {
+      "reserveLabel": "簽名分配",
+      "extras": {
+        "base": "+ 1,000 CST · {cscNftCount, plural, other {# 枚 Cosmic Signature NFT}}",
+        "withNft": "+ 1,000 CST · {cscNftCount, plural, other {# 枚 Cosmic Signature NFT}} · {nftCount, number} 枚附加 NFT",
+        "withErc20": "+ 1,000 CST · {cscNftCount, plural, other {# 枚 Cosmic Signature NFT}} · {erc20Count, number} 筆附加代幣存入",
+        "withBoth": "+ 1,000 CST · {cscNftCount, plural, other {# 枚 Cosmic Signature NFT}} · {nftCount, number} 枚附加 NFT · {erc20Count, number} 筆附加代幣存入"
+      },
+      "calendarTitle": "Cosmic Signature 第 {number} 個週期開啟",
+      "calendarBody": "下一演繹週期即將開放落筆。第一筆會啟動收官倒數。",
+      "calendarCta": "把開啟時間加入日曆"
+    },
+    "board": {
+      "title": "分配軌道",
+      "subtitle": "本週期收官時發放的全部內容",
+      "cstPlusNft": "1,000 CST + NFT",
+      "cstPlusNftEach": "每位 1,000 CST + NFT",
+      "stellarStatus": "V3 加權資格",
+      "ethGroup": "來自週期儲備的 ETH",
+      "fixedGroup": "CST 與 NFT 分配"
+    },
+    "art": {
+      "sectionAria": "精選鏈上藝術作品",
+      "eyebrow": "鏈上藝術",
+      "galleryCta": "畫廊",
+      "viewAria": "檢視 Cosmic Signature {id}",
+      "alt": "Cosmic Signature 藝術作品 {id} —— 確定性三體生成藝術",
+      "pairingNote": "藝術種子記錄在鏈上。固定 CST 依分配軌道發放，簽名分配的三枚 NFT 合計對應一次 1,000 CST。",
+      "watchDrawing": "觀看成形過程",
+      "showFinished": "顯示完成的作品"
+    },
+    "personal": {
+      "title": "你在本週期的位置",
+      "leader": "最新一筆由你寫下",
+      "heldFor": "已保持 {duration}",
+      "extending": "正在刷新堅守紀錄",
+      "gestures": "{count, plural, =0 {本週期尚未落筆} other {本週期已落筆 # 次}}",
+      "retrieve": "取回等待中的分配",
+      "nothingWaiting": "暫無等待取回的分配",
+      "cstPreview": "下一筆約可銘刻 {amount} CST",
+      "entryShare": "佔本週期星選的 {share}"
+    },
+    "introByPhase": {
+      "openingSoon": "倒數結束後，下一週期開啟。週期內落下第一筆，收官倒數隨之啟動。",
+      "waitingFirstGesture": "週期已開啟。落下第一筆，收官倒數隨之啟動；倒數歸零後，最新落筆者可收官並獲得簽名分配。",
+      "zero": "倒數已歸零。最新落筆者現在可以收官並獲得簽名分配；在收官之前，新的一筆仍能延長週期。"
+    },
+    "console": {
+      "title": "落筆",
+      "methodLabel": "落筆方式",
+      "reward": "CST 銘刻預覽",
+      "messageHint": "留言與你的落筆一同上鏈",
+      "finalizeOpensIn": "{duration}後你即可收官。在此之前，只有寫下收官之筆的參與者可以收官。",
+      "holderWindow": "接下來的{duration}內僅你可收官。之後，任何參與者都可收官並獲得簽名分配。",
+      "holderWindowEnded": "你的獨享時段已結束。現在任何參與者都可收官並獲得簽名分配。",
+      "randomWalkNote": "ETH 價格減半，需一枚未使用的 Random Walk NFT"
+    },
+    "links": {
+      "previousCycleDescription": "上一個收官週期的獲配者與分配"
+    },
+    "phaseGuide": {
+      "later": "之後"
+    }
+  },
+  "observatory": {
+    "pulse": {
+      "gestureCount": "{count, plural, =0 {尚無落筆} one {已落筆 # 次} other {已落筆 # 次}}",
+      "lastGestureAge": "最近一筆 {age}"
+    },
+    "clock": {
+      "reserveLabel": "簽名分配",
+      "reserveExtraCst": "+ 1,000 CST",
+      "reserveExtraNft": "{count, plural, other {# 枚 Cosmic Signature NFT}}",
+      "reserveAttached": "{count, plural, other {# 項附加資產}}",
+      "reserveUsd": "≈ {amount} 美元",
+      "calendarTitle": "Cosmic Signature 第 {number} 個週期開啟",
+      "calendarBody": "下一演繹週期即將開放落筆。第一筆會啟動收官倒數。",
+      "calendarCta": "把開啟時間加入日曆",
+      "state": {
+        "ready": "已可收官",
+        "confirming": "確認中"
+      },
+      "finalize": {
+        "exclusiveFor": "僅你可收官，剩餘",
+        "openIn": "所有人可收官，還需",
+        "openNow": "現在任何人都可收官"
+      }
+    },
+    "standings": {
+      "title": "即時席位",
+      "latestTooltip": "最新落筆者。週期收官時，仍保持這一位置的參與者可獲得簽名分配。",
+      "cstPlusNft": "1,000 CST + NFT"
+    },
+    "intel": {
+      "viewGesture": "檢視這次落筆"
+    },
+    "ribbon": {
+      "title": "分配軌道",
+      "subtitle": "本週期收官時發放的全部內容",
+      "tooltip": "目前演繹週期各條分配軌道的即時一覽。金額隨儲備增長，並在週期收官時發放。",
+      "fullBreakdown": "檢視完整分配明細",
+      "nextCycleName": "下一週期儲備",
+      "nextCycleTooltip": "這一份額不會在收官時發放——它留存於儲備之中，作為下一演繹週期的起始分配。",
+      "nextCycleDetail": "滾存至下一週期",
+      "percentOfReserve": "佔儲備 {percent}%"
+    },
+    "dock": {
+      "aria": "週期快捷操作",
+      "openPanelAria": "開啟落筆面板"
+    },
+    "panel": {
+      "sheetTitle": "落筆"
+    },
+    "ledger": {
+      "columns": {
+        "holder": "持有者",
+        "time": "保持時長",
+        "allocation": "分配"
+      },
+      "empty": {
+        "latest": "本週期尚無落筆",
+        "endurance": "暫無堅守紀錄",
+        "chrono": "暫無時之勇士紀錄",
+        "finalCst": "尚無 CST 落筆"
+      },
+      "passesRecordIn": "距超過堅守紀錄還需",
+      "extendsRecordIn": "距延長堅守紀錄還需",
+      "chronoStopsIn": "若目前堅守持續，距停止增長還需",
+      "finalCstNote": "僅在 CST 落筆時變更",
+      "position": "落筆位置",
+      "challenge": {
+        "reign": "堅守冠軍目前在位時長",
+        "passesIn": "距超過此紀錄還需",
+        "progressAria": "堅守冠軍目前在位時長相對時之勇士紀錄的進度"
+      },
+      "paid": "落筆價格"
+    },
+    "standing": {
+      "title": "你在本週期的位置",
+      "position": "位置",
+      "positionLatest": "最新一筆由你寫下",
+      "positionOther": "最新一筆由其他參與者寫下",
+      "positionNone": "你本週期尚未落筆",
+      "positionTaken": "你的位置已被取代",
+      "takenBy": "取代者",
+      "dismiss": "關閉",
+      "positionExclusive": "僅你可收官",
+      "positionWindowEnded": "你的獨享時段已結束",
+      "goToFinalize": "前往收官",
+      "thisCycle": "本週期",
+      "gestures": "{count, plural, =0 {你尚未落筆} other {共 {total} 筆中的 # 筆}}",
+      "share": "佔本週期星選的 {percent}",
+      "updating": "正在同步你的落筆",
+      "checkFailed": "無法查詢",
+      "retry": "重試",
+      "waiting": "待取回",
+      "waitingNothing": "無",
+      "waitingNfts": "{count, plural, other {# 個 NFT}}",
+      "retrieveHint": "在「我的分配」中取回",
+      "spent": "你本週期已花費",
+      "landed": "你的落筆已確認，最新一筆由你寫下。"
+    }
+  },
+  "cycleDetails": {
+    "title": "檢視完整週期詳情",
+    "subtitle": "落筆歷史、排行、貢獻與分配發放"
+  },
+  "publicGoods": {
+    "eyebrow": "公共財",
+    "heading": "資助以太坊核心貢獻者。",
+    "stats": {
+      "vault": "金庫現存",
+      "retrieved": "已取回"
+    },
+    "projected": "本週期預估"
+  },
+  "rwlkGrid": {
+    "searchPlaceholder": "輸入 NFT ID",
+    "searchAria": "依 ID 搜尋 Random Walk NFT",
+    "tokenAria": "Random Walk NFT 編號 {id}",
+    "empty": "找不到符合的 NFT",
+    "imprint": "銘刻一枚 Random Walk NFT",
+    "none": "此錢包沒有未使用過的 Random Walk NFT。",
+    "loading": "正在讀取此錢包的 Random Walk NFT…"
+  },
+  "orientation": {
+    "title": "週期如何運作",
+    "costsNote": "其他參與者取代你的位置時，落筆所花費的 ETH 或 CST 不會退還。交易 Gas 費一律使用 ETH 支付。",
+    "allocationsTitle": "週期儲備如何分配",
+    "allocationsDescription": "檢視全部分配，包括星選與公共財。",
+    "storyTitle": "週期背後的藝術",
+    "storyDescription": "落筆如何塑造簽名、CST 紀錄的內容，以及分配如何資助公共財。",
+    "methods": {
+      "eth": "用 ETH 支付目前落筆價格。",
+      "cst": "使用錢包中已有的 CST。即時價格會隨時間變化。",
+      "randomWalk": "使用符合條件的 Random Walk NFT，降低 ETH 落筆價格。NFT 仍保留在錢包中。"
+    },
+    "connectHelp": "連接 Arbitrum 錢包，檢視並確認你的落筆。"
+  },
+  "latestSignature": {
+    "title": "最新簽名",
+    "gallery": "畫廊",
+    "unnamed": "Cosmic Signature {id}",
+    "named": "Cosmic Signature {id}《{name}》",
+    "imprintedIn": "銘刻於第 {number} 個週期",
+    "position": "{index} / {count}",
+    "newer": "較新的簽名",
+    "older": "較早的簽名",
+    "none": "尚未銘刻簽名"
+  },
+  "announce": {
+    "newGesture": "{address} 落下新的一筆，現為最新落筆者。",
+    "placeTaken": "你的位置已被取代：{address} 現為最新落筆者。"
+  }
+}

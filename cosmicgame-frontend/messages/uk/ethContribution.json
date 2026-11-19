@@ -1,0 +1,79 @@
+{
+  "page": {
+    "historyTitle": "Історія внесків",
+    "historyEmpty": "Тут з’являться внески, зроблені через форму, разом із нотатками до них.",
+    "historyError": "Не вдалося завантажити історію внесків.",
+    "jumpToForm": "Внести ETH"
+  },
+  "form": {
+    "optional": "(необов’язково)",
+    "titleLabel": "Заголовок",
+    "titlePlaceholder": "Заголовок внеску",
+    "urlLabel": "URL",
+    "messageLabel": "Повідомлення",
+    "messagePlaceholder": "За бажанням додайте до внеску нотатку",
+    "contributeEth": "Внести ETH",
+    "title": "Зробити внесок ETH",
+    "description": "Ваш ETH надходить просто до резерву поточного циклу — без жесту. Внесок не можна скасувати.",
+    "amountHint": "Будь-яка сума понад 0 з гаманця в {network}.",
+    "connectHint": "Під’єднайте гаманець у {network}, щоб зробити внесок.",
+    "noteSummary": "Додати публічну нотатку",
+    "noteAdded": "Додано",
+    "noteHint": "Нотатка зберігається в блокчейні разом із внеском і показується на його публічній сторінці.",
+    "urlError": "Вкажіть повне посилання, що починається з https:// або http://.",
+    "summary": "{amount} надійде до резерву циклу {cycle}.",
+    "summaryNoCycle": "{amount} надійде до резерву циклу.",
+    "submitAmount": "Внести {amount}",
+    "riskLink": "Перш ніж зробити внесок, прочитайте розкриття ризиків"
+  },
+  "detail": {
+    "invalidId": "Недійсний ідентифікатор внеску",
+    "title": "Внесок №{id}",
+    "breadcrumbContributions": "Внески ETH",
+    "lede": "Прямий внесок ETH до резерву циклу {cycle}.",
+    "figures": {
+      "amount": "Сума",
+      "from": "Від",
+      "cycle": "Цикл",
+      "date": "Дата"
+    },
+    "noteTitle": "Нотатка автора внеску",
+    "noteCaption": "Написано автором внеску й збережено в блокчейні разом із ним.",
+    "noteRawCaption": "Показано так, як збережено: нотатка не у звичному форматі форми.",
+    "opensInNewTab": "Відкривається в новій вкладці",
+    "recordTitle": "Запис",
+    "transactionLabel": "Транзакція",
+    "cycleLink": "Усі внески циклу {cycle}",
+    "recordLabel": "Номер запису",
+    "recordValue": "№{id}",
+    "invalidIdTitle": "Це посилання не веде до внеску",
+    "invalidIdDescription": "Номери внесків — цілі числа, наприклад 7.",
+    "notFoundTitle": "Внеску №{id} не існує",
+    "notFoundDescription": "Сторінку запису мають лише внески з нотаткою. Знайдіть потрібний у повному списку.",
+    "backToAll": "Усі внески",
+    "loadError": "Не вдалося завантажити внесок.",
+    "notFoundHeading": "Внесок не знайдено"
+  },
+  "cycle": {
+    "invalidNumber": "Недійсний номер циклу",
+    "title": "Внески циклу {cycle}",
+    "breadcrumbContributions": "Внески ETH",
+    "lede": "Прямі внески ETH до резерву циклу під час циклу {cycle}.",
+    "figures": {
+      "count": "Внесків",
+      "total": "Усього внесено",
+      "contributors": "Автори внесків"
+    },
+    "otherCycles": "Інші цикли",
+    "previous": "Попередній цикл",
+    "next": "Наступний цикл",
+    "cycleLabel": "Цикл {cycle}",
+    "viewAllocation": "Розподіл циклу {cycle}",
+    "viewLive": "Поточний цикл",
+    "emptyDescription": "Тут з’являться внески, надіслані під час циклу {cycle}.",
+    "loadError": "Не вдалося завантажити внески цього циклу.",
+    "invalidTitle": "Це посилання не веде до циклу",
+    "invalidDescription": "Номери циклів — цілі числа від 0, наприклад 3.",
+    "emptyDescriptionPast": "Під час циклу {cycle} прямих внесків ETH не було."
+  }
+}

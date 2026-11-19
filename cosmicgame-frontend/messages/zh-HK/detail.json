@@ -1,0 +1,109 @@
+{
+  "notFound": {
+    "title": "這枚簽名尚未銘刻",
+    "description": "簽名按銘刻的先後次序編號。",
+    "newest": "最新的一枚是 #{id}。",
+    "newestLink": "查看最新的簽名"
+  },
+  "jsonLd": {
+    "productDescription": "Cosmic Signature 的生成藝術 NFT，以三體物理模擬生成獨一無二的圖像。"
+  },
+  "badges": {
+    "stellarSelectionRecipient": "星選獲配者",
+    "anchorRecipient": "錨定獲配者",
+    "cycleRecipient": "週期獲配者",
+    "enduranceChampion": "堅守冠軍",
+    "eligibleForAnchoring": "可錨定",
+    "eligibleForAnchoringTooltip": "這枚 Cosmic Signature NFT 尚未錨定過，錨定後即可累積 ETH 錨定派發。",
+    "alreadyAnchored": "已錨定過",
+    "alreadyAnchoredTooltip": "這枚代幣已錨定過，無法再次錨定。"
+  },
+  "share": {
+    "trigger": "分享",
+    "copyVideoLink": "複製影片連結",
+    "copyImageLink": "複製圖片連結",
+    "copyPageLink": "複製頁面連結",
+    "copyFailed": "無法複製連結。"
+  },
+  "navigation": {
+    "label": "上一枚與下一枚簽名"
+  },
+  "sections": {
+    "nameHistory": "命名記錄",
+    "ownershipHistory": "流轉記錄"
+  },
+  "ownerActions": {
+    "title": "管理這枚代幣",
+    "tabs": {
+      "name": "命名",
+      "transfer": "轉移"
+    },
+    "anchor": {
+      "button": "錨定 {id}",
+      "note": "錨定後，這枚 NFT 將共享每個已收官週期的錨定派發。每枚 NFT 只能錨定一次，解錨後無法再次錨定。"
+    },
+    "metaMaskTooltip": "請求 MetaMask 瀏覽器擴展顯示這枚 NFT。NFT 導入仍為實驗性功能，MetaMask 流動裝置暫不支持。",
+    "addToMetaMask": "將 NFT 添加至 MetaMask",
+    "addingToMetaMask": "正在添加 NFT…",
+    "nameLabel": "名稱",
+    "nameHint": "最多 {max} 字節，記錄在鏈上，所有人皆可見。",
+    "namePlaceholder": "輸入代幣名稱",
+    "setName": "設定名稱",
+    "changeName": "更改名稱",
+    "clearName": "清除",
+    "transferButton": "轉移 {id}",
+    "namedTokensCount": "目前共有 {count} 枚已命名代幣。",
+    "viewAllNamedTokens": "查看全部已命名代幣"
+  },
+  "metadata": {
+    "imprinted": "銘刻時間",
+    "cycle": "週期",
+    "recipient": "獲配者",
+    "owner": "持有者",
+    "roundNumber": "第 {round} 個週期",
+    "anchoring": "錨定",
+    "seed": "種子",
+    "seedTooltip": "用於生成這枚代幣畫面與特徵的唯一隨機種子。",
+    "copySeed": "複製種子"
+  },
+  "image": {
+    "rendering": "正在渲染",
+    "artworkUnavailable": "作品暫不可用"
+  },
+  "viewer": {
+    "editionLabel": "作品版本",
+    "original": "原作",
+    "spectral": "光譜掃描",
+    "spectralLabel": "{subject} 的光譜掃描",
+    "modeLabel": "作品檢視",
+    "still": "靜態",
+    "motion": "動態",
+    "play": "播放動畫",
+    "pause": "暫停動畫",
+    "fullscreen": "全螢幕",
+    "zoomIn": "放大",
+    "zoomOut": "符合視窗大小",
+    "zoomHint": "點按作品或按 + 鍵放大。",
+    "panHint": "拖曳或使用方向鍵移動作品。按 0 鍵恢復為符合視窗大小。",
+    "motionError": "動畫無法載入。",
+    "motionLabel": "{subject} 的動畫"
+  },
+  "ink": {
+    "trigger": "墨繪習作",
+    "description": "同樣的軌跡，以墨跡在紙上重現。",
+    "mediaLabel": "墨繪版本",
+    "image": "圖片",
+    "seconds": "{seconds} 秒",
+    "minutes": "約 {minutes} 分鐘",
+    "videoLabel": "{subject} 的墨繪影片",
+    "imageLabel": "{subject} 的墨繪圖片",
+    "shareView": "複製此版本連結",
+    "shareMedia": "複製媒體連結",
+    "loading": "正在載入墨繪習作…",
+    "unavailable": "此作品未提供所選墨繪版本。",
+    "availabilityError": "未能確認墨繪習作是否可用，請重試。",
+    "loadError": "未能載入墨繪影片。",
+    "imageError": "未能載入墨繪圖片。",
+    "retry": "重試"
+  }
+}

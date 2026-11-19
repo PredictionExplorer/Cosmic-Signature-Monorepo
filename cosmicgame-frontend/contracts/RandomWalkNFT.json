@@ -1,0 +1,875 @@
+[
+  {
+    "name": "ERC721EnumerableForbiddenBatchMint",
+    "type": "error",
+    "inputs": []
+  },
+  {
+    "name": "ERC721IncorrectOwner",
+    "type": "error",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      },
+      {
+        "type": "uint256",
+        "name": "param1"
+      },
+      {
+        "type": "address",
+        "name": "param2"
+      }
+    ]
+  },
+  {
+    "name": "ERC721InsufficientApproval",
+    "type": "error",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      },
+      {
+        "type": "uint256",
+        "name": "param1"
+      }
+    ]
+  },
+  {
+    "name": "ERC721InvalidApprover",
+    "type": "error",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "ERC721InvalidOperator",
+    "type": "error",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "ERC721InvalidOwner",
+    "type": "error",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "ERC721InvalidReceiver",
+    "type": "error",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "ERC721InvalidSender",
+    "type": "error",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "ERC721NonexistentToken",
+    "type": "error",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "ERC721OutOfBoundsIndex",
+    "type": "error",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      },
+      {
+        "type": "uint256",
+        "name": "param1"
+      }
+    ]
+  },
+  {
+    "name": "OwnableInvalidOwner",
+    "type": "error",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "Approval",
+    "type": "event",
+    "inputs": [
+      {
+        "type": "address",
+        "indexed": true,
+        "name": "param0"
+      },
+      {
+        "type": "address",
+        "indexed": true,
+        "name": "param1"
+      },
+      {
+        "type": "uint256",
+        "indexed": true,
+        "name": "param2"
+      }
+    ]
+  },
+  {
+    "name": "ApprovalForAll",
+    "type": "event",
+    "inputs": [
+      {
+        "type": "address",
+        "indexed": true,
+        "name": "param0"
+      },
+      {
+        "type": "address",
+        "indexed": true,
+        "name": "param1"
+      },
+      {
+        "type": "bool",
+        "name": "param2"
+      }
+    ]
+  },
+  {
+    "name": "MintEvent",
+    "type": "event",
+    "inputs": [
+      {
+        "type": "uint256",
+        "indexed": true,
+        "name": "param0"
+      },
+      {
+        "type": "address",
+        "indexed": true,
+        "name": "param1"
+      },
+      {
+        "type": "bytes32",
+        "name": "param2"
+      },
+      {
+        "type": "uint256",
+        "name": "param3"
+      }
+    ]
+  },
+  {
+    "name": "OwnershipTransferred",
+    "type": "event",
+    "inputs": [
+      {
+        "type": "address",
+        "indexed": true,
+        "name": "param0"
+      },
+      {
+        "type": "address",
+        "indexed": true,
+        "name": "param1"
+      }
+    ]
+  },
+  {
+    "name": "TokenNameEvent",
+    "type": "event",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      },
+      {
+        "type": "string",
+        "name": "param1"
+      }
+    ]
+  },
+  {
+    "name": "Transfer",
+    "type": "event",
+    "inputs": [
+      {
+        "type": "address",
+        "indexed": true,
+        "name": "param0"
+      },
+      {
+        "type": "address",
+        "indexed": true,
+        "name": "param1"
+      },
+      {
+        "type": "uint256",
+        "indexed": true,
+        "name": "param2"
+      }
+    ]
+  },
+  {
+    "name": "WithdrawalEvent",
+    "type": "event",
+    "inputs": [
+      {
+        "type": "uint256",
+        "indexed": true,
+        "name": "param0"
+      },
+      {
+        "type": "address",
+        "name": "param1"
+      },
+      {
+        "type": "uint256",
+        "name": "param2"
+      }
+    ]
+  },
+  {
+    "name": "approve",
+    "type": "function",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      },
+      {
+        "type": "uint256",
+        "name": "param1"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "balanceOf",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "entropy",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "bytes32",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "getApproved",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "getMintPrice",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "isApprovedForAll",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      },
+      {
+        "type": "address",
+        "name": "param1"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "bool",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "lastMintTime",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "lastMinter",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "mint",
+    "type": "function",
+    "stateMutability": "payable",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "name",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "string",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "nextTokenId",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "numWithdrawals",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "owner",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "ownerOf",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "price",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "renounceOwnership",
+    "type": "function",
+    "stateMutability": "nonpayable",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "safeTransferFrom",
+    "type": "function",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      },
+      {
+        "type": "address",
+        "name": "param1"
+      },
+      {
+        "type": "uint256",
+        "name": "param2"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "safeTransferFrom",
+    "type": "function",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      },
+      {
+        "type": "address",
+        "name": "param1"
+      },
+      {
+        "type": "uint256",
+        "name": "param2"
+      },
+      {
+        "type": "bytes",
+        "name": "param3"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "saleTime",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "seeds",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "bytes32",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "seedsOfOwner",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "bytes32[]",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "setApprovalForAll",
+    "type": "function",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      },
+      {
+        "type": "bool",
+        "name": "param1"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "setBaseURI",
+    "type": "function",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      {
+        "type": "string",
+        "name": "param0"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "setTokenName",
+    "type": "function",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      },
+      {
+        "type": "string",
+        "name": "param1"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "supportsInterface",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "bytes4",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "bool",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "symbol",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "string",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "timeUntilSale",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "timeUntilWithdrawal",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "tokenByIndex",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "tokenGenerationScript",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "string",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "tokenNames",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "string",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "tokenOfOwnerByIndex",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      },
+      {
+        "type": "uint256",
+        "name": "param1"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "tokenURI",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "string",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "totalSupply",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "transferFrom",
+    "type": "function",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      },
+      {
+        "type": "address",
+        "name": "param1"
+      },
+      {
+        "type": "uint256",
+        "name": "param2"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "transferOwnership",
+    "type": "function",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "name": "walletOfOwner",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "address",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "uint256[]",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "withdraw",
+    "type": "function",
+    "stateMutability": "nonpayable",
+    "inputs": [],
+    "outputs": []
+  },
+  {
+    "name": "withdrawalAmount",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "withdrawalAmounts",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "withdrawalNums",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  },
+  {
+    "name": "withdrawalWaitSeconds",
+    "type": "function",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "param0"
+      }
+    ]
+  }
+]

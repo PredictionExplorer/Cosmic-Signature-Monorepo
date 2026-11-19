@@ -1,0 +1,322 @@
+'use client';
+
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import type { PublicClient } from 'viem';
+import { usePublicClient } from 'wagmi';
+
+import { cosmicGameAbi } from '@/contracts/abis';
+
+import { activeChain } from '@/config/chains';
+import { useContractAddresses } from '@/contexts/ContractAddressesContext';
+import { useCurrentSpecialRecipients } from '@/hooks/useApiQuery';
+import type { SpecialRecipients } from '@/services/api/types';
+import { isEmptyContractReadError } from '@/utils/contractErrors';
+import { reportError } from '@/utils/errors';
+
+export type SpecialAllocationSource = 'api-v2' | 'api-v1+chain' | 'api-v1';
+
+export interface SpecialAllocationSnapshot extends SpecialRecipients {
+  source: SpecialAllocationSource;
+  receivedAtMs: number;
+  hasChronoSegmentData: boolean;
+  hasFinalCstTime: boolean;
+  StoredChronoWarriorDuration?: number;
+  StoredEnduranceChampionAddress?: string;
+  StoredEnduranceChampionDuration?: number;
+}
+
+interface ChainSpecialAllocationSnapshot {
+  data: Partial<SpecialRecipients> & {
+    StoredChronoWarriorDuration?: number;
+    StoredEnduranceChampionAddress?: string;
+    StoredEnduranceChampionDuration?: number;
+  };
+  receivedAtMs?: number;
+}
+
+type ParticipantInfoResult =
+  | readonly [bigint, bigint, bigint]
+  | {
+      totalSpentEthAmount?: bigint;
+      totalSpentCstAmount?: bigint;
+      lastBidTimeStamp?: bigint;
+      [key: string]: unknown;
+    };
+
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+export function isHarnessChainSnapshotPreferred(): boolean {
+  return process.env.NEXT_PUBLIC_HARNESS === '1' && process.env.NEXT_PUBLIC_NETWORK === 'local';
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function bigintToSafeNumber(value: unknown): number | undefined {
+  if (typeof value !== 'bigint') return undefined;
+  const numberValue = Number(value);
+  return Number.isSafeInteger(numberValue) ? numberValue : undefined;
+}
+
+function cleanAddress(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function latestParticipantLastGestureTime(result: unknown): number | undefined {
+  const info = result as ParticipantInfoResult;
+  if (Array.isArray(info)) {
+    return bigintToSafeNumber((info as readonly unknown[])[2]);
+  }
+  return bigintToSafeNumber((info as Record<string, unknown> | undefined)?.lastBidTimeStamp);
+}
+
+export function hasApiV2SpecialAllocationData(data: SpecialRecipients | null | undefined): boolean {
+  return (
+    isFiniteNumber(data?.EnduranceChampionStartTimeStamp) &&
+    isFiniteNumber(data?.PrevEnduranceChampionDuration) &&
+    isFiniteNumber(data?.SourceBlockTimeStamp) &&
+    typeof data?.ChronoWarriorIsLive === 'boolean'
+  );
+}
+
+export function normalizeSpecialAllocationSnapshot({
+  apiData,
+  chainData,
+  apiReceivedAtMs,
+  chainReceivedAtMs,
+}: {
+  apiData: SpecialRecipients | null | undefined;
+  chainData?: ChainSpecialAllocationSnapshot | null;
+  apiReceivedAtMs: number;
+  chainReceivedAtMs?: number;
+}): SpecialAllocationSnapshot | null {
+  if (!apiData && !chainData?.data) return null;
+
+  const hasApiV2 = hasApiV2SpecialAllocationData(apiData);
+  const shouldUseChain = !hasApiV2 && !!chainData?.data;
+  const merged = {
+    ...(apiData ?? {}),
+    ...(shouldUseChain ? chainData?.data : {}),
+  } as SpecialRecipients & { StoredChronoWarriorDuration?: number };
+
+  const hasChronoSegmentData =
+    isFiniteNumber(merged.EnduranceChampionStartTimeStamp) &&
+    isFiniteNumber(merged.PrevEnduranceChampionDuration) &&
+    isFiniteNumber(merged.SourceBlockTimeStamp) &&
+    (typeof merged.ChronoWarriorIsLive === 'boolean' ||
+      isFiniteNumber(merged.StoredChronoWarriorDuration));
+
+  return {
+    ...merged,
+    source: hasApiV2 ? 'api-v2' : shouldUseChain ? 'api-v1+chain' : 'api-v1',
+    receivedAtMs: shouldUseChain
+      ? (chainData?.receivedAtMs ?? chainReceivedAtMs ?? apiReceivedAtMs)
+      : apiReceivedAtMs,
+    hasChronoSegmentData,
+    hasFinalCstTime: isFiniteNumber(merged.LastCstBidderLastBidTime),
+    StoredChronoWarriorDuration: merged.StoredChronoWarriorDuration,
+  };
+}
+
+export function keepPreviousSpecialAllocationChainSnapshot(
+  previousData: ChainSpecialAllocationSnapshot | null | undefined,
+) {
+  return previousData;
+}
+
+export async function fetchChainSpecialAllocationSnapshot({
+  publicClient,
+  cosmicGameAddress,
+}: {
+  publicClient: PublicClient;
+  cosmicGameAddress: string;
+}): Promise<ChainSpecialAllocationSnapshot | null> {
+  if (!cosmicGameAddress) return null;
+
+  const address = cosmicGameAddress as `0x${string}`;
+  const block = await publicClient.getBlock({ blockTag: 'latest' });
+  const read = (functionName: string, args?: readonly unknown[]) =>
+    publicClient.readContract({
+      address,
+      abi: cosmicGameAbi,
+      functionName,
+      args,
+      blockNumber: block.number,
+    });
+
+  const [
+    champions,
+    storedEnduranceChampionAddress,
+    storedEnduranceChampionDuration,
+    enduranceChampionStartTimeStamp,
+    prevEnduranceChampionDuration,
+    storedChronoWarriorDuration,
+    lastBidderAddress,
+    lastCstBidderAddress,
+    roundNum,
+  ] = await Promise.all([
+    read('tryGetCurrentChampions'),
+    read('enduranceChampionAddress'),
+    read('enduranceChampionDuration'),
+    read('enduranceChampionStartTimeStamp'),
+    read('prevEnduranceChampionDuration'),
+    read('chronoWarriorDuration'),
+    read('lastBidderAddress'),
+    read('lastCstBidderAddress'),
+    read('roundNum'),
+  ]);
+
+  const [
+    enduranceChampionAddress,
+    enduranceChampionDuration,
+    chronoWarriorAddress,
+    chronoDuration,
+  ] = champions as readonly [`0x${string}`, bigint, `0x${string}`, bigint];
+
+  const roundNumber = bigintToSafeNumber(roundNum);
+  const latestParticipant = cleanAddress(lastBidderAddress);
+  let latestParticipantLastGestureTimeValue: number | undefined;
+
+  if (roundNumber !== undefined && latestParticipant && latestParticipant !== ZERO_ADDRESS) {
+    const info = await read('biddersInfo', [BigInt(roundNumber), latestParticipant]);
+    latestParticipantLastGestureTimeValue = latestParticipantLastGestureTime(info);
+  }
+
+  const sourceBlockNumber = bigintToSafeNumber(block.number);
+  const sourceBlockTimeStamp = bigintToSafeNumber(block.timestamp);
+
+  // Live endurance-champion anchor, derived the same way the Go API does
+  // (internal/api/cosmicgame/contractstate/specialwinners.go): when the
+  // current last bidder has out-held the stored endurance record,
+  // tryGetCurrentChampions() recomputes the champion in memory, but the
+  // enduranceChampionStartTimeStamp() / prevEnduranceChampionDuration()
+  // storage getters still return the OLD anchor until the next bid commits
+  // the update. Mixing the live champion with that stale anchor made the
+  // Chrono-Warrior segment and its "is live" flag wrong after a live
+  // overtake, freezing the displayed run until the next bid.
+  const storedEnduranceStart = bigintToSafeNumber(enduranceChampionStartTimeStamp);
+  const storedPrevDuration = bigintToSafeNumber(prevEnduranceChampionDuration);
+  const storedEnduranceDurationNumber = bigintToSafeNumber(storedEnduranceChampionDuration);
+  const storedEnduranceAddress = cleanAddress(storedEnduranceChampionAddress);
+  const lastGestureTime = latestParticipantLastGestureTimeValue;
+  let liveEnduranceStart = storedEnduranceStart;
+  let livePrevDuration = storedPrevDuration;
+  if (
+    latestParticipant &&
+    latestParticipant !== ZERO_ADDRESS &&
+    lastGestureTime !== undefined &&
+    sourceBlockTimeStamp !== undefined
+  ) {
+    if (!storedEnduranceAddress || storedEnduranceAddress === ZERO_ADDRESS) {
+      // No champion recorded yet: the last bidder is the (live) champion.
+      liveEnduranceStart = lastGestureTime;
+    } else if (
+      storedEnduranceDurationNumber !== undefined &&
+      sourceBlockTimeStamp - lastGestureTime > storedEnduranceDurationNumber
+    ) {
+      // Last bidder out-held the stored record: champion start/prev are
+      // recomputed live, exactly as tryGetCurrentChampions() does.
+      livePrevDuration = storedEnduranceDurationNumber;
+      liveEnduranceStart = lastGestureTime;
+    }
+  }
+
+  const currentChronoSegmentDuration =
+    sourceBlockTimeStamp !== undefined
+      ? sourceBlockTimeStamp - ((liveEnduranceStart ?? 0) + (livePrevDuration ?? 0))
+      : undefined;
+  const storedChronoDuration = bigintToSafeNumber(storedChronoWarriorDuration);
+  const returnedChronoDuration = bigintToSafeNumber(chronoDuration);
+
+  return {
+    data: {
+      EnduranceChampionAddress: enduranceChampionAddress,
+      EnduranceChampionDuration: bigintToSafeNumber(enduranceChampionDuration),
+      StoredEnduranceChampionAddress: cleanAddress(storedEnduranceChampionAddress),
+      StoredEnduranceChampionDuration: bigintToSafeNumber(storedEnduranceChampionDuration),
+      EnduranceChampionStartTimeStamp: liveEnduranceStart,
+      PrevEnduranceChampionDuration: livePrevDuration,
+      ChronoWarriorAddress: chronoWarriorAddress,
+      ChronoWarriorDuration: bigintToSafeNumber(chronoDuration),
+      ChronoWarriorIsLive:
+        currentChronoSegmentDuration !== undefined && returnedChronoDuration !== undefined
+          ? currentChronoSegmentDuration === returnedChronoDuration
+          : undefined,
+      StoredChronoWarriorDuration: storedChronoDuration,
+      LastBidderAddress: latestParticipant,
+      LastBidderLastBidTime: latestParticipantLastGestureTimeValue,
+      LastCstBidderAddress: cleanAddress(lastCstBidderAddress),
+      RoundNum: roundNumber,
+      SourceBlockNumber: sourceBlockNumber,
+      SourceBlockTimeStamp: sourceBlockTimeStamp,
+    },
+    receivedAtMs: Date.now(),
+  };
+}
+
+export function useSpecialAllocationSnapshot(
+  initialData?: SpecialRecipients | null,
+  enabled = true,
+): {
+  snapshot: SpecialAllocationSnapshot | null;
+  isLoading: boolean;
+  raw: SpecialRecipients | null | undefined;
+} {
+  // A newly configured local cycle has no Chrono record yet, which the Go
+  // endpoint represents as HTTP 400. The harness already has the real local
+  // contract, so read the same fields directly instead of filling DevTools
+  // with expected request failures during every phase switch.
+  const harnessUsesChainSnapshot = isHarnessChainSnapshotPreferred();
+  const apiQuery = useCurrentSpecialRecipients(initialData, enabled && !harnessUsesChainSnapshot);
+  const publicClient = usePublicClient({ chainId: activeChain.id });
+  const { cosmicGame } = useContractAddresses();
+  const apiData = enabled && !harnessUsesChainSnapshot ? apiQuery.data : null;
+  const apiHasV2 = hasApiV2SpecialAllocationData(apiData);
+  const shouldReadChain =
+    enabled &&
+    !!publicClient &&
+    !!cosmicGame &&
+    (harnessUsesChainSnapshot || (!!apiData && !apiHasV2));
+
+  const chainQuery = useQuery<ChainSpecialAllocationSnapshot | null>({
+    queryKey: ['specialAllocationChainSnapshot', cosmicGame, apiQuery.dataUpdatedAt],
+    enabled: shouldReadChain,
+    placeholderData: keepPreviousSpecialAllocationChainSnapshot,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    queryFn: async () => {
+      try {
+        return await fetchChainSpecialAllocationSnapshot({
+          publicClient: publicClient!,
+          cosmicGameAddress: cosmicGame,
+        });
+      } catch (error) {
+        if (!isEmptyContractReadError(error)) {
+          reportError(error, 'special allocation chain fallback');
+        }
+        return null;
+      }
+    },
+  });
+
+  const snapshot = useMemo(
+    () =>
+      normalizeSpecialAllocationSnapshot({
+        apiData,
+        chainData: enabled ? chainQuery.data : null,
+        apiReceivedAtMs: apiQuery.dataUpdatedAt,
+        chainReceivedAtMs: chainQuery.dataUpdatedAt,
+      }),
+    [apiData, apiQuery.dataUpdatedAt, chainQuery.data, chainQuery.dataUpdatedAt, enabled],
+  );
+
+  return {
+    snapshot,
+    isLoading:
+      enabled && (apiQuery.isLoading || (shouldReadChain && chainQuery.isLoading && !snapshot)),
+    raw: enabled ? apiData : undefined,
+  };
+}

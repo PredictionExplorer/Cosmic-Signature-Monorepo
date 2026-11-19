@@ -1,0 +1,23 @@
+{
+  "page": {
+    "title": "網站導覽",
+    "subtitle": "Cosmic Signature 的所有頁面，按選單的分組排列。",
+    "home": "首頁",
+    "jsonLdName": "Cosmic Signature 網站導覽"
+  },
+  "sections": {
+    "participate": "在進行中的週期落筆，以及銘刻 Random Walk NFT。",
+    "collection": "每一件簽名作品，以及過程中被命名、附加和使用的 NFT。",
+    "explore": "進行中週期的全貌，以及按主題檢視的協議整體資料。",
+    "records": "每個週期的儲備去向：分配、錨定、推廣與公共財。",
+    "learn": "從第一次落筆到白皮書，了解協議如何運作。",
+    "trust": "驗證、審計、風險揭露與法律條款。",
+    "account": "你的統計、分配、NFT 與錨定。連接錢包後即可檢視。",
+    "ecosystem": "圍繞 Cosmic Signature 建立的獨立服務，將在新分頁中開啟。",
+    "community": "社群交流的地方，以及公共財分配的去向。"
+  },
+  "guides": {
+    "title": "指南",
+    "description": "{host} 上的學習文章：協議、藝術與參與方式。"
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "breadcrumbs": {
+    "home": "Home",
+    "contracts": "Contracts"
+  },
+  "page": {
+    "title": "Contract addresses",
+    "subtitle": "On-chain addresses, configuration, source links, and verification context for the Cosmic Signature protocol."
+  },
+  "network": {
+    "chain": "Chain {chainId}"
+  },
+  "entries": {
+    "protocol": {
+      "name": "Cosmic Signature Protocol",
+      "description": "The main protocol proxy contract that manages cycles, gestures, and allocation distribution"
+    },
+    "implementation": {
+      "name": "Implementation contract",
+      "description": "The current implementation behind the Cosmic Signature Protocol proxy contract"
+    },
+    "cst": {
+      "name": "Cosmic Signature CST Token",
+      "description": "ERC-20 token (CST) created through Participation CST and fixed allocations, and used for delegated Coordination Weight"
+    },
+    "nft": {
+      "name": "Cosmic Signature NFT",
+      "description": "ERC-721 NFT collection imprinted as allocations to cycle recipients"
+    },
+    "randomWalk": {
+      "name": "Random Walk NFT",
+      "description": "RandomWalk NFT collection that can be attached to ETH gestures for a one-time discount or anchored for Anchored-NFT Stellar Selection eligibility"
+    },
+    "council": {
+      "name": "Cosmic Council",
+      "description": "On-chain Protocol Coordination contract for Coordination Proposals"
+    },
+    "publicGoods": {
+      "name": "Public Goods Vault",
+      "description": "Receives the Public Goods Allocation from each cycle’s Cycle Reserve"
+    },
+    "outreach": {
+      "name": "Outreach Reserve",
+      "description": "Funds allocated for outreach distributions and ecosystem contributors"
+    },
+    "allocations": {
+      "name": "Allocations Wallet",
+      "description": "Escrow contract holding allocations awaiting retrieval"
+    },
+    "cosmicAnchor": {
+      "name": "Cosmic Signature NFT Anchoring Wallet",
+      "description": "Anchoring contract for Cosmic Signature NFTs"
+    },
+    "rwalkAnchor": {
+      "name": "RWLK Anchoring Wallet",
+      "description": "Anchoring contract for Random Walk NFTs"
+    }
+  },
+  "categories": {
+    "core": "Core contracts",
+    "wallet": "Wallets",
+    "anchoring": "Anchoring"
+  },
+  "addresses": {
+    "title": "Contract addresses",
+    "description": "Every Cosmic Signature contract on Arbitrum One. Copy an address, or check it on Arbiscan and its source code on Sourcify.",
+    "verified": "Companion contracts and the historical V2 implementation have published matches checked {date}. The current V3 implementation is not yet verified on Sourcify; inspect its own lookup.",
+    "markets": "Markets",
+    "reported": "The indexer reports {address}, which differs from the checked address shown here."
+  },
+  "funds": {
+    "title": "Allocation tracks",
+    "description": "How the Cycle Reserve distributes across allocation tracks: Signature Allocation, Chrono-Warrior, Stellar Selection, Anchor Distribution and Public Goods, with the rest carried into the next cycle as the Compounding Cycle Reserve.",
+    "chartAria": "Allocation tracks bar chart",
+    "segments": {
+      "signature": {
+        "label": "Signature Allocation",
+        "tooltip": "ETH share received by the finalization caller, together with 1,000 CST in total and the configured Signature NFT allocation"
+      },
+      "chrono": {
+        "label": "Chrono-Warrior",
+        "tooltip": "ETH allocation to the Chrono-Warrior, who also receives 1,000 CST and a Cosmic Signature NFT"
+      },
+      "stellar": {
+        "label": "Stellar Selection",
+        "tooltip": "Participant ETH selections use undiscounted, premium-free ETH base-cost weights in V3, including the concurrent ETH base cost for CST gestures"
+      },
+      "anchor": {
+        "label": "Anchor Distribution",
+        "tooltip": "ETH Anchor Distributions to Cosmic Signature NFT anchor-holders, proportional to anchored NFT count"
+      },
+      "publicGoods": {
+        "label": "Public Goods",
+        "tooltip": "Allocated to the Public Goods Vault for a separate permissionless transfer to its configured beneficiary"
+      },
+      "next": {
+        "label": "Compounding Cycle Reserve",
+        "tooltip": "Remaining funds that roll forward into the next cycle as the Compounding Cycle Reserve."
+      }
+    }
+  },
+  "configuration": {
+    "title": "Protocol configuration",
+    "description": "The live parameters the protocol contracts read.",
+    "cards": {
+      "ethStep": {
+        "label": "ETH Gesture Cost step-up",
+        "tooltip": "ETH Gesture Cost uses this step-up parameter. CST Gesture Cost follows the live CST Calibration Window."
+      },
+      "timeIncrement": {
+        "label": "Time added per gesture",
+        "tooltip": "Each gesture adds this much time to the Cycle Finalization Time. The increment grows by {percent}% with each cycle."
+      },
+      "cstPreview": {
+        "label": "Participation CST now",
+        "tooltip": "Estimated amount credited to the previous participant by a later gesture in V3. Formula: {formula}, in CST smallest units. The first gesture credits none; finalization does not settle an additional amount."
+      },
+      "finalization": {
+        "label": "Finalization timeout",
+        "tooltip": "Time the Final Gesture participant has to finalize the cycle before the Open-Finalization Window opens to anyone"
+      },
+      "initial": {
+        "label": "Initial cycle duration",
+        "tooltip": "The initial Cycle Finalization Time added when the first gesture is made"
+      },
+      "message": {
+        "label": "Message length limit",
+        "tooltip": "Maximum UTF-8 byte length of a gesture message"
+      },
+      "v3CstDecline": {
+        "label": "CST Price Decline Rate",
+        "value": "{amount} CST/min",
+        "tooltip": "The live CST base-cost decline rate. ETH can increase it subject to a safeguard; CST reduces it and resets the ceiling. Participation CST is a separate calculation."
+      },
+      "v3SignatureNfts": {
+        "label": "Signature Allocation NFTs",
+        "tooltip": "Number of Cosmic Signature NFTs (sequential ids) imprinted for the Signature Allocation recipient when a cycle finalizes."
+      },
+      "v3LateWindow": {
+        "label": "Late-Gesture Window",
+        "tooltip": "Duration before the Cycle Finalization Time during which the Gesture Cost carries an exponentially accelerating premium (up to ~5x)."
+      }
+    },
+    "groups": {
+      "gestures": "Gestures",
+      "timing": "Timing",
+      "selection": "Stellar Selection"
+    }
+  },
+  "parameters": {
+    "windowsTitle": "Calibration Windows",
+    "windowsDescription": "Each window lowers a Gesture Cost over time. The CST window restarts after every CST gesture; the ETH window opens each cycle and closes at its first gesture.",
+    "cstTitle": "CST Calibration Window",
+    "ethTitle": "ETH Calibration Window",
+    "duration": "Duration",
+    "elapsed": "Elapsed",
+    "remaining": "Remaining",
+    "progress": "{percent} complete",
+    "state": {
+      "running": "Running",
+      "complete": "Complete",
+      "closed": "Closed",
+      "notStarted": "Not started"
+    },
+    "ceiling": "Starting cost",
+    "cstDurationTooltip": "Live stored duration of the CST Calibration Window. CST gestures lengthen it by about {increase}%; ETH gestures shorten it by about {decrease}%.",
+    "cstCeilingTooltip": "The current beginning base cost. It declines at the on-chain rate; the late-gesture premium is calculated separately.",
+    "publicGoodsAddress": "Public Goods Beneficiary",
+    "publicGoodsAddressTooltip": "The on-chain address currently receiving the Public Goods Allocation from the Public Goods Vault contract",
+    "selection": {
+      "ethLabel": "ETH Stellar Selection recipients",
+      "ethTooltip": "Number of participants randomly selected to receive ETH allocations each cycle",
+      "nftLabel": "NFT Stellar Selection recipients",
+      "nftTooltip": "Number of participants randomly selected to receive Cosmic Signature NFTs each cycle",
+      "anchorLabel": "Anchored-NFT Stellar Selection recipients",
+      "anchorTooltip": "Number of Random Walk NFT anchor-holders randomly selected to receive Cosmic Signature NFTs each cycle"
+    },
+    "cstComplete": "The window has run its full length, so the CST Gesture Cost stays at its floor until the next CST gesture restarts it.",
+    "ethClosed": "The cycle’s first gesture closed this window; the ETH Gesture Cost now steps up with each gesture.",
+    "ethComplete": "The window has run its full length, so the ETH Gesture Cost stays at its floor until the cycle’s first gesture.",
+    "cstDurationTooltipV3": "Derived from the current CST ceiling and decline rate. V3 adjusts the rate and resets the ceiling after CST gestures; it does not adjust a stored duration by fixed percentages."
+  },
+  "vault": {
+    "title": "Public Goods",
+    "description": "Each cycle sends its Public Goods share to the vault, which forwards it to the Public Goods Beneficiary.",
+    "tooltip": "Calls the Public Goods Vault send() function to forward the vault’s ETH balance to the configured Protocol Guild beneficiary.",
+    "vaultAddress": "Vault",
+    "share": "Share of each cycle",
+    "balance": "In vault now",
+    "empty": "The vault is empty: nothing to forward yet.",
+    "balanceUnavailable": "The vault balance could not be read, so forwarding is not offered right now.",
+    "note": "Anyone can forward the vault’s balance to the beneficiary; it costs only gas."
+  },
+  "seo": {
+    "heading": "Cosmic Signature contracts",
+    "partialFallback": "Live figures are unavailable right now. The addresses below are the verified list."
+  }
+}

@@ -1,0 +1,312 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslations } from 'next-intl';
+import { usePublicClient } from 'wagmi';
+import { zeroAddress } from 'viem';
+
+import { cosmicGameAbi } from '@/contracts/abis';
+
+import { activeChain } from '@/config/chains';
+import { useContractAddresses } from '@/contexts/ContractAddressesContext';
+import { useRouter } from '@/i18n/navigation';
+import api from '@/services/api';
+import { isAxiosError } from '@/services/api/client';
+import useCosmicGameContract from '@/hooks/useCosmicGameContract';
+import type { DashboardInfo } from '@/services/api/types';
+import { classifyTxError } from '@/lib/txErrors';
+import { reportError } from '@/utils/errors';
+import { isEmptyContractReadError } from '@/utils/contractErrors';
+import { useNotify } from '@/hooks/useNotify';
+import { useTxFlow } from '@/hooks/useTxFlow';
+import { useAllocationTime, useCurrentTime, useClaimHistory } from '@/hooks/useApiQuery';
+import { getStableClientTargetTime } from '@/utils/time';
+import type { ServerTimingSample } from '@/utils/time';
+import { useUxScenarioSnapshot } from '@/lib/uxCycleScenarios';
+
+const GAS_EXTRA = BigInt(1_000_000);
+const GAS_FLOOR = BigInt(2_000_000);
+
+interface UseAllocationFinalizeOptions {
+  data: DashboardInfo | null;
+  offset: number;
+  initialTimingSample?: ServerTimingSample | null;
+}
+
+export function useAllocationFinalize({
+  data,
+  offset,
+  initialTimingSample = null,
+}: UseAllocationFinalizeOptions) {
+  const t = useTranslations('toasts');
+  const router = useRouter();
+  const publicClient = usePublicClient({ chainId: activeChain.id });
+  const { cosmicGame } = useContractAddresses();
+  const cosmicGameContract = useCosmicGameContract();
+  const { notify } = useNotify();
+  const tx = useTxFlow();
+  const uxScenario = useUxScenarioSnapshot();
+
+  const { data: prizeTimeRaw } = useAllocationTime(
+    initialTimingSample?.targetServerTimeSec,
+    initialTimingSample ? 0 : undefined,
+  );
+  const { data: currentTimeRaw, dataUpdatedAt: currentTimeUpdatedAt } = useCurrentTime(
+    initialTimingSample?.currentServerTimeSec,
+    initialTimingSample ? 0 : undefined,
+  );
+  const { data: claimHistoryRaw } = useClaimHistory();
+
+  const [allocationTime, setAllocationTime] = useState(() => {
+    if (initialTimingSample && initialTimingSample.targetServerTimeSec > 0) {
+      return (
+        initialTimingSample.sampledAtMs +
+        (initialTimingSample.targetServerTimeSec - initialTimingSample.currentServerTimeSec) * 1000
+      );
+    }
+    const stableTargetMs = getStableClientTargetTime({
+      targetServerTimeSec: prizeTimeRaw,
+      currentServerTimeSec: currentTimeRaw,
+      currentServerTimeUpdatedAtMs: currentTimeUpdatedAt,
+    });
+    if (stableTargetMs > 0) return stableTargetMs;
+    // Server-seeded fallback: the dashboard snapshot already carries the
+    // finalization timestamp the dedicated queries will re-fetch. Using it
+    // for the first render keeps the server-rendered phase correct (live /
+    // approach instead of a spurious ready-to-finalize) so the home page's
+    // sections do not mount/unmount — and shift layout — after hydration.
+    const seededSeconds = data?.PrizeClaimTs;
+    return typeof seededSeconds === 'number' && seededSeconds > 0 ? seededSeconds * 1000 : 0;
+  });
+
+  useEffect(() => {
+    const updateId = window.setTimeout(() => {
+      setAllocationTime((previousTargetMs) => {
+        const nextTargetMs = getStableClientTargetTime({
+          targetServerTimeSec: prizeTimeRaw,
+          currentServerTimeSec: currentTimeRaw,
+          currentServerTimeUpdatedAtMs: currentTimeUpdatedAt,
+          previousTargetMs,
+          correctionToleranceMs: 1500,
+        });
+        // While the timing queries are still in flight the helper yields 0;
+        // keep the seeded target instead of clobbering it back to "ready".
+        return nextTargetMs > 0 ? nextTargetMs : previousTargetMs;
+      });
+    }, 0);
+    return () => window.clearTimeout(updateId);
+  }, [prizeTimeRaw, currentTimeRaw, currentTimeUpdatedAt]);
+
+  const claimHistory =
+    (claimHistoryRaw as
+      | import('@/components/tables/RecipientHistoryTable').WinningHistoryEntry[]
+      | null) ?? null;
+
+  const [timeoutFinalize, setTimeoutClaimPrize] = useState(0);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [activationTime, setActivationTime] = useState(0);
+
+  const mountedRef = useRef(true);
+  const inFlightRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  /**
+   * Finalizes the current cycle (the contract's `claimMainPrize`), then
+   * records the cycle for the indexer and opens the finalized-cycle page.
+   * Runs through `useTxFlow`: chain guard, one lifecycle toast with an
+   * explorer link, and localized failures (known contract errors included).
+   * Returns `true` once the transaction is confirmed so the caller can
+   * refresh; `false` on a missing contract, a dismissed wallet prompt, a
+   * failure, or a concurrent submit.
+   */
+  const onFinalize = async (): Promise<boolean> => {
+    if (inFlightRef.current) return false;
+    if (!cosmicGame) {
+      notify('error', t('wallet.connectCorrectNetwork'));
+      return false;
+    }
+    if (!publicClient) {
+      notify('error', t('network.unavailable'));
+      return false;
+    }
+
+    inFlightRef.current = true;
+    setIsClaiming(true);
+    const contract = { address: cosmicGame as `0x${string}`, abi: cosmicGameAbi };
+    let roundBefore = 0n;
+    let hasFinalCstGesture = false;
+    let gasLimit = GAS_FLOOR;
+    let roundAdvanced = false;
+
+    try {
+      const result = await tx.run({
+        prepare: async (ctx) => {
+          roundBefore = (await publicClient.readContract({
+            ...contract,
+            functionName: 'roundNum',
+          })) as bigint;
+          const finalCstGestureParticipant =
+            ((await publicClient.readContract({
+              ...contract,
+              functionName: 'lastCstBidderAddress',
+            })) as string | undefined) ?? zeroAddress;
+          hasFinalCstGesture = finalCstGestureParticipant !== zeroAddress;
+          try {
+            const estimate = await publicClient.estimateContractGas({
+              ...contract,
+              functionName: 'claimMainPrize',
+              account: ctx.account,
+            });
+            if (estimate) gasLimit = estimate + GAS_EXTRA;
+          } catch (estimateErr) {
+            // A revert means the contract would reject the finalization (too
+            // early, or someone else just finalized): stop here with its
+            // decoded reason instead of sending with the gas floor. Only an
+            // estimate that could not run falls back to the floor.
+            if (classifyTxError(estimateErr).kind === 'would-revert') throw estimateErr;
+            reportError(estimateErr, 'finalize-cycle-gas-estimate');
+          }
+        },
+        write: (ctx) =>
+          ctx.writeContract({ ...contract, functionName: 'claimMainPrize', gas: gasLimit }),
+        onConfirmed: async () => {
+          // A successful claimMainPrize receipt already means the cycle
+          // advanced; this read only double-checks it. When the read itself
+          // fails (a rate limit, a flaky RPC) the receipt stands, so the
+          // participant still reaches the confirmation page.
+          let roundAfter: bigint | null = null;
+          try {
+            roundAfter = (await publicClient.readContract({
+              ...contract,
+              functionName: 'roundNum',
+            })) as bigint;
+          } catch (readErr) {
+            reportError(readErr, 'finalize-cycle-round-check');
+          }
+          if (roundAfter !== null && roundAfter <= roundBefore) {
+            notify('warning', t('finalize.roundDidNotAdvance'));
+            return;
+          }
+          roundAdvanced = true;
+
+          // V3 awards `mainPrizeNumCosmicSignatureNfts` Signature Allocation NFTs
+          // (default 3); V1/V2 award exactly 1 (the getter does not exist there,
+          // so the read fails and we keep 1).
+          let signatureAllocationNftCount = 1;
+          try {
+            const value = (await cosmicGameContract?.read.mainPrizeNumCosmicSignatureNfts?.()) as
+              | bigint
+              | undefined;
+            if (value !== undefined && value > 0n) signatureAllocationNftCount = Number(value);
+          } catch {
+            // V2 deployment — selector not recognized; keep the single-NFT count.
+          }
+
+          // Imprinted per finalize: Signature Allocation NFT(s) + Endurance Champion
+          // + Chrono-Warrior + participant Stellar NFTs + (final CST gesturer, if any)
+          // + (RWLK anchor Stellar, if staked).
+          let count =
+            (data?.NumRaffleNFTWinnersBidding ?? 0) +
+            2 +
+            signatureAllocationNftCount +
+            (hasFinalCstGesture ? 1 : 0);
+          if ((data?.MainStats?.StakeStatisticsRWalk?.TotalTokensStaked ?? 0) > 0) {
+            count += data?.NumRaffleNFTWinnersStakingRWalk ?? 0;
+          }
+          try {
+            await api.create(Number(roundBefore), count);
+          } catch (apiErr) {
+            const missingIndexer = isAxiosError(apiErr) && apiErr.response?.status === 404;
+            if (!missingIndexer) {
+              reportError(apiErr, 'post-claim-api');
+              notify('warning', t('finalize.metadataUpdating'));
+            }
+          }
+
+          /** Completed cycle is the on-chain round before advance — matches `api.get_round_info`. */
+          const params = new URLSearchParams();
+          params.set('cycle', String(Number(roundBefore)));
+          params.set('message', 'success');
+          router.push(`/allocation-finalized?${params.toString()}`);
+        },
+        successMessage: () => (roundAdvanced ? t('cycleFinalized') : null),
+        failureMessage: t('finalize.failed'),
+        errorContext: 'finalize-cycle',
+      });
+      return result.status === 'confirmed';
+    } finally {
+      inFlightRef.current = false;
+      if (mountedRef.current) setIsClaiming(false);
+    }
+  };
+
+  const fetchActivationTime = useCallback(async () => {
+    // Scenario activation time is derived at the hook's return; nothing to read.
+    if (uxScenario) return;
+    if (!cosmicGameContract) return;
+    try {
+      const time = await cosmicGameContract.read.roundActivationTime?.();
+      if (!mountedRef.current) return;
+      const targetServerTimeSec = Number(time ?? 0);
+      const projectedTargetMs = getStableClientTargetTime({
+        targetServerTimeSec,
+        currentServerTimeSec: currentTimeRaw,
+        currentServerTimeUpdatedAtMs: currentTimeUpdatedAt,
+      });
+      setActivationTime(
+        projectedTargetMs > 0 ? projectedTargetMs / 1000 : targetServerTimeSec - offset / 1000,
+      );
+    } catch (err) {
+      if (!isEmptyContractReadError(err)) {
+        reportError(err, 'fetchActivationTime');
+      }
+      if (mountedRef.current) setActivationTime(0);
+    }
+  }, [cosmicGameContract, currentTimeRaw, currentTimeUpdatedAt, offset, uxScenario]);
+
+  useEffect(() => {
+    // Scenario values are not synced into state: the return below derives
+    // them, so a scenario never inherits (or leaks) a real deployment's
+    // figures.
+    if (uxScenario) return;
+    const fetchTimeoutFinalize = async () => {
+      if (!cosmicGameContract) return;
+      try {
+        const timeout = await cosmicGameContract.read.timeoutDurationToClaimMainPrize?.();
+        if (!mountedRef.current) return;
+        setTimeoutClaimPrize(Number(timeout ?? 0));
+      } catch (err) {
+        if (!isEmptyContractReadError(err)) {
+          reportError(err, 'fetchTimeoutFinalize');
+        }
+        if (mountedRef.current) setTimeoutClaimPrize(0);
+      }
+    };
+
+    if (cosmicGameContract) {
+      void fetchTimeoutFinalize();
+      // Setting activation time state from a one-shot async contract read.
+      // Migrating to React Query would be cleaner long-term but is a larger
+      // refactor (the gesture flow couples to fetchActivationTime via the
+      // returned callback). Every setState inside lands from the read's
+      // await continuation, never synchronously, so the warning is the
+      // tracer being conservative about the shared callback.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void fetchActivationTime();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cosmicGameContract, offset]);
+
+  return {
+    allocationTime,
+    timeoutFinalize: uxScenario ? 300 : timeoutFinalize,
+    isClaiming,
+    claimHistory,
+    activationTime: uxScenario ? 0 : activationTime,
+    onFinalize,
+    fetchActivationTime,
+  } as const;
+}

@@ -1,0 +1,81 @@
+{
+  "howItWorks": {
+    "title": "参与方式",
+    "steps": {
+      "promote": {
+        "title": "开展推广",
+        "description": "在社交平台、博客和社区中介绍 Cosmic Signature。",
+        "detail": "文章、推荐链接、博客与视频均可。"
+      },
+      "verify": {
+        "title": "接受核验",
+        "description": "团队会核验推广行动。",
+        "detail": "确认分配前，会评估传播范围、内容质量与真实性。"
+      },
+      "receive": {
+        "title": "获得 CST",
+        "description": "分配以 CST 直接发放至钱包。",
+        "detail": "核验完成后通过链上交易发送，分配额取决于推广的实际影响。"
+      }
+    },
+    "description": "通过 3 个步骤参与 Cosmic Signature 推广并获得分配。"
+  },
+  "leaderboard": {
+    "title": "推广贡献榜",
+    "empty": "暂无推广贡献者。",
+    "description": "按推广活动累计获配的 CST 排名。",
+    "columns": {
+      "rank": "排名",
+      "contributor": "贡献者",
+      "share": "比例",
+      "shareHelp": "该贡献者获配的 CST 相对于迄今全部推广分配的比例。",
+      "received": "获配 CST",
+      "allocations": "分配笔数"
+    }
+  },
+  "history": {
+    "title": "推广分配记录",
+    "emptyDescription": "推广行动通过核验并完成拨付后，记录会显示在这里。",
+    "description": "推广储备发出的每一笔分配，均附交易链接。"
+  },
+  "cta": {
+    "title": "准备参与推广？",
+    "description": "加入推广计划，向更多人介绍 Cosmic Signature，并根据经核验的推广行动获得 CST 分配。",
+    "contact": "发邮件联系推广团队",
+    "note": "团队会协助准备推广材料，并说明分配的确定方式。",
+    "copyEmail": "复制邮箱地址",
+    "emailCopied": "邮箱地址已复制",
+    "rulesLink": "联系团队前请阅读参与须知"
+  },
+  "address": {
+    "parent": "推广分配",
+    "title": "获得的推广分配",
+    "lede": "此地址从推广储备获得的 CST。",
+    "profile": "参与者主页",
+    "figures": {
+      "total": "获配 CST",
+      "allocations": "分配笔数",
+      "first": "首笔分配",
+      "latest": "最近一笔分配",
+      "allocated": "分配时间",
+      "rank": "排名",
+      "rankValue": "第 {rank} 名，共 {total} 名",
+      "shareCaption": "占全部推广 CST 的 {share}"
+    },
+    "emptyDescription": "推广团队向此地址发出 CST 后，分配会显示在这里。",
+    "invalidAddress": {
+      "title": "地址无效",
+      "description": "链接中需要完整地址：0x 加 40 位字母和数字。",
+      "action": "全部推广分配"
+    }
+  },
+  "learnHow": "了解参与方式",
+  "loadError": "无法加载推广分配记录。",
+  "rules": {
+    "title": "参与须知",
+    "review": "任何人都可以提出推广方案；每项方案在分配前都会经团队审核。",
+    "discretion": "分配由团队酌情决定：是否批准推广、何时发送 CST 以及发送多少，均由团队决定。未获批准的推广不会获得分配。",
+    "excluded": "垃圾信息、购买的关注或互动，以及误导性说法（包括关于 CST 价值的说法）均不计入。",
+    "disclose": "每次发布关于 Cosmic Signature 的内容时，请说明你可能因此获得 CST。"
+  }
+}

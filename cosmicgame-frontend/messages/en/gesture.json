@@ -1,0 +1,87 @@
+{
+  "invalid": {
+    "title": "Invalid gesture ID",
+    "help": "The gesture ID in the address must be a whole number, zero or greater."
+  },
+  "header": {
+    "title": "Gesture #{position}",
+    "fallback": "Gesture record {id}",
+    "explorer": "View transaction"
+  },
+  "empty": {
+    "title": "No gesture information found.",
+    "help": "Check the gesture ID. A recent gesture may take a moment to appear.",
+    "action": "See the current cycle"
+  },
+  "error": {
+    "title": "Gesture record didn’t load",
+    "message": "Check your connection and try again."
+  },
+  "figures": {
+    "cost": "Gesture Cost",
+    "held": "Time held",
+    "heldInfo": "How long this gesture was the Last Gesture: until the next gesture, or until the cycle finalized.",
+    "heldLive": "Still the Last Gesture"
+  },
+  "credit": {
+    "titlePrevious": "CST credited to previous participant",
+    "titleCurrent": "CST credited to this participant",
+    "titleUnknown": "CST credit",
+    "recipient": "Recipient",
+    "recipientUnavailable": "Recipient unavailable",
+    "sameWallet": "Same wallet",
+    "firstGesture": "First gesture — no CST credit",
+    "zero": "No CST credited",
+    "amountUnavailable": "CST amount unavailable",
+    "incomplete": "Some CST credit details are unavailable.",
+    "bodyPrevious": "This gesture credited the participant who made the preceding gesture."
+  },
+  "method": {
+    "eth": "ETH",
+    "ethRandomWalk": "ETH + Random Walk NFT",
+    "cst": "CST"
+  },
+  "sections": {
+    "details": {
+      "title": "Record"
+    },
+    "message": {
+      "title": "Message"
+    },
+    "nft": {
+      "title": "Attached NFT"
+    }
+  },
+  "rows": {
+    "participant": "Participant",
+    "finalizationTime": "Finalization time after this gesture",
+    "clockExtended": "Extended by {duration}",
+    "transaction": "Transaction",
+    "copyHash": "Copy transaction hash",
+    "hashCopied": "Transaction hash copied",
+    "erc20": "Attached ERC-20",
+    "erc20Amount": "Attached ERC-20 token amount",
+    "nftContract": "Attached NFT contract address",
+    "nftId": "Attached NFT ID"
+  },
+  "nav": {
+    "aria": "Neighbouring gestures",
+    "previous": "Previous gesture",
+    "next": "Next gesture",
+    "all": "All gestures in Cycle {cycle}"
+  },
+  "nftPreview": {
+    "collectionName": "Collection name",
+    "artist": "Artist",
+    "platform": "Platform",
+    "description": "Description"
+  },
+  "randomWalk": {
+    "heading": "Random Walk NFT"
+  },
+  "rail": {
+    "position": "Gesture {position} of {total}",
+    "positionLive": "Gesture {position} of {total} so far",
+    "liveNote": "This cycle is still open. Its Signature is imprinted when it finalizes."
+  }
+}

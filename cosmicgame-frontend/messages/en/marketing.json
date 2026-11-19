@@ -1,0 +1,81 @@
+{
+  "howItWorks": {
+    "title": "How it works",
+    "steps": {
+      "promote": {
+        "title": "Promote",
+        "description": "Tell people about Cosmic Signature on social media, blogs and in communities.",
+        "detail": "Posts, referral links, articles and videos all count."
+      },
+      "verify": {
+        "title": "Get verified",
+        "description": "Our team checks your outreach.",
+        "detail": "It looks at reach, quality and authenticity before approving an allocation."
+      },
+      "receive": {
+        "title": "Receive CST",
+        "description": "The allocation arrives as CST in your wallet.",
+        "detail": "It is sent on-chain once your outreach is verified, and its size reflects the outreach’s impact."
+      }
+    },
+    "description": "Three steps, from telling people about Cosmic Signature to CST in your wallet."
+  },
+  "leaderboard": {
+    "title": "Top outreach contributors",
+    "empty": "No outreach contributors yet.",
+    "description": "Ranked by the CST each has received for outreach.",
+    "columns": {
+      "rank": "Rank",
+      "contributor": "Contributor",
+      "share": "Share",
+      "shareHelp": "Their part of all the CST allocated for outreach so far.",
+      "received": "CST received",
+      "allocations": "Allocations"
+    }
+  },
+  "history": {
+    "title": "Allocation history",
+    "emptyDescription": "Approved outreach allocations appear here after they are sent.",
+    "description": "Every allocation sent from the Outreach Reserve, each linked to its transaction."
+  },
+  "cta": {
+    "title": "Ready to spread the word?",
+    "description": "Join our outreach program and receive CST distributions for promoting Cosmic Signature to the world.",
+    "contact": "Email the outreach team",
+    "note": "The team can help with outreach materials and explain how allocations are decided.",
+    "copyEmail": "Copy email address",
+    "emailCopied": "Email address copied",
+    "rulesLink": "Read the program rules before you email the team"
+  },
+  "address": {
+    "parent": "Outreach allocations",
+    "title": "Outreach allocations received",
+    "lede": "CST this address has received from the Outreach Reserve.",
+    "profile": "Participant profile",
+    "figures": {
+      "total": "CST received",
+      "allocations": "Allocations",
+      "first": "First allocation",
+      "latest": "Latest allocation",
+      "allocated": "Allocated on",
+      "rank": "Rank",
+      "rankValue": "{rank} of {total}",
+      "shareCaption": "{share} of all outreach CST"
+    },
+    "emptyDescription": "Allocations appear here once the outreach team sends CST to this address.",
+    "invalidAddress": {
+      "title": "Invalid address",
+      "description": "The link needs a full address: 0x followed by 40 letters and digits.",
+      "action": "All outreach allocations"
+    }
+  },
+  "learnHow": "Learn how",
+  "loadError": "The outreach allocations couldn’t be loaded.",
+  "rules": {
+    "title": "Program rules",
+    "review": "Anyone can propose outreach; the team reviews each proposal before any allocation.",
+    "discretion": "Allocations are at the team’s discretion: it decides whether to approve outreach, when to send CST and how much. Outreach that isn’t approved receives nothing.",
+    "excluded": "Spam, bought followers or engagement, and misleading claims, including claims about what CST is worth, don’t count.",
+    "disclose": "Say that you may receive CST whenever you post about Cosmic Signature."
+  }
+}

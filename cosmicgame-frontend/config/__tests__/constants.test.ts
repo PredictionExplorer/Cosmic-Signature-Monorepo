@@ -1,0 +1,87 @@
+import {
+  DATA_POLL_INTERVAL_MS,
+  HEADER_POLL_INTERVAL_MS,
+  NOTIFICATION_AUTO_HIDE_MS,
+  ERC721_INTERFACE_ID,
+} from '../constants';
+
+describe('config/constants', () => {
+  describe('DATA_POLL_INTERVAL_MS', () => {
+    it('equals 12 000', () => {
+      expect(DATA_POLL_INTERVAL_MS).toBe(12_000);
+    });
+
+    it('is a number', () => {
+      expect(typeof DATA_POLL_INTERVAL_MS).toBe('number');
+    });
+
+    it('is positive', () => {
+      expect(DATA_POLL_INTERVAL_MS).toBeGreaterThan(0);
+    });
+  });
+
+  describe('HEADER_POLL_INTERVAL_MS', () => {
+    it('equals 30 000', () => {
+      expect(HEADER_POLL_INTERVAL_MS).toBe(30_000);
+    });
+
+    it('is a number', () => {
+      expect(typeof HEADER_POLL_INTERVAL_MS).toBe('number');
+    });
+
+    it('is positive', () => {
+      expect(HEADER_POLL_INTERVAL_MS).toBeGreaterThan(0);
+    });
+  });
+
+  describe('NOTIFICATION_AUTO_HIDE_MS', () => {
+    it('equals 5 000', () => {
+      expect(NOTIFICATION_AUTO_HIDE_MS).toBe(5_000);
+    });
+
+    it('is a number', () => {
+      expect(typeof NOTIFICATION_AUTO_HIDE_MS).toBe('number');
+    });
+
+    it('is positive', () => {
+      expect(NOTIFICATION_AUTO_HIDE_MS).toBeGreaterThan(0);
+    });
+  });
+
+  describe('ERC721_INTERFACE_ID', () => {
+    it('equals 0x80ac58cd', () => {
+      expect(ERC721_INTERFACE_ID).toBe('0x80ac58cd');
+    });
+
+    it('is a string', () => {
+      expect(typeof ERC721_INTERFACE_ID).toBe('string');
+    });
+
+    it('starts with 0x', () => {
+      expect(ERC721_INTERFACE_ID).toMatch(/^0x/);
+    });
+
+    it('is a valid 4-byte hex selector', () => {
+      expect(ERC721_INTERFACE_ID).toMatch(/^0x[0-9a-f]{8}$/);
+    });
+  });
+
+  describe('interval ordering', () => {
+    it('DATA_POLL_INTERVAL_MS <= HEADER_POLL_INTERVAL_MS', () => {
+      expect(DATA_POLL_INTERVAL_MS).toBeLessThanOrEqual(HEADER_POLL_INTERVAL_MS);
+    });
+  });
+
+  describe('module exports', () => {
+    it('exports exactly the expected constants', () => {
+      const constants = require('../constants');
+      const exportedKeys = Object.keys(constants).sort();
+      expect(exportedKeys).toEqual([
+        'DATA_POLL_INTERVAL_MS',
+        'ERC721_INTERFACE_ID',
+        'HEADER_POLL_INTERVAL_MS',
+        'NOTIFICATION_AUTO_HIDE_MS',
+      ]);
+    });
+  });
+});

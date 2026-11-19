@@ -1,0 +1,409 @@
+{
+  "shared": {
+    "unavailable": "暫不可用",
+    "cycleNumber": "第 {cycle} 個週期"
+  },
+  "allocations": {
+    "title": "我的分配",
+    "subtitle": "協議為此錢包預留的所有分配，都可以在這裡一併取回。",
+    "loadErrorTitle": "未能載入分配",
+    "loadErrorMessage": "未能載入待取回分配資料，請稍後再試。",
+    "anchorLoadError": {
+      "title": "無法載入你的錨定配發",
+      "message": "此錢包的錨定配發暫時無法取得，請稍後再試。"
+    },
+    "summary": {
+      "title": "可取回",
+      "description": "一筆交易即可取回為此錢包保留的 ETH、已附加 NFT 和已附加代幣。",
+      "eth": "ETH 分配",
+      "nfts": "已附加 NFT",
+      "tokens": "已附加代幣",
+      "anchor": "錨定配發",
+      "cycles": "{count, plural, other {來自 # 個週期}}",
+      "anchorCaption": "在下方另行取回",
+      "retrieveEverything": "取回 ETH、NFT 和代幣",
+      "retrieveBy": "請在 <date></date> 前取回，之後任何人都可以取回。",
+      "expired": "取回期限已於 <date></date> 截止。在其他人取回之前，你仍可取回。",
+      "success": "已全部取回到你的錢包。"
+    },
+    "nothing": {
+      "title": "目前沒有可取回的分配",
+      "description": "已收官週期分配給此錢包的 ETH、NFT 或代幣會保留在這裡，直到你取回。"
+    },
+    "sections": {
+      "eth": "ETH 分配",
+      "ethDescription": "星選與時之勇士的 ETH 按週期保留，直到你取回。",
+      "anchors": "錨定配發",
+      "anchorsDescription": "錨定合約為你已錨定的 Cosmic Signature NFT 配發的 ETH。",
+      "nfts": "已附加 NFT",
+      "erc20": "已附加 ERC-20 代幣"
+    },
+    "retrieveAll": "全部取回",
+    "lookup": {
+      "label": "查詢任意地址",
+      "hint": "分配紀錄是公開的：可檢視任意地址獲得的分配。",
+      "submit": "查詢",
+      "invalid": "請輸入完整地址：0x 後接 40 個十六進位字元（0～9、a～f）。"
+    }
+  },
+  "anchors": {
+    "title": "我的錨定",
+    "subtitle": "錨定你的 NFT，檢視它們獲得的配發，並在合適的時候解錨。",
+    "tabs": {
+      "label": "系列",
+      "cosmicSignature": "Cosmic Signature",
+      "randomWalk": "Random Walk",
+      "anchoredCount": "{count, plural, other {已錨定 # 枚}}"
+    },
+    "stats": {
+      "unretrieved": {
+        "label": "未取回配發",
+        "tooltip": "已分配至 Cosmic Signature NFT 但尚未取回的 ETH 錨定配發。解錨時，累積配發會自動取回。解錨不可撤銷：解錨後的 NFT 無法再次錨定。",
+        "caption": "解錨時取回。解錨不可撤銷。"
+      },
+      "distributionPerNft": {
+        "label": "每枚已錨定 NFT",
+        "tooltip": "目前每枚已錨定 Cosmic Signature NFT 的 ETH 錨定配發額，按鏈上錨定池總額除以已索引的錨定 NFT 數量計算。",
+        "noneAnchored": "尚未索引到已錨定的 Cosmic Signature NFT"
+      }
+    }
+  },
+  "statistics": {
+    "page": {
+      "invalidAddress": "地址無效",
+      "ownTitle": "我的統計",
+      "ownSubtitle": "你在每個演繹週期的落筆及其花費、獲配內容、NFT 與錨定。",
+      "userSubtitle": "此地址在每個演繹週期的落筆及其花費、獲配內容、NFT 與錨定。",
+      "emptyTitle": "暫無活動",
+      "emptyDescription": "此地址尚無落筆、分配或錨定紀錄。",
+      "sections": {
+        "gestureHistory": "落筆",
+        "recipientHistory": "獲配紀錄",
+        "anchoring": "錨定",
+        "artworks": "Cosmic Signature NFT",
+        "outreachAllocations": "推廣分配",
+        "claimableAssets": "已附加資產"
+      },
+      "participant": "參與者",
+      "loadErrorTitle": "無法載入此地址的統計",
+      "loadErrorMessage": "統計服務暫未回應，請稍後再試。",
+      "sectionLoadErrorTitle": "此區塊未能載入",
+      "nav": {
+        "label": "個人資料目錄",
+        "overview": "概覽",
+        "nfts": "NFT",
+        "gestures": "落筆",
+        "allocations": "獲配紀錄",
+        "anchoring": "錨定",
+        "outreach": "推廣分配",
+        "attached": "已附加資產"
+      }
+    },
+    "figures": {
+      "gestures": {
+        "label": "落筆",
+        "caption": "{count, plural, other {跨 # 個週期}}"
+      },
+      "spent": {
+        "label": "落筆花費",
+        "caption": "另加 {amount}",
+        "info": "此地址為 ETH 落筆支付的 ETH。CST 落筆以 CST 支付，顯示於下方。落筆費用不予退還。"
+      },
+      "received": {
+        "label": "獲配",
+        "caption": "{count, plural, other {來自 # 項分配}}",
+        "info": "此地址經由分配收到的 ETH：簽名分配、時之勇士與星選的 ETH。CST、NFT 與錨定配發列於下方。"
+      },
+      "balance": {
+        "label": "錢包餘額"
+      }
+    },
+    "titles": {
+      "label": "稱號",
+      "signatureAllocation": "簽名分配",
+      "enduranceChampion": "堅守冠軍",
+      "chronoWarrior": "時之勇士",
+      "finalCstGesture": "CST 收官之筆",
+      "entry": "{title} · {count, plural, other {第 {cycles} 個週期}}"
+    },
+    "selection": {
+      "title": "星選佔比 · 第 {cycle} 個週期",
+      "share": "{total} 次落筆中的 {mine} 次",
+      "caption": "週期收官時，協議會從本週期的全部落筆中選取 {eth} 次 ETH 星選與 {nft} 次 NFT 星選，同一筆落筆可再次獲選。每次落筆計為一次。",
+      "captionGeneric": "週期收官時，協議會從本週期的全部落筆中進行星選，同一筆落筆可再次獲選。每次落筆計為一次。",
+      "weightedNote": "V3 參與者 ETH 與 NFT 星選都依每筆當時未減免、未含溢價的 ETH 基礎價格加權。"
+    },
+    "overview": {
+      "title": "概覽",
+      "gestures": {
+        "title": "落筆",
+        "largest": "最大一筆 ETH 落筆",
+        "firstCycle": "首個週期",
+        "latest": "最近落筆"
+      },
+      "stellarSelection": {
+        "title": "星選",
+        "ethSelections": "ETH 星選次數",
+        "ethAllocated": "已分配 ETH",
+        "ethRetrieved": "已取回 ETH",
+        "nfts": "星選 NFT"
+      },
+      "nfts": {
+        "title": "Cosmic Signature NFT",
+        "received": "收到",
+        "toRetrieve": "待取回的已附加 NFT",
+        "transfers": "轉移",
+        "heldOrAnchored": "目前持有或錨定 {count, number} 枚"
+      },
+      "anchoring": {
+        "title": "錨定",
+        "anchoredNow": "目前錨定",
+        "actions": "錨定與解錨操作",
+        "distributions": "錨定配發",
+        "byKind": "Cosmic Signature {cosmicSignature, number} · Random Walk {randomWalk, number}"
+      },
+      "definitions": {
+        "label": "定義",
+        "largest": "此地址單次 ETH 落筆的最大金額。",
+        "ethAllocated": "各週期經由星選分配給此地址的 ETH，含已取回與未取回。",
+        "selectionNfts": "經由星選為此地址銘刻的 Cosmic Signature NFT。",
+        "nftsReceived": "此地址在各週期經由任何分配收到的 Cosmic Signature NFT。",
+        "toRetrieve": "隨簽名分配歸於此地址、尚未取回的已附加 NFT。",
+        "distributions": "錨定 Cosmic Signature NFT 所得的 ETH 錨定配發，含已取回與未取回。"
+      }
+    },
+    "artworks": {
+      "emptyTitle": "未持有 Cosmic Signature NFT",
+      "emptyDescription": "此地址持有的 Cosmic Signature NFT 會顯示在這裡。",
+      "showAll": "顯示全部 {count} 枚",
+      "showFewer": "收合"
+    },
+    "quickActions": {
+      "anchor": {
+        "label": "錨定 NFT",
+        "description": "錨定 Cosmic Signature NFT 可獲得 ETH 錨定配發；錨定 Random Walk NFT 可參與錨定 NFT 星選"
+      },
+      "gesture": {
+        "label": "落筆",
+        "description": "參與目前週期"
+      },
+      "transfers": {
+        "label": "NFT 轉移紀錄",
+        "description": "Cosmic Signature NFT 轉移紀錄"
+      },
+      "stellarSelection": {
+        "label": "星選紀錄",
+        "description": "星選分配與 ETH 存入紀錄"
+      },
+      "label": "下一步"
+    },
+    "anchoring": {
+      "tabs": {
+        "label": "NFT 類型",
+        "cosmicSignature": "Cosmic Signature NFT",
+        "randomWalk": "Random Walk NFT"
+      },
+      "empty": {
+        "cosmicSignatureTitle": "暫無錨定活動",
+        "cosmicSignatureDescription": "已錨定的 Cosmic Signature NFT 會分享每個週期的 ETH 錨定配發。",
+        "randomWalkTitle": "暫無 Random Walk NFT 錨定",
+        "randomWalkDescription": "已錨定的 Random Walk NFT 會參與錨定 NFT 星選。"
+      },
+      "stats": {
+        "anchorActions": "錨定操作",
+        "releaseActions": "解錨操作",
+        "totalDistributions": "錨定配發",
+        "unretrievedDistributions": "尚未取回",
+        "nftsAnchored": "目前錨定",
+        "nftsImprinted": "已銘刻 NFT",
+        "acrossNfts": "{count, plural, other {涉及 # 枚 NFT}}"
+      },
+      "sections": {
+        "actions": "錨定與解錨操作",
+        "distributionsByToken": "按代幣檢視錨定配發",
+        "anchoredNftSelection": "錨定 NFT 星選"
+      },
+      "showDeposits": "顯示存入紀錄",
+      "hideDeposits": "隱藏存入紀錄",
+      "depositsHeader": "存入紀錄",
+      "nothingRetrieved": "尚未取回任何錨定配發：NFT 解錨時取回其錨定配發。"
+    },
+    "donatedAssets": {
+      "nfts": {
+        "title": "收到的已附加 NFT",
+        "tooltip": "其他參與者隨落筆附加的 NFT，隨簽名分配歸於此地址。獲配者可取回尚未取回的 NFT。",
+        "unclaimed": "{count} 枚未取回",
+        "claimAll": "全部取回 NFT",
+        "emptyTitle": "暫無已附加 NFT",
+        "emptyDescription": "尚無已附加 NFT 分配給此地址。"
+      },
+      "erc20": {
+        "title": "已附加 ERC-20 代幣",
+        "tooltip": "其他參與者隨落筆附加、分配給此地址的 ERC-20 代幣。獲配者可取回尚未取回的代幣。",
+        "unclaimed": "{count} 筆未取回",
+        "claimAll": "全部取回代幣",
+        "emptyTitle": "暫無已附加代幣",
+        "emptyDescription": "尚無已附加 ERC-20 代幣分配給此地址。"
+      }
+    },
+    "viewAddress": {
+      "label": "查看任一地址",
+      "hint": "參與者統計是公開的：無需連接錢包即可查看任何地址。",
+      "placeholder": "0x…",
+      "submit": "查看",
+      "invalid": "請輸入完整地址：0x 加 40 位字母和數字。"
+    }
+  },
+  "tokens": {
+    "page": {
+      "title": "我的 NFT",
+      "subtitle": "所連接錢包中的 Cosmic Signature NFT",
+      "newestCaption": "最新的簽名作品。你的簽名也會在這裡展出。",
+      "anchorLink": "錨定 NFT",
+      "loadErrorTitle": "未能載入代幣",
+      "loadErrorMessage": "未能載入 Cosmic Signature NFT。",
+      "ownedTitle": "持有的 Cosmic Signature NFT",
+      "transferTitle": "轉移 NFT",
+      "figures": {
+        "owned": "此錢包中",
+        "anchored": "已錨定"
+      },
+      "emptyTitle": "此錢包中還沒有簽名",
+      "emptyDescription": "你在分配中獲得或在市場上購入的簽名會顯示在這裡。"
+    }
+  },
+  "transferCst": {
+    "page": {
+      "title": "轉帳 CST",
+      "subtitle": "將已連接錢包中的 CST 傳送至 {network} 上的其他地址。"
+    },
+    "form": {
+      "send": "傳送 CST",
+      "sendAmount": "傳送 {amount}"
+    },
+    "guide": {
+      "from": "傳送方",
+      "history": "你的 CST 轉帳紀錄",
+      "title": "傳送之前",
+      "final": "轉帳無法撤銷。傳送到錯誤地址的 CST 無法找回。",
+      "network": "只傳送到能在 {network} 上持有代幣的地址。",
+      "paste": "請從接收錢包複製地址，不要手動輸入。"
+    }
+  },
+  "nftTransfer": {
+    "pickerTitle": "選擇要轉移的 NFT",
+    "pickerSummary": "可轉移 {total} 枚，已選擇 {selected} 枚。",
+    "selectAll": "全選",
+    "selectAria": "選擇 NFT {id}",
+    "statusLabels": {
+      "anchored": "已錨定，請先解錨再轉移",
+      "ownerChanged": "持有者已變更，請重新整理後再轉移"
+    },
+    "progress": {
+      "transferred": "已轉移 {completed} 枚，共 {total} 枚",
+      "stopped": "已傳送 {completed} 枚（共 {total} 枚），在 NFT {id} 處停止。未傳送的 NFT 仍保持選取。"
+    },
+    "sending": "傳送中…",
+    "send": "傳送已選 NFT",
+    "viewHistory": "檢視 NFT 轉移紀錄",
+    "review": {
+      "count": "{count, plural, other {# 枚 NFT}}"
+    },
+    "sendCount": "{count, plural, other {傳送 # 枚 NFT}}"
+  },
+  "transferHistory": {
+    "nft": {
+      "title": "NFT 轉移紀錄",
+      "empty": "暫無 NFT 轉移紀錄。",
+      "lede": "銘刻給此地址的 Cosmic Signature NFT，以及它收到或傳出的每一枚。",
+      "emptyDescription": "NFT 銘刻給該地址或由其他錢包傳來時，紀錄會顯示在這裡。",
+      "figures": {
+        "imprinted": "銘刻",
+        "received": "收到",
+        "sent": "傳出",
+        "anchoring": "錨定或解錨"
+      }
+    },
+    "cst": {
+      "title": "CST 轉帳紀錄",
+      "empty": "暫無 CST 轉帳紀錄。",
+      "lede": "銘刻給此地址的 CST、它收發的 CST，以及它的 CST 落筆所消耗的 CST。",
+      "emptyDescription": "落筆為地址銘刻 CST，或其他錢包傳來 CST 時，紀錄會顯示在這裡。",
+      "figures": {
+        "received": "流入合計",
+        "sent": "流出合計",
+        "net": "淨變化",
+        "imprintedCaption": "其中銘刻：{amount}",
+        "consumedCaption": "其中消耗：{amount}"
+      }
+    },
+    "switcherLabel": "該地址的轉移紀錄",
+    "artUnavailable": "作品暫不可用",
+    "viewOnExplorer": "在 {explorer} 查看",
+    "error": "無法載入該地址的轉移紀錄。",
+    "count": "{count, plural, other {# 筆紀錄}}",
+    "activity": {
+      "imprinted": "銘刻",
+      "received": "收到",
+      "sent": "傳出",
+      "consumed": "消耗",
+      "anchored": "錨定",
+      "released": "解錨"
+    },
+    "filter": {
+      "label": "顯示",
+      "all": "全部",
+      "in": "轉入",
+      "out": "轉出",
+      "empty": "該方向暫無紀錄。",
+      "transfers": "錢包間轉移"
+    },
+    "columns": {
+      "activity": "類型",
+      "counterparty": "對方地址"
+    },
+    "invalidAddress": {
+      "title": "地址無效",
+      "description": "連結中需要完整地址：0x 加 40 位字母和數字。",
+      "action": "瀏覽參與者"
+    }
+  },
+  "ethAllocations": {
+    "columns": {
+      "cycle": "週期",
+      "source": "來源",
+      "allocated": "分配時間",
+      "amount": "金額",
+      "deadline": "取回期限",
+      "status": "狀態"
+    },
+    "cycle": "第 {cycle} 個週期",
+    "sources": {
+      "stellarSelection": "星選",
+      "chronoWarrior": "時之勇士"
+    },
+    "status": {
+      "retrieved": "已取回",
+      "waiting": "未取回"
+    },
+    "deadline": {
+      "remaining": "剩餘 {remaining}",
+      "expired": "已過期",
+      "help": "在此日期前只有獲配者可以取回 ETH，之後任何人都可以取回。"
+    }
+  },
+  "attached": {
+    "columns": {
+      "nft": "NFT",
+      "token": "代幣",
+      "cycle": "週期",
+      "contributor": "附加者",
+      "attached": "附加時間",
+      "amount": "數量",
+      "action": "操作"
+    },
+    "tokenNumber": "代幣 #{id}",
+    "retrieve": "取回",
+    "retrieveItem": "取回 {item}"
+  }
+}

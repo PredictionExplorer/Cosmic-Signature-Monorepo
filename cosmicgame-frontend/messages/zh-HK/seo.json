@@ -1,0 +1,413 @@
+{
+  "publicData": {
+    "common": {
+      "none": "暫無",
+      "relatedPagesAria": "{heading}相關頁面"
+    },
+    "routes": {
+      "allocation": {
+        "heading": "分配名錄",
+        "description": "瀏覽 Cosmic Signature 已收官演繹週期的公開分配歷史，包括簽名分配、星選、錨定派發與公共物品資金流。",
+        "links": {
+          "statistics": "查看協議統計",
+          "learn": "了解週期如何收官",
+          "contracts": "查閱合約地址"
+        },
+        "cards": {
+          "finalizedCycles": {
+            "label": "已收官週期"
+          },
+          "recipients": {
+            "label": "簽名分配獲配地址",
+            "tooltip": "因寫下收官之筆而獲得簽名分配的獨立錢包地址數量。"
+          },
+          "totalEth": {
+            "label": "簽名分配 ETH 總額",
+            "tooltip": "根據週期記錄彙總的歷次簽名分配 ETH。"
+          },
+          "totalGestures": {
+            "label": "落筆總次數"
+          }
+        }
+      },
+      "anchoring": {
+        "heading": "錨定派發",
+        "description": "鏈上可查的每一筆 ETH 錨定派發與每一次錨定 NFT 星選銘刻，以及錨定的運作方式。",
+        "links": {
+          "statistics": "查看錨定統計",
+          "learn": "了解錨定機制",
+          "gallery": "瀏覽 Cosmic Signature NFT"
+        },
+        "cards": {
+          "actions": {
+            "label": "錨定／解錨操作",
+            "tooltip": "自錨定開放以來，Cosmic Signature 與 Random Walk NFT 的每一次錨定與解錨。"
+          },
+          "ethDeposits": {
+            "label": "ETH 錨定派發存入次數",
+            "tooltip": "為已錨定 Cosmic Signature NFT 存入錨定派發的 ETH 次數。每次存入由存入時已錨定的 NFT 共享。"
+          },
+          "stellarImprints": {
+            "label": "錨定 NFT 星選銘刻數",
+            "tooltip": "透過錨定 NFT 星選為已錨定 Random Walk NFT 銘刻的 Cosmic Signature NFT 數量。"
+          }
+        }
+      },
+      "marketing": {
+        "heading": "推廣分配",
+        "description": "推廣儲備發放給幫助更多人了解 Cosmic Signature 的貢獻者的 CST，每筆分配都附有交易記錄。",
+        "links": {
+          "faq": "推廣儲備如何運作",
+          "statistics": "查看協議統計"
+        },
+        "cards": {
+          "records": {
+            "label": "分配記錄"
+          },
+          "allocatedCst": {
+            "label": "已分配 CST"
+          },
+          "contributors": {
+            "label": "貢獻者"
+          }
+        }
+      },
+      "imprint": {
+        "heading": "銘刻 Random Walk NFT",
+        "description": "一枚 Random Walk NFT 可令一筆 ETH 落筆的價格降低 50%。在這裏銘刻，再把它附加到你選定的那一筆。",
+        "links": {
+          "cycle": "打開目前演繹週期",
+          "learn": "了解落筆機制",
+          "used": "查看已使用的 Random Walk NFT"
+        },
+        "cards": {
+          "imprinted": {
+            "label": "已銘刻的 Random Walk NFT"
+          },
+          "used": {
+            "label": "已使用的 Random Walk NFT"
+          }
+        }
+      },
+      "eth-contribution": {
+        "heading": "直接 ETH 貢獻",
+        "description": "直接轉入週期儲備的 ETH，按週期與貢獻者列出；附留言的貢獻另有獨立記錄頁。",
+        "links": {
+          "reserve": "週期儲備如何分配",
+          "protocol": "公共物品份額的去向",
+          "risk": "閱讀風險披露"
+        },
+        "cards": {
+          "records": {
+            "label": "貢獻記錄"
+          },
+          "totalEth": {
+            "label": "貢獻 ETH"
+          },
+          "contributors": {
+            "label": "貢獻者"
+          }
+        }
+      },
+      "attached-nfts": {
+        "heading": "已附加 NFT 貢獻",
+        "description": "瀏覽隨 Cosmic Signature 落筆附加的 NFT。週期收官時，已附加的 ERC-721 代幣會轉給簽名分配獲配者。",
+        "links": {
+          "gallery": "瀏覽 Cosmic Signature 畫廊",
+          "cycle": "查看目前演繹週期",
+          "learn": "了解附加資產如何進入週期"
+        },
+        "cards": {
+          "records": {
+            "label": "已附加 NFT 記錄"
+          },
+          "contracts": {
+            "label": "獨立 NFT 合約"
+          },
+          "contributors": {
+            "label": "貢獻者錢包"
+          }
+        }
+      },
+      "allocation-finalized": {
+        "heading": "已收官的分配",
+        "description": "每個已收官週期的分配情況，由簽名分配到每一項星選與錨定派發記錄。",
+        "links": {
+          "myAllocations": "取回你的分配",
+          "statistics": "查看彙總統計",
+          "contracts": "查閱合約與驗證狀態"
+        },
+        "cards": {
+          "records": {
+            "label": "分配記錄",
+            "tooltip": "已收官週期中的全部分配記錄，包括 ETH、CST 與 NFT 分配。"
+          },
+          "eth": {
+            "label": "已分配 ETH",
+            "tooltip": "已收官週期中簽名分配、時之勇士、星選與錨定派發 ETH 的合計，不含 CST 與 NFT 分配。"
+          },
+          "recipients": {
+            "label": "獲配者錢包"
+          }
+        }
+      },
+      "named-nfts": {
+        "heading": "已命名 Cosmic Signature NFT",
+        "description": "持有者可以在鏈上為自己的簽名作品命名。這裏展示已命名的作品，最近命名的排在最前。",
+        "links": {
+          "gallery": "瀏覽完整畫廊",
+          "learn": "了解作品生成方式",
+          "code": "查閱渲染源代碼"
+        },
+        "cards": {
+          "named": {
+            "label": "已命名 NFT"
+          },
+          "owners": {
+            "label": "目前持有者"
+          }
+        }
+      },
+      "used-rwlk-nfts": {
+        "heading": "已使用的 Random Walk NFT",
+        "description": "查看已經附加至 ETH 落筆、並用掉一次性落筆價格減免資格的 Random Walk NFT。",
+        "links": {
+          "imprint": "銘刻 Random Walk NFT",
+          "learn": "了解落筆機制",
+          "cycle": "查看目前週期數據"
+        },
+        "cards": {
+          "used": {
+            "label": "已使用的 Random Walk NFT"
+          },
+          "wallets": {
+            "label": "參與者錢包"
+          },
+          "discount": {
+            "label": "一次性減免"
+          }
+        }
+      },
+      "coordination-changes": {
+        "heading": "協調變更",
+        "description": "合約所有者對協議參數作出的變更，每項都附有交易記錄。在放棄所有權之前，所有者仍可繼續變更。",
+        "links": {
+          "security": "閱讀安全概覽",
+          "audits": "查閱審計與驗證",
+          "learn": "了解 CST 與協議協調"
+        },
+        "cards": {
+          "records": {
+            "label": "變更記錄"
+          },
+          "latest": {
+            "label": "最近變更"
+          },
+          "owner": {
+            "label": "合約所有者",
+            "tooltip": "只有該地址可以變更這些參數。放棄所有權後，所有者會變為零地址，這些參數將無法再變更。",
+            "renounced": "已放棄",
+            "active": "可變更參數"
+          }
+        }
+      },
+      "public-goods-contributions-cg": {
+        "heading": "協議公共物品資助",
+        "description": "週期收官時，合約嘗試將週期儲備的 5% 轉入公共物品金庫，其後另發一筆交易才將餘額轉給目前受益方 Protocol Guild。",
+        "links": {
+          "learn": "了解公共物品機制",
+          "contracts": "查看金庫合約"
+        },
+        "cards": {
+          "records": {
+            "label": "資助記錄"
+          },
+          "share": {
+            "label": "每週期份額",
+            "tooltip": "每個已收官週期儲備中由協議轉入公共物品金庫的份額。"
+          },
+          "totalEth": {
+            "label": "貢獻 ETH"
+          }
+        }
+      },
+      "public-goods-contributions-voluntary": {
+        "heading": "自願公共物品資助",
+        "description": "任何人直接轉入公共物品金庫的 ETH，交由其受益方，目前為 Protocol Guild。",
+        "links": {
+          "direct": "查看直接 ETH 貢獻",
+          "learn": "了解公共物品機制",
+          "risk": "閱讀風險披露"
+        },
+        "cards": {
+          "records": {
+            "label": "貢獻記錄"
+          },
+          "totalEth": {
+            "label": "貢獻 ETH"
+          },
+          "contributors": {
+            "label": "貢獻者"
+          }
+        }
+      },
+      "public-goods-retrievals": {
+        "heading": "公共物品取回",
+        "description": "公共物品金庫向其受益方（目前為 Protocol Guild）的每一筆轉撥。任何人都可以發起，ETH 只會轉給受益方。",
+        "links": {
+          "learn": "了解公共物品機制",
+          "protocolGuild": "瀏覽 Protocol Guild",
+          "contracts": "查看金庫合約"
+        },
+        "cards": {
+          "records": {
+            "label": "取回記錄"
+          },
+          "totalEth": {
+            "label": "已取回 ETH"
+          },
+          "latest": {
+            "label": "最近一次"
+          },
+          "beneficiary": {
+            "label": "受益方",
+            "tooltip": "最近一次從公共物品金庫取回的資金接收地址。目前設定的受益方為 Protocol Guild。"
+          }
+        }
+      }
+    }
+  },
+  "gallerySummary": {
+    "heading": "Cosmic Signature 畫廊",
+    "description": "每一枚簽名，都由三體物理從鏈上種子繪出。",
+    "cards": {
+      "imprinted": "已銘刻 NFT",
+      "anchored": "已錨定 NFT",
+      "named": "已命名 NFT",
+      "cycles": "已收官週期"
+    },
+    "cardsShort": {
+      "imprinted": "已銘刻",
+      "anchored": "已錨定",
+      "named": "已命名"
+    },
+    "relatedAria": "畫廊相關頁面",
+    "links": {
+      "learn": "了解 Cosmic Signature 運作原理",
+      "code": "查閱渲染源代碼",
+      "statistics": "查看協議統計"
+    }
+  },
+  "currentCycleSummary": {
+    "heading": "目前演繹週期",
+    "description": "正在進行的週期：倒數、席位、分配與每一次落筆，即時更新。",
+    "cards": {
+      "gestures": "落筆總次數",
+      "opened": "開啟時間"
+    },
+    "relatedAria": "目前週期相關頁面",
+    "links": {
+      "learn": "了解演繹週期如何運作",
+      "statistics": "查看協議統計",
+      "contracts": "查閱合約與驗證狀態"
+    }
+  },
+  "jsonLd": {
+    "app": {
+      "protocolDescription": "Cosmic Signature 是 Arbitrum 上的程序化鏈上藝術協議。每一筆都在塑造週期最終的簽名；協議會將儲備分配至一組固定的軌道，其中包括 Protocol Guild。",
+      "webApplicationDescription": "Cosmic Signature 是 Arbitrum 上的程序化鏈上藝術協議。參與者在演繹週期中落筆；週期收官時，協議沿一組固定的軌道發放分配。",
+      "browserRequirements": "需要支援 Web3 的瀏覽器或錢包擴展"
+    },
+    "artProtocol": {
+      "creditText": "Cosmic Signature 協議",
+      "genre": "生成藝術"
+    },
+    "product": {
+      "category": "數碼藏品"
+    }
+  },
+  "og": {
+    "shared": {
+      "cycle": "第 {cycle} 個週期",
+      "plateCaption": "{name} · {cycle}"
+    },
+    "default": {
+      "alt": "Cosmic Signature · 每一筆，都在塑造簽名",
+      "title": "每一筆，都在塑造簽名。",
+      "subhead": "運行於 Arbitrum 的程序化鏈上藝術協議。",
+      "fact": "CC0 · 開源 · 5% 公共物品金庫份額"
+    },
+    "gallery": {
+      "alt": "Cosmic Signature · 畫廊",
+      "eyebrow": "畫廊",
+      "title": "三體軌跡，以鏈上種子生成。",
+      "subhead": "每件簽名作品都是一次確定性三體模擬，由鏈上種子經光譜渲染而成；種子相同，像素完全一致。",
+      "fact": "CC0 · 確定性 · 可復現"
+    },
+    "currentCycle": {
+      "alt": "Cosmic Signature · 即時演繹週期",
+      "eyebrow": "目前週期",
+      "title": "演繹週期，正在進行。",
+      "subhead": "落筆歷史、排行榜、已附加貢獻與分配軌道，即時呈現。",
+      "fact": "即時運行於 Arbitrum One"
+    },
+    "anchoring": {
+      "alt": "Cosmic Signature · 錨定",
+      "eyebrow": "錨定",
+      "title": "錨定一枚簽名，參與每個週期。",
+      "subhead": "已錨定的 Cosmic Signature NFT 按比例參與每個週期的錨定派發，可隨時解錨。",
+      "fact": "CC0 · 隨時解錨 · 錨定派發"
+    },
+    "faq": {
+      "alt": "Cosmic Signature · 常見問題",
+      "eyebrow": "常見問題",
+      "title": "值得直截了當回答的問題。",
+      "subhead": "演繹週期、落筆、分配、錨定與協議協調。",
+      "fact": "CC0 · 開源 · 5% 公共物品金庫份額"
+    },
+    "howItWorks": {
+      "alt": "Cosmic Signature · 運作原理",
+      "eyebrow": "運作原理",
+      "title": "從校準到分配，共分四步。",
+      "subhead": "開啟週期，落下一筆，完成收官，由協議發放週期儲備。",
+      "fact": "校準 · 落筆 · 分配"
+    },
+    "gesture": {
+      "alt": "Cosmic Signature · 落筆",
+      "altWithValue": "Cosmic Signature · 第 {cycle} 個週期的落筆 #{position}",
+      "eyebrow": "落筆",
+      "title": "一筆，銘入簽名。",
+      "titleWithValue": "落筆 #{position} · 第 {cycle} 個週期",
+      "subhead": "每一筆都會延長週期、塑造簽名，並可能銘刻參與 CST。",
+      "methods": {
+        "eth": "ETH 落筆",
+        "ethRandomWalk": "ETH + Random Walk 落筆",
+        "cst": "CST 落筆"
+      }
+    },
+    "allocation": {
+      "alt": "Cosmic Signature · 分配明細",
+      "altWithValue": "Cosmic Signature · 第 {cycle} 個週期的分配",
+      "eyebrow": "分配",
+      "title": "分配明細",
+      "titleWithValue": "第 {cycle} 個週期的分配",
+      "subhead": "查看週期儲備如何沿一組固定的分配軌道發放。"
+    },
+    "participant": {
+      "alt": "Cosmic Signature · 參與者",
+      "altWithValue": "Cosmic Signature · 參與者 {address}",
+      "eyebrow": "參與者",
+      "title": "參與者",
+      "subhead": "彙集各演繹週期中的落筆、分配、錨定與貢獻記錄。"
+    },
+    "token": {
+      "alt": "{subject}，一件確定性三體藝術作品",
+      "altWithTraits": "{subject}：結構為{structure}，調色為{palette}",
+      "altSubject": "Cosmic Signature #{id}",
+      "altSubjectNamed": "Cosmic Signature #{id}《{name}》",
+      "altInCycle": "第 {cycle} 個週期的 {subject}",
+      "title": "簽名 {number}",
+      "subhead": "確定性三體模擬：種子源自鏈上，由開源渲染器渲染。"
+    }
+  }
+}

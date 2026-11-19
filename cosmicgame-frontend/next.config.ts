@@ -1,0 +1,261 @@
+import { execSync } from 'node:child_process';
+
+import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
+import withBundleAnalyzer from '@next/bundle-analyzer';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+import { securityHeaders } from './config/securityHeaders';
+
+function resolveGitSha(): string {
+  if (process.env.VERCEL_GIT_COMMIT_SHA?.trim()) return process.env.VERCEL_GIT_COMMIT_SHA.trim();
+  if (process.env.GITHUB_SHA?.trim()) return process.env.GITHUB_SHA.trim();
+  try {
+    return execSync('git rev-parse HEAD', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return '';
+  }
+}
+
+function resolveGitRef(): string {
+  if (process.env.VERCEL_GIT_COMMIT_REF?.trim()) return process.env.VERCEL_GIT_COMMIT_REF.trim();
+  if (process.env.GITHUB_REF_NAME?.trim()) return process.env.GITHUB_REF_NAME.trim();
+  try {
+    return execSync('git rev-parse --abbrev-ref HEAD', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return '';
+  }
+}
+
+const bundleAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
+
+interface RemoteImagePattern {
+  protocol: 'http' | 'https';
+  hostname: string;
+  port: string;
+  pathname: string;
+  search: string;
+}
+
+/**
+ * One next/image remote pattern per configured API origin. NFT media is
+ * served by the same rotated API servers (see lib/serverRotation.ts and
+ * utils/urls.ts), so any host in NEXT_PUBLIC_API_URLS / NEXT_PUBLIC_API_URL
+ * may appear as an image src depending on the hourly rotation.
+ */
+function apiOriginRemotePatterns(): RemoteImagePattern[] {
+  const raw = [process.env.NEXT_PUBLIC_API_URLS, process.env.NEXT_PUBLIC_API_URL]
+    .filter(Boolean)
+    .join(',');
+  const patterns: RemoteImagePattern[] = [];
+  const seen = new Set<string>();
+  for (const entry of raw.split(',')) {
+    const trimmed = entry.trim();
+    if (!trimmed) continue;
+    try {
+      const url = new URL(trimmed);
+      if (seen.has(url.origin)) continue;
+      seen.add(url.origin);
+      patterns.push({
+        protocol: url.protocol === 'https:' ? 'https' : 'http',
+        hostname: url.hostname,
+        port: url.port,
+        pathname: '/**',
+        search: '',
+      });
+    } catch {
+      // Malformed origins surface at runtime through the fetch layer.
+    }
+  }
+  return patterns;
+}
+
+// Links i18n/request.ts to next-intl (docs/i18n/README.md §2).
+const withNextIntl = createNextIntlPlugin();
+
+const nextConfig: NextConfig = {
+  /**
+   * The local test harness (scripts/harness) runs its own dev server with a
+   * separate dist dir so it can coexist with a regular `npm run dev`/`start`
+   * on the default `.next`. Unset everywhere else.
+   */
+  ...(process.env.NEXT_DIST_DIR?.trim() ? { distDir: process.env.NEXT_DIST_DIR.trim() } : {}),
+  env: {
+    NEXT_PUBLIC_BUILD_COMMIT: resolveGitSha(),
+    NEXT_PUBLIC_BUILD_REF: resolveGitRef(),
+    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV || '',
+  },
+  reactStrictMode: true,
+  /**
+   * `next/jest` only transforms node_modules listed here. @formatjs ships
+   * ESM-only and is parsed by the i18n catalog-integrity suite
+   * (i18n/__tests__/catalog-integrity.test.ts); no app bundle imports it.
+   */
+  transpilePackages: ['@formatjs/icu-messageformat-parser', '@formatjs/icu-skeleton-parser'],
+  /**
+   * Tree-shake barrel imports for libraries we import heavily. Next compiles
+   * `import { X, Y } from 'lucide-react'` as if we wrote per-icon ESM imports,
+   * shaving ~100s of KB per page. Pair with direct imports in source where
+   * the build output justifies it (rare).
+   */
+  experimental: {
+    /**
+     * `app/global-not-found.tsx` renders every URL no route matches. The site
+     * has three root layouts under a dynamic `[locale]` segment, so no
+     * layout-level not-found file can serve an unmatched URL: a catch-all
+     * page that called `notFound()` sent an empty error shell with no
+     * stylesheet, and the branded page appeared only after the app bundle
+     * hydrated (node_modules/next/dist/docs/01-app/03-api-reference/
+     * 03-file-conventions/not-found.md, `global-not-found.js`).
+     */
+    globalNotFound: true,
+    /**
+     * Pages each build worker prerenders at once (Next's default is 8). Every
+     * prerender reads the public API, which rate-limits bursts: at 8 pages on
+     * each of a build machine's workers the last build was turned away 91
+     * times. Server reads also retry a 429 (services/api/rateLimit.ts); this
+     * keeps the burst smaller in the first place. Prerendering waits on the
+     * network, so the build stays within seconds of the default.
+     */
+    staticGenerationMaxConcurrency: 4,
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      '@radix-ui/react-accordion',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-select',
+      '@radix-ui/react-switch',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-tooltip',
+      'recharts',
+    ],
+  },
+  /**
+   * Allow the dev server to serve assets (_next/static/*, HMR websocket) to
+   * the marketing/app host aliases we document in lib/hostRouting.ts. Next
+   * 16 blocks cross-origin dev requests by default; without this, visits to
+   * `http://cosmicsignature.local:3000` load the HTML but then hang while
+   * fetching chunks, producing a half-rendered page.
+   */
+  allowedDevOrigins: ['cosmicsignature.local', 'app.cosmicsignature.local'],
+  /**
+   * Optional: proxy /api/cosmicgame/* to the Go websrv so the browser can
+   * use same-origin NEXT_PUBLIC_API_URL (e.g. http://localhost:3000/api/
+   * cosmicgame) and avoid CORS / mixed-content. Set
+   * COSMICGAME_API_UPSTREAM=http://127.0.0.1:8099 (no path) in .env.local.
+   */
+  async rewrites() {
+    const upstream = process.env.COSMICGAME_API_UPSTREAM?.trim();
+    if (!upstream) return [];
+    const base = upstream.replace(/\/+$/, '');
+    return [
+      {
+        source: '/api/cosmicgame/:path*',
+        destination: `${base}/api/cosmicgame/:path*`,
+      },
+      {
+        source: '/api/v2/cosmicgame/:path*',
+        destination: `${base}/api/v2/cosmicgame/:path*`,
+      },
+    ];
+  },
+  images: {
+    // A Signature's files are named by its seed, so their pixels never
+    // change: keep the optimizer's 1200 and 1920px renditions of the art (the
+    // detail page's LCP image among them) for a month instead of re-encoding
+    // them from the 3456px original every 4 hours, the default. The same
+    // month applies to the other optimized inputs: static files in public/,
+    // which take a new name when their content changes, and attached NFTs'
+    // art through /api/attached-nft/<contract>/<id>/image, which rarely
+    // changes (a collection that swaps a token's image shows the old one
+    // here for up to a month).
+    minimumCacheTTL: 2_678_400,
+    remotePatterns: [
+      // Rotated API origins (the media servers actually used by the app).
+      ...apiOriginRemotePatterns(),
+      // Legacy media host: kept for URLs stored in metadata / third-party
+      // caches. Frontend code no longer builds URLs against it.
+      {
+        protocol: 'https',
+        hostname: 'nfts.cosmicsignature.com',
+        port: '',
+        pathname: '/**',
+        search: '',
+      },
+      {
+        protocol: 'https',
+        hostname: 'nfts-sepolia.cosmicsignature.com',
+        port: '',
+        pathname: '/**',
+        search: '',
+      },
+      {
+        protocol: 'https',
+        hostname: 'nfts-local.cosmicsignature.com',
+        port: '',
+        pathname: '/**',
+        search: '',
+      },
+    ],
+  },
+  turbopack: {
+    root: __dirname,
+  },
+  webpack: (config) => {
+    config.context = __dirname;
+    config.resolve!.fallback = {
+      ...(config.resolve?.fallback ?? {}),
+      '@react-native-async-storage/async-storage': false,
+    };
+    config.externals = [...(config.externals ?? []), 'pino-pretty'];
+    return config;
+  },
+  // Framing, sniffing, referrer and permission policy, and the Content
+  // Security Policy: enforced baseline plus a report-only allowlist
+  // (config/securityHeaders.ts).
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders({
+          development: process.env.NODE_ENV === 'development',
+          sentryDsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+          dataEndpoints: [
+            process.env.NEXT_PUBLIC_API_URLS,
+            process.env.NEXT_PUBLIC_API_URL,
+            process.env.NEXT_PUBLIC_RPC_URLS,
+            process.env.NEXT_PUBLIC_RPC_URL,
+          ].flatMap((value) => value?.split(',') ?? []),
+        }),
+      },
+      {
+        // Static images in public/ (brand marks, landing and learn figures):
+        // a day in the browser, then served from cache while it revalidates.
+        // Their names carry no hash, so this stays short of immutable.
+        source: '/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+    ];
+  },
+};
+
+export default withSentryConfig(bundleAnalyzer(withNextIntl(nextConfig)), {
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+});

@@ -1,0 +1,19 @@
+{
+  "breadcrumbs": {
+    "home": "Головна",
+    "terms": "Умови використання",
+    "privacy": "Політика конфіденційності",
+    "risk": "Розкриття ризиків",
+    "security": "Безпека",
+    "audits": "Аудити",
+    "contracts": "Контракти",
+    "code": "Вихідний код"
+  },
+  "document": {
+    "contents": "На цій сторінці",
+    "backToTop": "Угору",
+    "backToContents": "До змісту",
+    "sectionLink": "Посилання на розділ «{section}»",
+    "revisionHistory": "Історія змін на GitHub"
+  }
+}

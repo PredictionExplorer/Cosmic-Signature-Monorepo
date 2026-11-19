@@ -1,0 +1,47 @@
+{
+  "generic": "操作未完成，請重試。",
+  "walletNotConnected": "連接 Web3 錢包後即可落筆。",
+  "insufficientEth": "錢包中的 ETH 不足，無法落筆。",
+  "state": {
+    "title": "發生錯誤",
+    "retry": "重試"
+  },
+  "boundary": {
+    "title": "發生錯誤",
+    "description": "發生了意外錯誤，請重試。",
+    "home": "返回主頁"
+  },
+  "route": {
+    "message": "頁面暫時無法顯示，請重試或稍後再來。",
+    "titles": {
+      "app": "未能載入本頁面",
+      "allocation": "未能載入分配詳情",
+      "anchoring": "未能載入錨定派發",
+      "gallery": "未能載入畫廊",
+      "myAllocations": "未能載入我的分配",
+      "myAnchors": "未能載入我的錨定",
+      "myTokens": "未能載入我的代幣",
+      "myStatistics": "未能載入我的統計"
+    }
+  },
+  "global": {
+    "title": "應用程式發生意外錯誤",
+    "message": "應用程式暫時無法正常運作，請重新載入。",
+    "retry": "重新載入"
+  },
+  "environment": {
+    "title": "缺少環境變量，應用程式無法運行。",
+    "description": "必須明確設定網絡和 API URL，不能使用推斷值。",
+    "missing": "缺少或無效的變量：",
+    "resolution": "請在 shell 或 .env 文件中設定這些變量，然後重啟開發伺服器。"
+  },
+  "unexpected": "發生意外錯誤，請重試。",
+  "notFound": {
+    "code": "錯誤 404",
+    "title": "找不到頁面",
+    "description": "連結可能有誤，或頁面已經移動。可以從下面這些頁面繼續。",
+    "primaryCta": "前往觀測台",
+    "secondaryCta": "瀏覽畫廊",
+    "suggestedPages": "推薦頁面"
+  }
+}

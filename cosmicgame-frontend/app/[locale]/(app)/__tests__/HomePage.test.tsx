@@ -1,0 +1,2319 @@
+import userEvent from '@testing-library/user-event';
+
+import { formatAddress } from '@/utils';
+
+import { resetUxScenarioForTest } from '@/lib/uxCycleScenarios';
+
+import { render, screen, within, act, checkA11y, fireEvent, waitFor } from '@/test-utils';
+
+import HomePage, { resolveHomeNow } from '../HomePage';
+
+jest.mock('@rainbow-me/rainbowkit');
+
+/* ── useApiQuery hooks ──────────────────────────────────────────── */
+
+const mockUseDashboardInfo = jest.fn().mockReturnValue({ data: undefined, isLoading: false });
+const mockUseHomeGestureFeed = jest.fn().mockReturnValue({ data: undefined });
+const mockUseDonationsNFTByRound = jest.fn().mockReturnValue({ data: undefined });
+const mockUseDonationsERC20ByRound = jest.fn().mockReturnValue({ data: undefined });
+const mockUseBannedGestures = jest.fn().mockReturnValue({ data: [] });
+const mockUseCurrentTime = jest.fn().mockReturnValue({
+  data: Math.floor(Date.now() / 1000),
+  isLoading: false,
+});
+const mockUseLatestSignatures = jest
+  .fn()
+  .mockReturnValue({ signatures: [], isLoading: false, isError: false });
+
+jest.mock('../../../../hooks/useApiQuery', () => ({
+  useDashboardInfo: (...args: unknown[]) => mockUseDashboardInfo(...args),
+  useDonationsNFTByRound: (...args: unknown[]) => mockUseDonationsNFTByRound(...args),
+  useDonationsERC20ByRound: (...args: unknown[]) => mockUseDonationsERC20ByRound(...args),
+  useBannedGestures: (...args: unknown[]) => mockUseBannedGestures(...args),
+  useCurrentTime: (...args: unknown[]) => mockUseCurrentTime(...args),
+}));
+
+jest.mock('@/hooks/useLatestSignatures', () => ({
+  useLatestSignatures: (...args: unknown[]) => mockUseLatestSignatures(...args),
+}));
+
+const mockEmptyGestures: unknown[] = [];
+const mockLoadOlder = jest.fn().mockResolvedValue(undefined);
+const mockRetryFeed = jest.fn();
+
+jest.mock('@/hooks/useHomeGestureFeed', () => ({
+  useHomeGestureFeed: (...args: unknown[]) => {
+    const result = mockUseHomeGestureFeed(...args);
+    const gestures = result.data ?? mockEmptyGestures;
+    return {
+      gestures,
+      chatGestures: gestures,
+      latestGesture:
+        [...gestures].sort(
+          (left, right) =>
+            Number(right.TimeStamp ?? 0) - Number(left.TimeStamp ?? 0) ||
+            Number(right.EvtLogId ?? 0) - Number(left.EvtLogId ?? 0),
+        )[0] ?? null,
+      mode: 'legacy',
+      isLoading: false,
+      error: null,
+      hasMore: false,
+      isLoadingOlder: false,
+      olderError: null,
+      loadOlder: mockLoadOlder,
+      retry: mockRetryFeed,
+      resetKey: String(args[0]),
+      ...result,
+    };
+  },
+}));
+
+/* ── useGestureForm ─────────────────────────────────────────────────── */
+
+const mockGestureForm = {
+  gestureType: 'ETH',
+  setBidType: jest.fn(),
+  contributionType: 'NFT',
+  setContributionType: jest.fn(),
+  cstGestureData: {
+    AuctionDuration: 3600,
+    CSTPrice: 1,
+    CSTPriceWei: 1000000000000000000n,
+    SecondsElapsed: 1800,
+    isFree: false,
+    source: 'api' as const,
+  },
+  ethGestureInfo: { AuctionDuration: 3600, ETHPrice: 0.01, SecondsElapsed: 1800 },
+  gestureCstRewardAmount: 100,
+  isCstRewardLoading: false,
+  message: '',
+  setMessage: jest.fn(),
+  nftDonateAddress: '',
+  setNftDonateAddress: jest.fn(),
+  nftId: '',
+  setNftId: jest.fn(),
+  tokenDonateAddress: '',
+  setTokenDonateAddress: jest.fn(),
+  tokenAmount: '',
+  setTokenAmount: jest.fn(),
+  rwlkId: -1,
+  setRwlkId: jest.fn(),
+  gestureCostPlus: 2,
+  setBidPricePlus: jest.fn(),
+  isGesturing: false,
+  gestureTxStage: { status: 'idle' } as { status: string },
+  advancedExpanded: false,
+  setAdvancedExpanded: jest.fn(),
+  rwlknftIds: [] as number[],
+  onGesture: jest.fn().mockResolvedValue(true),
+  onGestureWithCST: jest.fn().mockResolvedValue(true),
+  getLastGestureHash: jest.fn(() => '0xfeed'),
+};
+
+const mockUseGestureFormOptions = jest.fn();
+jest.mock('../../../../hooks/useGestureForm', () => ({
+  useGestureForm: (options: unknown) => {
+    mockUseGestureFormOptions(options);
+    return mockGestureForm;
+  },
+}));
+
+/* ── useChampions ─────────────────────────────────────────────────── */
+
+const mockChampions = {
+  isLoading: false,
+  hasData: true,
+  endurance: {
+    address: '0xEndurance',
+    duration: 3600,
+    lockedDuration: 3600,
+    isLive: false,
+  },
+  chrono: {
+    address: '0xChrono',
+    duration: 1800,
+    lockedDuration: 1800,
+    isLive: false,
+    statusText: 'Record standing',
+    sourceText: 'API confirmed',
+    hasLiveDetails: false,
+  },
+  chronoChallenge: {
+    address: '0xEndurance',
+    duration: 1200,
+    recordToBeat: 1800,
+    isLive: false,
+    isRecordHolder: false,
+    hasDetails: true,
+    startsGrowingIn: 601,
+  },
+  lastCst: { address: '0xLastCst' },
+  latestGesture: {
+    address: '0xBidder',
+    holdDuration: 600,
+    latestGestureTime: 1_700_000_000,
+    isCurrentEnduranceChampion: false,
+    isExtendingEnduranceRecord: false,
+    durationToBeat: 3601,
+    secondsUntilEnduranceChampion: 3001,
+    progressToEnduranceChampion: 16.7,
+  },
+  raw: null,
+  source: 'api-v2' as const,
+};
+
+const mockUseChampions = jest.fn(
+  (_initialData?: unknown, _latestEvidence?: unknown) => mockChampions,
+);
+jest.mock('../../../../hooks/useChampions', () => ({
+  useChampions: (initialData?: unknown, latestEvidence?: unknown) =>
+    mockUseChampions(initialData, latestEvidence),
+}));
+
+/* ── useAllocationFinalize ──────────────────────────────────────────────── */
+
+const mockAllocationFinalize = {
+  fetchActivationTime: jest.fn().mockResolvedValue(0),
+  allocationTime: Date.now() + 60_000,
+  timeoutFinalize: 600,
+  isClaiming: false,
+  activationTime: 0,
+  claimHistory: null,
+  onFinalize: jest.fn().mockResolvedValue(true),
+};
+
+jest.mock('../../../../hooks/useAllocationFinalize', () => ({
+  useAllocationFinalize: () => mockAllocationFinalize,
+}));
+
+/* ── useEndgameChainSync ─────────────────────────────────────────── */
+
+const mockUseEndgameChainSync = jest.fn(() => ({
+  isConfirmationPending: false,
+  isClaimedOnChain: false,
+  lastSample: null,
+}));
+
+jest.mock('../../../../hooks/useEndgameChainSync', () => ({
+  useEndgameChainSync: (...args: unknown[]) => (mockUseEndgameChainSync as jest.Mock)(...args),
+}));
+
+/* ── notifications / prices ────────────────────────────────────── */
+
+jest.mock('../../../../hooks/useAllocationNotification', () => ({
+  useAllocationNotification: () => ({
+    sendNotification: jest.fn(),
+    alertEnabled: false,
+    alertMinutes: 5,
+  }),
+}));
+
+const mockNotify = jest.fn();
+jest.mock('../../../../hooks/useNotify', () => ({
+  useNotify: () => ({ notify: mockNotify, notifyErrorFromEthers: jest.fn() }),
+}));
+
+jest.mock('../../../../hooks/useMetaMaskWatchAsset', () => ({
+  useMetaMaskWatchAsset: () => ({
+    isMetaMaskConnected: false,
+    isAddingCst: false,
+    isAddingNft: false,
+    addCst: jest.fn(),
+    addCosmicSignatureNft: jest.fn(),
+  }),
+}));
+
+jest.mock('../../../../hooks/useTokenPrice', () => ({
+  useTokenPrice: () => 2000,
+}));
+
+/* ── wagmi / web3 ───────────────────────────────────────────────── */
+
+let mockAccount: string | null = '0xUser';
+jest.mock('../../../../hooks/web3', () => ({
+  useActiveWeb3React: () => ({ account: mockAccount }),
+}));
+
+jest.mock('wagmi', () => ({
+  ...jest.requireActual('../../../../__mocks__/wagmi'),
+  usePublicClient: () => ({ waitForTransactionReceipt: jest.fn() }),
+  useWalletClient: () => ({ data: null }),
+}));
+
+/* ── next / react-query ─────────────────────────────────────────── */
+
+const mockInvalidateQueries = jest.fn();
+const mockSetQueryData = jest.fn();
+const mockCancelQueries = jest.fn();
+
+jest.mock('next/link', () => ({
+  __esModule: true,
+  default: ({ children, ...props }: { children: React.ReactNode; href: string }) => (
+    <a {...props}>{children}</a>
+  ),
+}));
+
+jest.mock('@tanstack/react-query', () => ({
+  ...jest.requireActual('@tanstack/react-query'),
+  useQueryClient: () => ({
+    invalidateQueries: mockInvalidateQueries,
+    setQueryData: mockSetQueryData,
+    getQueryCache: () => ({
+      subscribe: () => () => undefined,
+      findAll: () => [],
+      getAll: () => [],
+    }),
+    cancelQueries: mockCancelQueries,
+  }),
+}));
+
+// The weighted Stellar Selection pool reads the chain through react-query;
+// the page renders without a QueryClientProvider here, so serve the
+// count-based fallback (a null pool) directly.
+jest.mock('@/hooks/useSelectionPool', () => ({
+  useSelectionPool: () => ({ data: null }),
+}));
+
+// The chain-read allocation facts have their own hook; the page renders
+// without a QueryClientProvider here, so serve the static figures directly.
+jest.mock('@/hooks/useLiveAllocationFacts', () => {
+  const facts = jest.requireActual('@/content/protocol-facts');
+  return {
+    useLiveAllocationFacts: () => ({
+      mainEthPercentage: facts.ethDistributionFacts.mainEthPercentage,
+      chronoWarriorEthPercentage: facts.ethDistributionFacts.chronoWarriorEthPercentage,
+      stellarSelectionEthPercentage: facts.ethDistributionFacts.stellarSelectionEthPercentage,
+      anchorDistributionPercentage: facts.ethDistributionFacts.anchorDistributionPercentage,
+      publicGoodsPercentage: facts.ethDistributionFacts.publicGoodsPercentage,
+      signatureNftCount: facts.isV3Mechanics
+        ? facts.protocolFacts.v3.mainPrizeNftsPerCycleDefault
+        : 1,
+      live: false,
+    }),
+  };
+});
+
+/* ── child components with their own suites ─────────────────────── */
+
+// The wallet's cycle summary reads its full indexed history; the hooks have
+// their own suite, so the page is driven with their states directly.
+let mockParticipation: Record<string, unknown> = {
+  status: 'ready',
+  gestures: 2,
+  spentEth: 0.02,
+  spentCst: 0,
+};
+let mockRetrieve: Record<string, unknown> = { state: 'none' };
+const mockRefetchParticipation = jest.fn();
+
+jest.mock('../../../../hooks/useCycleParticipation', () => ({
+  useCycleParticipation: () => ({ ...mockParticipation, refetch: mockRefetchParticipation }),
+  useRetrieveStatus: () => mockRetrieve,
+}));
+
+const attachedShowcaseRenderSpy = jest.fn();
+jest.mock('../../../../components/attachments/DonatedNFTPrizeShowcase', () => ({
+  AttachedNFTAllocationShowcase: ({
+    nfts,
+    erc20Tokens = [],
+    cycleNumber,
+    variant = 'default',
+  }: {
+    nfts: unknown[];
+    erc20Tokens?: unknown[];
+    cycleNumber?: number;
+    variant?: 'default' | 'rail';
+  }) => {
+    attachedShowcaseRenderSpy();
+    return nfts.length > 0 || erc20Tokens.length > 0 ? (
+      <section
+        data-testid="attached-nft-showcase"
+        data-count={nfts.length}
+        data-erc20-count={erc20Tokens.length}
+        data-cycle={cycleNumber}
+        data-variant={variant}
+      >
+        Attached NFT Showcase
+      </section>
+    ) : null;
+  },
+}));
+
+jest.mock('../../../../components/nft/NFTImage', () => ({
+  __esModule: true,
+  default: ({ src, alt = 'NFT' }: { src: string; alt?: string }) => (
+    <img data-testid="nft-image" src={src} alt={alt} />
+  ),
+}));
+
+// Image-grid heavy; the picker interaction is covered by the GesturePanel suite.
+jest.mock('../../../../components/nft/PaginationRWLKGrid', () => ({
+  __esModule: true,
+  default: ({ selectedToken }: { selectedToken: number }) => (
+    <div data-testid="rwlk-grid" data-selected={selectedToken}>
+      RWLK grid
+    </div>
+  ),
+}));
+
+jest.mock('../../../../components/common/UniswapTradeButton', () => ({
+  UniswapTradeButton: () => <a href="https://app.uniswap.org">Uniswap</a>,
+}));
+
+jest.mock('../../../../utils/errors', () => ({
+  reportError: jest.fn(),
+}));
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  resetUxScenarioForTest();
+  window.history.pushState({}, '', '/');
+  // Keep notification preferences isolated between tests.
+  window.localStorage.clear();
+  mockAccount = '0xUser';
+  mockUseChampions.mockImplementation(() => mockChampions);
+  mockParticipation = { status: 'ready', gestures: 2, spentEth: 0.02, spentCst: 0 };
+  mockRetrieve = { state: 'none' };
+  mockUseEndgameChainSync.mockReturnValue({
+    isConfirmationPending: false,
+    isClaimedOnChain: false,
+    lastSample: null,
+  });
+  Object.assign(mockGestureForm, {
+    gestureType: 'ETH',
+    contributionType: 'NFT',
+    cstGestureData: {
+      AuctionDuration: 3600,
+      CSTPrice: 1,
+      CSTPriceWei: 1000000000000000000n,
+      SecondsElapsed: 1800,
+      isFree: false,
+      source: 'api' as const,
+    },
+    ethGestureInfo: { AuctionDuration: 3600, ETHPrice: 0.01, SecondsElapsed: 1800 },
+    gestureCstRewardAmount: 100,
+    isCstRewardLoading: false,
+    message: '',
+    nftDonateAddress: '',
+    nftId: '',
+    tokenDonateAddress: '',
+    tokenAmount: '',
+    rwlkId: -1,
+    gestureCostPlus: 2,
+    isGesturing: false,
+    gestureTxStage: { status: 'idle' },
+    advancedExpanded: false,
+    rwlknftIds: [],
+  });
+  mockGestureForm.onGesture.mockResolvedValue(true);
+  mockGestureForm.onGestureWithCST.mockResolvedValue(true);
+  Object.assign(mockAllocationFinalize, {
+    allocationTime: Date.now() + 13 * 60 * 60_000,
+    timeoutFinalize: 600,
+    isClaiming: false,
+    activationTime: 0,
+    claimHistory: null,
+  });
+  mockAllocationFinalize.fetchActivationTime.mockResolvedValue(0);
+  mockAllocationFinalize.onFinalize.mockResolvedValue(true);
+  mockUseDashboardInfo.mockReturnValue({ data: undefined, isLoading: false });
+  mockUseHomeGestureFeed.mockReturnValue({ data: undefined });
+  mockUseDonationsNFTByRound.mockReturnValue({ data: [] });
+  mockUseDonationsERC20ByRound.mockReturnValue({ data: [] });
+  mockUseBannedGestures.mockReturnValue({ data: [] });
+  mockUseCurrentTime.mockReturnValue({
+    data: Math.floor(Date.now() / 1000),
+    isLoading: false,
+  });
+  mockUseLatestSignatures.mockReturnValue({ signatures: [], isLoading: false, isError: false });
+});
+
+/* ── helpers ────────────────────────────────────────────────────── */
+
+const makeDashboardData = (overrides = {}) => ({
+  CurRoundNum: 5,
+  CurNumBids: 10,
+  LastBidderAddr: '0xBidder',
+  CurBidPriceEth: 0.01,
+  PrizeAmountEth: 1.5,
+  RaffleAmountEth: 0.4,
+  StakingAmountEth: 0.6,
+  CosmicGameBalanceEth: 10,
+  PrizePercentage: 25,
+  ChronoWarriorPercentage: 8,
+  RafflePercentage: 4,
+  StakingPercentage: 6,
+  CharityPercentage: 7,
+  CharityBalanceEth: '0.5',
+  SumVoluntaryDonationsEth: '0.8',
+  NumRaffleEthWinnersBidding: 3,
+  NumRaffleNFTWinnersBidding: 10,
+  NumRaffleNFTWinnersStakingRWalk: 10,
+  PrizeClaimTs: Math.floor(Date.now() / 1000) + 3600,
+  TsRoundStart: Math.floor(Date.now() / 1000) - 3600,
+  MainStats: { NumCSTokenMints: 100, SumCosmicGameDonationsEth: 1.2, SumWithdrawals: 0.4 },
+  CurRoundStats: { TotalDonatedNFTs: 3, TotalDonatedAmountEth: 0.5 },
+  ...overrides,
+});
+
+function mockScrollIntoView(reducedMotion = false) {
+  const scrollIntoView = jest.fn();
+  const prototype = window.HTMLElement.prototype as Partial<Pick<HTMLElement, 'scrollIntoView'>>;
+  const original = prototype.scrollIntoView;
+  const originalMatchMedia = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: jest.fn((query: string) => ({
+      matches: reducedMotion && query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  });
+
+  Object.defineProperty(prototype, 'scrollIntoView', {
+    configurable: true,
+    writable: true,
+    value: scrollIntoView,
+  });
+
+  return {
+    scrollIntoView,
+    restore: () => {
+      if (originalMatchMedia) {
+        Object.defineProperty(window, 'matchMedia', originalMatchMedia);
+      } else {
+        Reflect.deleteProperty(window, 'matchMedia');
+      }
+      if (original) {
+        Object.defineProperty(prototype, 'scrollIntoView', {
+          configurable: true,
+          writable: true,
+          value: original,
+        });
+      } else {
+        delete prototype.scrollIntoView;
+      }
+    },
+  };
+}
+
+/** The in-page panel's submit button, distinct from the sheet twin. */
+function getPanelSubmitButton() {
+  const button = document.getElementById('gesture-submit');
+  expect(button).toBeInstanceOf(HTMLButtonElement);
+  return button as HTMLButtonElement;
+}
+
+async function openDisclosure(user: ReturnType<typeof userEvent.setup>, testId: string) {
+  const disclosure = screen.getByTestId(testId);
+  const summary = disclosure.querySelector('summary');
+  expect(summary).not.toBeNull();
+  await user.click(summary!);
+  expect(disclosure).toHaveAttribute('open');
+  return disclosure;
+}
+
+/* ── Tests ──────────────────────────────────────────────────────── */
+
+describe('HomePage', () => {
+  it('uses the serialized timing anchor for the SSR and hydration snapshot', () => {
+    expect(resolveHomeNow(0, { sampledAtMs: 1_700_000_000_000 })).toBe(1_700_000_000_000);
+    expect(resolveHomeNow(0, null, 1_699_999_999_000)).toBe(1_699_999_999_000);
+    expect(resolveHomeNow(1_700_000_000_500, { sampledAtMs: 1_700_000_000_000 })).toBe(
+      1_700_000_000_500,
+    );
+  });
+
+  it('rejects a first-paint timing sample from a different cycle', () => {
+    render(
+      <HomePage
+        initialDashboardData={makeDashboardData({ CurRoundNum: 5 }) as never}
+        initialTimingSample={{
+          cycleNumber: 6,
+          targetServerTimeSec: 1_700_000_600,
+          currentServerTimeSec: 1_700_000_000,
+          sampledAtMs: 1_700_000_000_000,
+        }}
+      />,
+    );
+
+    expect(mockUseCurrentTime).toHaveBeenCalledWith(undefined, undefined);
+  });
+
+  /* ── First viewport structure ───────────────────────────────── */
+
+  it('integrates the pulse bar (page H1, cycle, phase, activity) into the control desk', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({
+        CurRoundNum: 7,
+        CurNumBids: 42,
+        LastBidderAddr: '0x1111111111111111111111111111111111111111',
+      }),
+      isLoading: false,
+    });
+    mockUseHomeGestureFeed.mockReturnValue({
+      data: [
+        {
+          EvtLogId: 42,
+          TimeStamp: Math.floor(Date.now() / 1000) - 12,
+          BidderAddr: '0x1111111111111111111111111111111111111111',
+          RoundNum: 7,
+          GestureType: 0,
+          Message: '',
+        },
+      ],
+    });
+
+    render(<HomePage />);
+
+    const header = screen.getByTestId('home-deck-header');
+    expect(
+      within(header).getByRole('heading', { level: 1, name: 'home.deck.title' }),
+    ).toBeInTheDocument();
+    expect(within(header).getByText('home.hero.cycleNumber(number=7)')).toBeInTheDocument();
+    expect(screen.getByTestId('pulse-phase-chip')).toHaveTextContent(
+      'home.chrono.phase.live.label',
+    );
+    expect(screen.getByTestId('pulse-gesture-count')).toHaveTextContent(
+      'home.observatory.pulse.gestureCount(count=42)',
+    );
+    expect(screen.getByTestId('pulse-last-gesture')).toHaveTextContent(
+      /home\.ticker\.age\.seconds/,
+    );
+    expect(within(header).getByRole('link', { name: /home\.deck\.newHere/ })).toHaveAttribute(
+      'href',
+      '/how-it-works',
+    );
+
+    const desk = screen.getByTestId('control-desk');
+    const grid = screen.getByTestId('control-desk-grid');
+    expect(desk).toContainElement(header);
+    expect(header.compareDocumentPosition(grid)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('sets every region heading of the desk and the feed in one style', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({
+        CurRoundNum: 7,
+        CurNumBids: 42,
+        LastBidderAddr: '0x1111111111111111111111111111111111111111',
+      }),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    // Position, not size, orders the regions: one tier for every desk H2, so
+    // no small heading sits above a larger neighbour (D040).
+    const regions = [screen.getByTestId('control-desk'), screen.getByTestId('home-feed-layout')];
+    const headings = regions.flatMap((region) =>
+      within(region).getAllByRole('heading', { level: 2 }),
+    );
+    expect(headings.length).toBeGreaterThanOrEqual(6);
+    for (const heading of headings) {
+      expect(heading).toHaveClass('type-heading-3');
+    }
+  });
+
+  it('keeps all live decision information visible while allocation detail is collapsed', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ CurRoundNum: 7 }),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    const desk = screen.getByTestId('control-desk');
+    const clock = screen.getByTestId('cycle-clock');
+    const latest = screen.getByTestId('latest-participant-intel');
+    const standings = screen.getByTestId('standings-ledger');
+    const calibration = screen.getByTestId('control-desk-calibration');
+    const panel = screen.getByTestId('gesture-panel');
+    const ledger = screen.getByTestId('allocation-ledger');
+
+    expect(desk).toContainElement(clock);
+    expect(desk).toContainElement(latest);
+    expect(desk).toContainElement(standings);
+    expect(desk).toContainElement(calibration);
+    expect(desk).toContainElement(panel);
+    // The full allocation ledger follows the desk and the conversation.
+    expect(desk).not.toContainElement(ledger);
+    expect(clock).toBeVisible();
+    expect(panel).toBeVisible();
+    expect(latest).toBeVisible();
+    expect(standings).toBeVisible();
+    expect(calibration).toBeVisible();
+    expect(within(calibration).getByRole('region')).toHaveAccessibleName(
+      'home.calibration.cstTitle',
+    );
+    expect(screen.queryByTestId('standings-disclosure')).not.toBeInTheDocument();
+    expect(ledger).not.toBeVisible();
+    expect(clock).toHaveAttribute('data-phase', 'live');
+    expect(screen.getByTestId('clock-reserve-amount')).toHaveTextContent('1.5000 ETH');
+    expect(screen.getByTestId('chrono-role-summary')).toHaveTextContent('0.8000 ETH');
+  });
+
+  it('shows what is at stake on the clock: reserve ETH, USD, and extras', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ CurRoundNum: 7, PrizeAmountEth: 2.75 }),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    const reserve = screen.getByTestId('clock-reserve');
+    expect(within(reserve).getByText('home.observatory.clock.reserveLabel')).toBeInTheDocument();
+    expect(screen.getByTestId('clock-reserve-amount').textContent).toBe(
+      `2.7500${String.fromCharCode(160)}ETH`,
+    );
+    expect(reserve.querySelector('[data-term="signatureAllocation"]')).not.toBeNull();
+    // 2.75 ETH × mocked 2,000 USD.
+    expect(screen.getByTestId('clock-reserve-usd')).toHaveTextContent('amount=5,500');
+    expect(within(reserve).getByTestId('clock-reserve-extras')).toHaveTextContent(
+      'home.observatory.clock.reserveExtraCst',
+    );
+    // No attachments in this cycle: the line promises none.
+    expect(within(reserve).queryByTestId('clock-reserve-attached')).not.toBeInTheDocument();
+  });
+
+  it('reveals the integrated allocation ledger with live amounts on demand', async () => {
+    const user = userEvent.setup();
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    await openDisclosure(user, 'allocations-disclosure');
+
+    expect(screen.getByTestId('ledger-track-signature')).toHaveTextContent('1.5000 ETH');
+    expect(screen.getByTestId('ledger-track-public-goods')).toHaveTextContent('0.7000 ETH');
+    // The full percentage set is present, so the rollover chip appears too.
+    expect(screen.getByTestId('ledger-track-next-cycle')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /home\.observatory\.ribbon\.fullBreakdown/ }),
+    ).toHaveAttribute('href', '/current-cycle#allocation-breakdown');
+  });
+
+  it('shows live method prices inside the one gesture panel', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    expect(screen.getByTestId('panel-method-eth-cost')).toHaveTextContent('0.01 ETH');
+    expect(screen.getByTestId('panel-method-randomWalk-cost')).toHaveTextContent('0.005 ETH');
+    expect(screen.getByTestId('panel-method-cst-cost')).toHaveTextContent('1 CST');
+  });
+
+  it.each(['ETH', 'CST', 'RandomWalk'])(
+    'keeps one live CST Calibration Window visible with %s selected',
+    (method) => {
+      mockGestureForm.gestureType = method;
+      mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+
+      render(<HomePage />);
+
+      const calibration = screen.getByTestId('control-desk-calibration');
+      expect(calibration).toBeVisible();
+      expect(within(calibration).getByRole('progressbar')).toBeVisible();
+      expect(screen.getAllByRole('region', { name: 'home.calibration.cstTitle' })).toHaveLength(1);
+      expect(screen.getByTestId('gesture-panel')).not.toContainElement(calibration);
+    },
+  );
+
+  it('keeps the optional message one step away beside decision information and identities', async () => {
+    const user = userEvent.setup();
+    mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+    render(<HomePage />);
+
+    // The decision and the commit lead; the optional message recedes.
+    const toggle = screen.getByTestId('gesture-message-toggle');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByTestId('gesture-message-input')).not.toBeVisible();
+    await user.click(toggle);
+    expect(screen.getByTestId('gesture-message-input')).toBeVisible();
+    for (const testId of [
+      'cycle-clock',
+      'latest-participant-intel',
+      'control-desk-endurance',
+      'chrono-role-summary',
+      'control-desk-calibration',
+    ]) {
+      expect(screen.getByTestId(testId)).toBeVisible();
+    }
+    for (const [testId, address] of [
+      ['latest-participant-intel', mockChampions.latestGesture.address],
+      ['control-desk-endurance', mockChampions.endurance.address],
+      ['chrono-role-summary', mockChampions.chrono.address],
+    ] as const) {
+      const profile = within(screen.getByTestId(testId)).getByRole('link', { name: address });
+      expect(profile).toBeVisible();
+      expect(profile).toHaveAttribute('href', `/user/${address}`);
+      expect(profile).toHaveAttribute('title', address);
+    }
+  });
+
+  it('shows complete latest-participant transaction and receipt details without disclosure', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+    mockUseHomeGestureFeed.mockReturnValue({
+      data: [
+        {
+          EvtLogId: 77,
+          BidPosition: 7,
+          TimeStamp: 1_700_000_000,
+          BidderAddr: '0xBidder',
+          RoundNum: 5,
+          GestureType: 1,
+          GestureCostEth: 0.05,
+          ParticipationCST: 123.45,
+          RWalkNFTId: 42,
+          NFTDonationTokenAddr: '0xNFT',
+          NFTDonationTokenId: 9,
+          DonatedERC20TokenAddr: '0xToken',
+          Message: 'The orbit holds.',
+        },
+      ],
+    });
+    mockUseDonationsNFTByRound.mockReturnValue({ data: [{ RecordId: 1 }] });
+    mockUseDonationsERC20ByRound.mockReturnValue({
+      data: [{ EvtLogId: 1, TokenAddr: '0xToken' }],
+    });
+
+    render(<HomePage />);
+
+    const intel = screen.getByTestId('latest-participant-intel');
+    for (const link of within(intel).getAllByRole('link', { name: '0xBidder' })) {
+      expect(link).toHaveAttribute('href', '/user/0xBidder');
+    }
+    expect(screen.getByTestId('latest-participant-paid-amount')).toHaveTextContent(
+      /home\.observatory\.ledger\.paid\s*0\.05 ETH/,
+    );
+    expect(screen.getByTestId('gesture-cst-credit')).toHaveTextContent('123.45 CST');
+    expect(screen.getByTestId('latest-participant-method')).toHaveTextContent('Random Walk');
+    expect(screen.getByTestId('latest-participant-gesture-id')).toHaveTextContent('#7');
+    expect(screen.getByTestId('latest-participant-attached-assets')).toHaveTextContent(
+      'NFT + ERC20',
+    );
+    expect(screen.getByTestId('latest-participant-message')).toHaveTextContent('The orbit holds.');
+    expect(
+      screen.getByRole('progressbar', { name: 'tables.specialAllocation.progressAria' }),
+    ).toHaveAttribute('aria-valuenow', '16');
+    expect(screen.getByTestId('attached-nft-showcase')).toHaveAttribute('data-erc20-count', '1');
+    // The clock names the attached assets (one NFT, one token deposit) and links to them.
+    const attached = screen.getByTestId('clock-reserve-attached');
+    expect(attached).toHaveTextContent('home.observatory.clock.reserveAttached(count=2)');
+    expect(within(attached).getByRole('link')).toHaveAttribute('href', '#home-attached-assets');
+    expect(screen.getByTestId('home-attached-assets')).toHaveAttribute(
+      'id',
+      'home-attached-assets',
+    );
+  });
+
+  it('restores the active Endurance challenge and complete Chrono next-change state', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    // Under the Chrono-Warrior row it can change: the Endurance Champion's
+    // reign so far (20m) against the 30m record, passed in 10m 1s.
+    const chrono = screen.getByTestId('chrono-role-summary');
+    const challenge = within(chrono).getByTestId('chrono-active-challenge');
+    expect(challenge).toHaveTextContent(/challenge\.reign\s*00:20:00/);
+    expect(challenge).toHaveTextContent(/challenge\.passesIn\s*00:10:01/);
+    // The record itself reads as a clock too, like every duration in the ledger.
+    expect(chrono).toHaveTextContent('00:30:00');
+    // The holder is named once, on the Endurance row, not again here.
+    expect(within(challenge).queryByRole('link')).not.toBeInTheDocument();
+    expect(chrono).toHaveTextContent('0.8000 ETH');
+  });
+
+  it('keeps Last Gesture current when the special-recipient snapshot is stale', () => {
+    const freshAddress = '0xFresh';
+    const freshGesture = {
+      EvtLogId: 91,
+      BidPosition: 11,
+      TimeStamp: 1_700_000_200,
+      BidderAddr: freshAddress,
+      RoundNum: 5,
+      GestureType: 0,
+      GestureCostEth: 0.07,
+      ParticipationCST: 44,
+      Message: 'fresh signal',
+    };
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ LastBidderAddr: freshAddress }),
+      isLoading: false,
+    });
+    mockUseHomeGestureFeed.mockReturnValue({ data: [freshGesture] });
+    mockUseChampions.mockImplementation((_seed, evidence) => ({
+      ...mockChampions,
+      latestGesture: {
+        ...mockChampions.latestGesture,
+        address: (evidence as { address: string }).address,
+        latestGestureTime: (evidence as { timestamp: number }).timestamp,
+      },
+    }));
+
+    render(
+      <HomePage
+        initialSpecialRecipients={
+          {
+            LastBidderAddress: '0xStale',
+            LastBidderLastBidTime: 1_700_000_100,
+          } as never
+        }
+      />,
+    );
+
+    expect(mockUseChampions).toHaveBeenCalledWith(expect.anything(), {
+      address: freshAddress,
+      timestamp: freshGesture.TimeStamp,
+    });
+    expect(screen.getByTestId('latest-participant-gesture-details')).toHaveTextContent('0.07 ETH');
+    expect(
+      within(screen.getByTestId('latest-participant-intel')).getByRole('link', {
+        name: freshAddress,
+      }),
+    ).toHaveAttribute('href', `/user/${freshAddress}`);
+    expect(screen.getByTestId('latest-participant-message')).toHaveTextContent('fresh signal');
+  });
+
+  it('shows Last Gesture syncing instead of a previous participant transaction', () => {
+    const freshAddress = '0xFresh';
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ LastBidderAddr: freshAddress }),
+      isLoading: false,
+    });
+    const previousGesture = {
+      EvtLogId: 90,
+      TimeStamp: 1_700_000_100,
+      BidderAddr: '0xPrevious',
+      RoundNum: 5,
+      GestureType: 0,
+      GestureCostEth: 0.05,
+      Message: 'stale signal',
+    };
+    mockUseHomeGestureFeed.mockReturnValue({
+      mode: 'paged',
+      // Metadata may index a new participant before their full detail read.
+      gestures: [
+        {
+          EvtLogId: 91,
+          TimeStamp: 1_700_000_200,
+          BidderAddr: freshAddress,
+          RoundNum: 5,
+          GestureType: 0,
+          GestureCostEth: -1,
+        },
+        previousGesture,
+      ],
+      latestGesture: previousGesture,
+      chatGestures: [previousGesture],
+    });
+    mockUseChampions.mockImplementation((_seed, evidence) => ({
+      ...mockChampions,
+      latestGesture: {
+        ...mockChampions.latestGesture,
+        address: (evidence as { address: string }).address,
+        latestGestureTime: 0,
+        holdDuration: 0,
+      },
+    }));
+
+    render(<HomePage />);
+
+    expect(screen.getByTestId('latest-participant-gesture-syncing')).toHaveTextContent(
+      'tables.specialAllocation.gestureDetailsSyncing',
+    );
+    expect(
+      within(screen.getByTestId('latest-participant-intel')).queryByText('stale signal'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('latest-participant-paid-amount')).not.toBeInTheDocument();
+  });
+
+  it('omits Last Gesture only when the cycle has no Gesture yet', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({
+        LastBidderAddr: '0x0000000000000000000000000000000000000000',
+        TsRoundStart: 0,
+      }),
+      isLoading: false,
+    });
+    mockUseHomeGestureFeed.mockReturnValue({ data: [] });
+    mockAllocationFinalize.activationTime = Math.floor(Date.now() / 1000) + 3600;
+
+    render(<HomePage />);
+
+    expect(screen.queryByTestId('latest-participant-gesture-details')).not.toBeInTheDocument();
+  });
+
+  it('keeps Last Gesture visible when stale activation data says opening soon', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+    mockUseHomeGestureFeed.mockReturnValue({
+      data: [
+        {
+          EvtLogId: 90,
+          TimeStamp: 1_700_000_100,
+          BidderAddr: '0xBidder',
+          RoundNum: 5,
+          GestureType: 0,
+          GestureCostEth: 0.05,
+          Message: '',
+        },
+      ],
+    });
+    mockAllocationFinalize.activationTime = Math.floor(Date.now() / 1000) + 3600;
+
+    render(<HomePage />);
+
+    expect(screen.getByTestId('cycle-clock')).toHaveAttribute('data-phase', 'opening-soon');
+    expect(screen.getByTestId('latest-participant-gesture-details')).toBeInTheDocument();
+  });
+
+  it('does not misclassify an open cycle when the chain clock is ahead', () => {
+    const browserNowSec = Math.floor(Date.now() / 1000);
+    const chainNowSec = browserNowSec + 28 * 60 * 60;
+    mockUseCurrentTime.mockReturnValue({
+      data: chainNowSec,
+      dataUpdatedAt: Date.now(),
+      isLoading: false,
+    });
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({
+        CurRoundStats: {
+          TotalBids: 10,
+          ActivationTime: chainNowSec - 120,
+        },
+      }),
+      isLoading: false,
+    });
+    // Simulate the direct chain read already observing cycle N+1 while the
+    // dashboard still consistently describes open cycle N.
+    mockAllocationFinalize.activationTime = browserNowSec + 600;
+    mockAllocationFinalize.allocationTime = Date.now() + 2 * 60 * 60_000;
+
+    render(<HomePage />);
+
+    expect(screen.getByTestId('cycle-clock')).toHaveAttribute('data-phase', 'approach');
+    expect(screen.getByTestId('gesture-panel')).toBeInTheDocument();
+  });
+
+  it('keeps prices and the inline action together at every viewport size', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    const panel = screen.getByTestId('gesture-panel');
+    expect(panel).toBeVisible();
+    expect(within(panel).getByTestId('panel-method-eth-cost')).toHaveTextContent('0.01 ETH');
+    expect(within(panel).getByTestId('panel-method-randomWalk-cost')).toHaveTextContent(
+      '0.005 ETH',
+    );
+    expect(within(panel).getByTestId('panel-method-cst-cost')).toHaveTextContent('1 CST');
+    expect(screen.queryByTestId('gesture-price-strip')).not.toBeInTheDocument();
+    expect(screen.getByTestId('control-desk-gesture')).not.toHaveClass('hidden');
+  });
+
+  it('threads first-paint role and latest-gesture seeds into their live hooks', () => {
+    const seededGesture = {
+      EvtLogId: 88,
+      TimeStamp: 1_700_000_100,
+      BidderAddr: '0xSeeded',
+      RoundNum: 5,
+      GestureType: 0,
+      GestureCostEth: 0.1,
+      Message: '',
+    } as never;
+    const seededRecipients = {
+      LastBidderAddress: '0xSeeded',
+      LastBidderLastBidTime: 1_700_000_100,
+    } as never;
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ LastBidderAddr: '0xSeeded' }),
+      isLoading: false,
+    });
+    mockUseHomeGestureFeed.mockReturnValue({ data: [seededGesture] });
+
+    render(
+      <HomePage initialLatestGesture={seededGesture} initialSpecialRecipients={seededRecipients} />,
+    );
+
+    expect(mockUseHomeGestureFeed).toHaveBeenCalledWith(5, [seededGesture]);
+    expect(mockUseChampions).toHaveBeenCalledWith(seededRecipients, {
+      address: '0xSeeded',
+      timestamp: 1_700_000_100,
+    });
+  });
+
+  /* ── Below the fold ─────────────────────────────────────────── */
+
+  it('keeps personal state in the desk, then the chat beside the cycle guide, then detail', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+    mockUseHomeGestureFeed.mockReturnValue({
+      data: [
+        { EvtLogId: 1, TimeStamp: 1700000000, BidderAddr: '0xUser', RoundNum: 5, Message: '' },
+      ],
+    });
+
+    render(<HomePage />);
+
+    const desk = screen.getByTestId('control-desk');
+    const strip = screen.getByTestId('cycle-standing');
+    const feed = screen.getByTestId('home-feed-layout');
+    const guide = screen.getByTestId('cycle-phase-guide');
+    const disclosure = screen.getByTestId('allocations-disclosure');
+    const story = screen.getByTestId('home-story-section');
+
+    expect(desk).toContainElement(strip);
+    expect(desk.compareDocumentPosition(feed)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // The phase stepper is promoted out of the story, beside the chat (F296).
+    expect(feed).toContainElement(guide);
+    expect(guide).toBeVisible();
+    expect(guide).toHaveAttribute('data-step', 'open');
+    expect(story).not.toContainElement(guide);
+    expect(feed.compareDocumentPosition(disclosure)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(disclosure.compareDocumentPosition(story)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // No duplicate newcomer explainer and no public experimental link (F280).
+    expect(screen.queryByText('home.phaseGuide.explainer.title')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('experimental-ui-entry')).not.toBeInTheDocument();
+    expect(screen.queryByText('home.allocation.title')).not.toBeInTheDocument();
+  });
+
+  it('states the wallet standing from its indexed history, beside the running spend', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+    // A partial feed never stands in for the wallet's own count.
+    mockUseHomeGestureFeed.mockReturnValue({
+      data: [
+        { EvtLogId: 1, TimeStamp: 1700000000, BidderAddr: '0xUser', RoundNum: 5, Message: '' },
+      ],
+    });
+
+    const { rerender } = render(<HomePage />);
+    expect(screen.getByTestId('personal-gesture-count')).toHaveTextContent(
+      'home.observatory.standing.gestures(count=2,total=10)',
+    );
+    // The spend sits beside the not-refunded note, ETH and CST never summed.
+    const spent = screen.getByTestId('personal-spent');
+    expect(spent).toHaveTextContent('home.observatory.standing.spent 0.0200 ETH');
+    expect(screen.getByTestId('gesture-panel-action')).toContainElement(spent);
+
+    mockAccount = null;
+    rerender(<HomePage />);
+    expect(screen.queryByTestId('cycle-standing')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('personal-spent')).not.toBeInTheDocument();
+    // No placeholder region: the form's own connect action says what connecting adds.
+    expect(screen.queryByTestId('control-desk-standing')).not.toBeInTheDocument();
+  });
+
+  it('never reports a confident zero while the wallet history is unknown', () => {
+    mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+    mockParticipation = { status: 'loading' };
+    mockRetrieve = { state: 'loading' };
+
+    render(<HomePage />);
+    expect(screen.getByTestId('personal-gesture-count')).not.toHaveTextContent(/\d/);
+    expect(screen.getByTestId('personal-spent')).not.toHaveTextContent(/\d/);
+    expect(screen.getByTestId('personal-retrieve-status')).not.toHaveTextContent('waitingNothing');
+  });
+
+  it('hangs the newest Signature beside the form and gives attachments their own section', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ CurRoundNum: 7 }),
+      isLoading: false,
+    });
+    mockUseLatestSignatures.mockReturnValue({
+      signatures: [
+        { TokenId: 47, Seed: 'abc123', RoundNum: 6, TimeStamp: 1_786_491_506 },
+        { TokenId: 46, Seed: 'def456', RoundNum: 6, TimeStamp: 1_786_491_506 },
+      ],
+      isLoading: false,
+      isError: false,
+    });
+    mockUseDonationsNFTByRound.mockReturnValue({ data: [{ RecordId: 1 }, { RecordId: 2 }] });
+    mockUseDonationsERC20ByRound.mockReturnValue({
+      data: [{ EvtLogId: 1, TokenAddr: '0xToken', AmountDonatedEth: 5 }],
+    });
+
+    render(<HomePage />);
+
+    // The art is part of the desk: row 2, beside the form, above the fold.
+    const art = screen.getByTestId('latest-signature');
+    expect(screen.getByTestId('control-desk-art')).toContainElement(art);
+    expect(within(art).getByTestId('latest-signature-link')).toHaveAttribute('href', '/detail/47');
+    expect(within(art).getByText('common.signature.cycle(n=6)')).toBeVisible();
+    expect(
+      within(art).getByRole('link', { name: /home\.latestSignature\.gallery/ }),
+    ).toHaveAttribute('href', '/gallery');
+
+    const actions = screen.getByTestId('home-feed-actions');
+    expect(actions).toContainElement(screen.getByTestId('cycle-details-link-card'));
+    expect(screen.getByTestId('cycle-details-link-card')).toHaveAttribute('href', '/current-cycle');
+    expect(screen.getByTestId('previous-cycle-link-card')).toHaveAttribute('href', '/allocation/6');
+    expect(screen.queryByTestId('public-goods-impact-card')).not.toBeInTheDocument();
+
+    const showcase = screen.getByTestId('attached-nft-showcase');
+    const assets = screen.getByTestId('home-attached-assets');
+    expect(assets).toContainElement(showcase);
+    expect(screen.getByTestId('home-feed-layout').compareDocumentPosition(assets)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(showcase).toHaveAttribute('data-count', '2');
+    expect(showcase).toHaveAttribute('data-erc20-count', '1');
+    expect(showcase).toHaveAttribute('data-cycle', '7');
+    expect(showcase).toHaveAttribute('data-variant', 'default');
+  });
+
+  it('reads the newest imprints keyed by the dashboard imprint count and the server seed', () => {
+    const seed = [{ TokenId: 47, Seed: 'abc123', RoundNum: 1 }];
+    mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+    render(<HomePage initialLatestSignatures={seed as never} />);
+    expect(mockUseLatestSignatures).toHaveBeenCalledWith(
+      makeDashboardData().MainStats.NumCSTokenMints,
+      seed,
+    );
+  });
+
+  it('omits the attachment section when the cycle has nothing to show', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ CurRoundNum: 1, CharityPercentage: 0 }),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    expect(screen.queryByTestId('public-goods-impact-card')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('attached-nft-showcase')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('clock-reserve-attached')).not.toBeInTheDocument();
+  });
+
+  it('links the cycle before the live one, Cycle 0 included, since cycles count from 0', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ CurRoundNum: 1 }),
+      isLoading: false,
+    });
+    const { unmount } = render(<HomePage />);
+    // Regression: while Cycle 1 ran, "Cycle 0 allocations" never rendered.
+    expect(screen.getByTestId('previous-cycle-link-card')).toHaveAttribute('href', '/allocation/0');
+    unmount();
+
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ CurRoundNum: 0 }),
+      isLoading: false,
+    });
+    render(<HomePage />);
+    expect(screen.queryByTestId('previous-cycle-link-card')).not.toBeInTheDocument();
+  });
+
+  it('tells the story behind the art in notes with level-3 headings under one page H1', async () => {
+    const user = userEvent.setup();
+    mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+
+    render(<HomePage />);
+
+    const story = screen.getByTestId('home-story-section');
+    expect(story).not.toHaveAttribute('open');
+    expect(window.localStorage.getItem('cosmic-observatory-visited')).toBeNull();
+    const note = within(story).getByRole('heading', {
+      level: 3,
+      name: 'home.hero.story.gestures.title',
+    });
+    expect(note).not.toBeVisible();
+
+    await openDisclosure(user, 'home-story-section');
+    expect(note).toBeVisible();
+    expect(
+      within(story).getByRole('link', { name: /home\.latestSignature\.gallery/ }),
+    ).toHaveAttribute('href', '/gallery');
+    // The art hangs on the desk; the story does not repeat it.
+    expect(within(story).queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+
+    // The notes sit under their own section heading for heading navigation.
+    expect(
+      within(story).getByRole('heading', { level: 2, name: 'home.orientation.storyTitle' }),
+    ).toBeInTheDocument();
+    await user.click(story.querySelector('summary')!);
+    expect(story).not.toHaveAttribute('open');
+  });
+
+  it('shows one plate of the newest Signature instead of repeating the gallery', () => {
+    mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+    render(<HomePage />);
+    expect(screen.queryByTestId('latest-nfts')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('deck-art-card')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('latest-signature')).toHaveLength(1);
+  });
+
+  it('sets the control desk on the full-strength atmosphere and starfield', () => {
+    mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+    render(<HomePage />);
+    // The home is a hero page: full palette atmosphere plus the static
+    // starfield, where data pages dim both to 40% (`subtle`).
+    const backdrop = document.querySelector('[data-ambient-backdrop]');
+    expect(backdrop).toHaveAttribute('data-ambient-backdrop', 'hero');
+    expect(backdrop!.querySelector('[data-starfield]')).not.toBeNull();
+  });
+
+  /* ── Gesture flow (the one panel) ───────────────────────────── */
+
+  it('switches methods through the shared state, resetting any picked RandomWalk token', async () => {
+    const user = userEvent.setup();
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    const tabs = screen.getByTestId('panel-method-tabs');
+    expect(
+      within(tabs).getByRole('radio', { name: /home\.form\.method\.eth\.label/ }),
+    ).toHaveAttribute('aria-checked', 'true');
+
+    await user.click(within(tabs).getByRole('radio', { name: /home\.form\.method\.cst\.label/ }));
+
+    expect(mockGestureForm.setRwlkId).toHaveBeenCalledWith(-1);
+    expect(mockGestureForm.setBidType).toHaveBeenCalledWith('CST');
+  });
+
+  it('asks the form to hold ETH before the cycle has its first Gesture', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ LastBidderAddr: '0x0000000000000000000000000000000000000000' }),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    expect(mockUseGestureFormOptions).toHaveBeenLastCalledWith({
+      firstGesture: true,
+      lastGesturerAddress: '0x0000000000000000000000000000000000000000',
+    });
+  });
+
+  it('submits an ETH gesture and refreshes live data optimistically', async () => {
+    const user = userEvent.setup();
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+    expect(getPanelSubmitButton()).toHaveTextContent('home.form.submit.action.eth · 0.01 ETH');
+    await user.click(getPanelSubmitButton());
+
+    // No notification-permission prompt in the middle of a gesture.
+    expect(window.Notification?.requestPermission ?? jest.fn()).not.toHaveBeenCalled();
+    expect(mockGestureForm.onGesture).toHaveBeenCalledTimes(1);
+    expect(mockGestureForm.onGestureWithCST).not.toHaveBeenCalled();
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['currentSpecialWinners'] });
+    expect(mockGestureForm.setMessage).toHaveBeenCalledWith('');
+
+    // The confirmed Gesture shows on every surface at once, before the index
+    // catches up: the count, and the wallet holding the Last Gesture.
+    expect(mockSetQueryData).not.toHaveBeenCalledWith(['dashboardInfo'], expect.anything());
+    await waitFor(() =>
+      expect(screen.getByTestId('pulse-gesture-count')).toHaveTextContent(
+        'home.observatory.pulse.gestureCount(count=11)',
+      ),
+    );
+    expect(screen.getByTestId('pulse-you-latest')).toBeInTheDocument();
+  });
+
+  it('submits a CST gesture through the CST interaction path', async () => {
+    const user = userEvent.setup();
+    mockGestureForm.gestureType = 'CST';
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+    expect(getPanelSubmitButton()).toHaveTextContent('home.form.submit.action.cst · 1 CST');
+    await user.click(getPanelSubmitButton());
+
+    expect(mockGestureForm.onGestureWithCST).toHaveBeenCalledTimes(1);
+    expect(mockGestureForm.onGesture).not.toHaveBeenCalled();
+  });
+
+  it('uses live-derived CST state for the submit button label', () => {
+    Object.assign(mockGestureForm, {
+      gestureType: 'CST',
+      cstGestureData: {
+        AuctionDuration: 10,
+        CSTPrice: 2,
+        CSTPriceWei: 2000000000000000000n,
+        SecondsElapsed: 9,
+        isFree: false,
+        source: 'contract' as const,
+        updatedAtMs: Date.now() - 30_500,
+      },
+    });
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    // 9s elapsed + 30s since the sample crossed the 10s window: free now.
+    expect(getPanelSubmitButton()).toHaveTextContent('home.form.submit.action.cst · 0 CST');
+  });
+
+  it('prevents ETH + RandomWalk gestures until the participant selects a token', async () => {
+    const user = userEvent.setup();
+    mockGestureForm.gestureType = 'RandomWalk';
+    mockGestureForm.rwlkId = -1;
+    Object.assign(mockGestureForm, { rwlknftIds: [3], rwlkListStatus: 'ready' });
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    // The token picker lives inline in the panel — no detour to a console.
+    expect(screen.getByTestId('panel-rwlk-picker')).toBeInTheDocument();
+    const gestureButton = getPanelSubmitButton();
+    expect(gestureButton).toHaveTextContent('home.form.submit.action.randomWalk · 0.005 ETH');
+    expect(gestureButton).toBeDisabled();
+    await user.click(gestureButton);
+    expect(mockGestureForm.onGesture).not.toHaveBeenCalled();
+  });
+
+  it('uses the localized toast key for a simulated gesture', async () => {
+    const user = userEvent.setup();
+    window.history.pushState({}, '', '/?uxScenario=live-mid-cycle');
+    resetUxScenarioForTest();
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+    render(<HomePage />);
+
+    await user.click(getPanelSubmitButton());
+
+    expect(mockNotify).toHaveBeenCalledWith('success', 'toasts.gesture.simulated(seconds=25)');
+    expect(mockGestureForm.onGesture).not.toHaveBeenCalled();
+  });
+
+  it('applies RandomWalk deep links from the collection page', () => {
+    window.history.pushState({}, '', '/?randomwalk=1&tokenId=77');
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    expect(mockGestureForm.setRwlkId).toHaveBeenCalledWith(77);
+    expect(mockGestureForm.setBidType).toHaveBeenCalledWith('RandomWalk');
+  });
+
+  it.each(['?randomwalk=1', '?randomwalk=1&tokenId=abc', '?randomwalk=1&tokenId=-1'])(
+    'chooses the method but never guesses a token from %s',
+    (search) => {
+      window.history.pushState({}, '', `/${search}`);
+      mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+
+      render(<HomePage />);
+
+      expect(mockGestureForm.setBidType).toHaveBeenCalledWith('RandomWalk');
+      // Never token #0 or NaN: the participant picks one from their own list.
+      expect(mockGestureForm.setRwlkId).not.toHaveBeenCalled();
+    },
+  );
+
+  /* ── Finalize (the clock's action) ──────────────────────────── */
+
+  it('lets the eligible wallet finalize straight from the clock', async () => {
+    const user = userEvent.setup();
+    const finalGestureParticipant = '0x1234567890abcdef1234567890abcdef12345678';
+    mockAccount = finalGestureParticipant;
+    // Comfortably past the deadline so clock skew cannot flip the phase.
+    mockAllocationFinalize.allocationTime = Date.now() - 60 * 60_000;
+    mockAllocationFinalize.timeoutFinalize = 0;
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ LastBidderAddr: finalGestureParticipant }),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    expect(screen.getByTestId('cycle-clock')).toHaveAttribute('data-phase', 'ready-to-finalize');
+    await user.click(screen.getByTestId('clock-finalize'));
+
+    expect(mockAllocationFinalize.onFinalize).toHaveBeenCalledTimes(1);
+    // During rollover the backend refuses the current recipients read: it is
+    // cleared, never refetched into an error.
+    await waitFor(() =>
+      expect(mockSetQueryData).toHaveBeenCalledWith(['currentSpecialWinners'], null),
+    );
+    expect(mockCancelQueries).toHaveBeenCalledWith({ queryKey: ['currentSpecialWinners'] });
+  });
+
+  it('points the Last Gesture holder to Finalize whatever case the wallet reports its address in', () => {
+    const checksummed = '0xAbCdEf0123456789aBcDeF0123456789AbCdEf01';
+    // The wallet reports lowercase; the API returns the checksummed form.
+    mockAccount = checksummed.toLowerCase();
+    mockAllocationFinalize.allocationTime = Date.now() - 60 * 60_000;
+    mockAllocationFinalize.timeoutFinalize = 0;
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ LastBidderAddr: checksummed }),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    // Never nudged to pay for another Gesture instead of finalizing.
+    expect(screen.getByTestId('gesture-finalize-pointer')).toBeInTheDocument();
+    expect(document.getElementById('gesture-submit')).toBeNull();
+  });
+
+  it('holds the clock in the confirming phase until the zero-cross is verified on-chain', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ LastBidderAddr: mockAccount }),
+      isLoading: false,
+    });
+    mockAllocationFinalize.allocationTime = Date.now() - 60 * 60_000;
+    mockUseEndgameChainSync.mockReturnValue({
+      isConfirmationPending: true,
+      isClaimedOnChain: false,
+      lastSample: null,
+    });
+
+    render(<HomePage />);
+
+    expect(screen.getByTestId('cycle-clock')).toHaveAttribute('data-phase', 'confirming');
+    // The finalize CTA must not appear while the ready state is unverified: a
+    // last-second gesture may still have extended the cycle on-chain.
+    expect(screen.queryByTestId('clock-finalize')).not.toBeInTheDocument();
+  });
+
+  /* ── Lifecycle phases ───────────────────────────────────────── */
+
+  it('drops the panel and dock before gestures open, keeping cycle-details paths', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+    mockAllocationFinalize.activationTime = Math.floor(Date.now() / 1000) + 3600;
+
+    render(<HomePage />);
+
+    expect(screen.queryByTestId('gesture-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('action-dock')).not.toBeInTheDocument();
+    expect(screen.getByTestId('cycle-clock')).toHaveAttribute('data-phase', 'opening-soon');
+    expect(screen.getByTestId('latest-participant-intel')).toBeVisible();
+    expect(screen.getByTestId('standings-ledger')).toBeVisible();
+    // Between cycles the art takes the form's place on the desk.
+    expect(screen.getByTestId('control-desk-art')).toContainElement(
+      screen.getByTestId('latest-signature'),
+    );
+    expect(screen.getByTestId('clock-calendar-link')).toBeInTheDocument();
+    expect(screen.getByTestId('cycle-details-link-card')).toHaveAttribute('href', '/current-cycle');
+  });
+
+  it('shows the panel skeleton instead of a blocking overlay while loading', () => {
+    mockUseDashboardInfo.mockReturnValue({ data: undefined, isLoading: true });
+    render(<HomePage />);
+    expect(screen.getByRole('status', { name: 'home.form.loadingAria' })).toBeInTheDocument();
+    expect(screen.getByTestId('gesture-panel-skeleton')).toBeInTheDocument();
+    expect(document.getElementById('gesture-submit')).not.toBeInTheDocument();
+  });
+
+  it('signals the final minutes with the phase word alone, never a pulsing overlay', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+    mockAllocationFinalize.allocationTime = Date.now() + 30_000; // final-minute
+
+    const { container } = render(<HomePage />);
+    expect(screen.getByTestId('cycle-clock')).toHaveAttribute('data-phase', 'final-minute');
+    expect(screen.getByTestId('pulse-phase-chip')).toHaveTextContent(
+      'home.chrono.phase.finalMinute.label',
+    );
+    // One calm cue: no full-viewport vignette and no pulsing digits.
+    expect(screen.queryByTestId('final-window-vignette')).not.toBeInTheDocument();
+    expect(container.querySelector('.animate-urgency-pulse, .animate-pulse-glow')).toBeNull();
+    expect(screen.getByTestId('clock-figures').className).not.toMatch(/animate-/);
+  });
+
+  it('keeps the finalization alert in one place: the attention menu beside the title', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+    render(<HomePage />);
+
+    // The clock is type only; it carries no second set of alert chips.
+    expect(screen.queryByTestId('clock-notify-control')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('cycle-clock')).queryByRole('button', { pressed: true }),
+    ).toBeNull();
+  });
+
+  it('previews the panel with a connect prompt when the wallet is disconnected', async () => {
+    mockAccount = null;
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+    render(<HomePage />);
+
+    expect(screen.getByTestId('connect-to-gesture')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('connect-to-gesture')).getByText('home.orientation.connectHelp'),
+    ).toBeVisible();
+    // Live prices stay visible for observers deciding whether to join.
+    expect(screen.getByTestId('panel-method-eth-cost')).toHaveTextContent('0.01 ETH');
+    expect((await screen.findAllByTestId('connect-wallet-button')).length).toBeGreaterThanOrEqual(
+      1,
+    );
+  });
+
+  it('preserves the visible draft when the wallet connects', () => {
+    mockAccount = null;
+    mockGestureForm.message = 'A draft before connecting';
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    const { rerender } = render(<HomePage />);
+    expect(screen.getByTestId('connect-to-gesture')).toBeInTheDocument();
+    expect(document.getElementById('gesture-submit')).not.toBeInTheDocument();
+    const input = screen.getByTestId('gesture-message-input');
+    expect(input).toBeVisible();
+    expect(input).toBeEnabled();
+    expect(input).toHaveValue('A draft before connecting');
+
+    mockAccount = '0xUser';
+    rerender(<HomePage />);
+
+    expect(screen.queryByTestId('connect-to-gesture')).not.toBeInTheDocument();
+    expect(screen.getByTestId('gesture-message-input')).toBe(input);
+    expect(input).toHaveValue('A draft before connecting');
+    expect(mockGestureForm.setMessage).not.toHaveBeenCalled();
+    expect(getPanelSubmitButton()).toBeEnabled();
+    expect(mockGestureForm.onGesture).not.toHaveBeenCalled();
+  });
+
+  /* ── Feed and chat ──────────────────────────────────────────── */
+
+  it('keeps cycle metadata and latest details complete while chat loads only 50 messages', async () => {
+    const user = userEvent.setup();
+    const cycleStart = 1_700_000_000;
+    const participant = '0x1111111111111111111111111111111111111111';
+    const latestParticipant = '0x2222222222222222222222222222222222222222';
+    const metadata = Array.from({ length: 60 }, (_, index) => ({
+      EvtLogId: index + 1,
+      BidPosition: index + 1,
+      TimeStamp: cycleStart + index * 60,
+      BidderAddr: index < 10 ? participant : latestParticipant,
+      RoundNum: 7,
+      GestureType: 0,
+      GestureCostEth: 0.1,
+      ...(index === 59 ? { Message: '' } : {}),
+    })).reverse();
+    const chatGestures = metadata.slice(1, 51).map((gesture) => ({
+      ...gesture,
+      Message: `Loaded signal ${gesture.BidPosition}`,
+    }));
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({
+        CurRoundNum: 7,
+        CurNumBids: 60,
+        TsRoundStart: cycleStart,
+        LastBidderAddr: latestParticipant,
+      }),
+      isLoading: false,
+    });
+    mockUseCurrentTime.mockReturnValue({
+      data: cycleStart + 3600,
+      dataUpdatedAt: Date.now(),
+      isLoading: false,
+    });
+    // Paged rows have already passed server moderation; legacy ban IDs
+    // cannot be compared with their event-log IDs.
+    mockUseBannedGestures.mockReturnValue({ data: [{ bid_id: 59 }] });
+    mockUseHomeGestureFeed.mockReturnValue({
+      mode: 'paged',
+      gestures: metadata,
+      latestGesture: metadata[0],
+      chatGestures,
+      hasMore: true,
+    });
+
+    render(<HomePage />);
+
+    expect(screen.getByTestId('pulse-gesture-count')).toHaveTextContent(
+      'home.observatory.pulse.gestureCount(count=60)',
+    );
+    expect(screen.getByTestId('latest-participant-gesture-id')).toHaveTextContent('#60');
+    const chat = screen.getByTestId('gesture-message-chat');
+    expect(within(chat).getAllByText(/^Loaded signal /)).toHaveLength(50);
+    expect(within(chat).getByText('Loaded signal 59')).toBeInTheDocument();
+    expect(within(chat).queryByText('Loaded signal 60')).not.toBeInTheDocument();
+    // Reconstructed records require the entire cycle, including its first ten rows.
+    await user.click(within(chat).getByRole('button', { name: 'home.chat.view.all' }));
+    expect(
+      within(chat)
+        .getAllByTestId('chat-system-event')
+        .some((event) => event.dataset.kind === 'enduranceRecord'),
+    ).toBe(true);
+    // The feed reveals what it holds first, then fetches older history.
+    let showMore = within(chat).queryByRole('button', { name: 'home.chat.history.showMore' });
+    while (showMore) {
+      await user.click(showMore);
+      showMore = within(chat).queryByRole('button', { name: 'home.chat.history.showMore' });
+    }
+    await user.click(within(chat).getByRole('button', { name: 'home.chat.history.loadOlder' }));
+    expect(mockLoadOlder).toHaveBeenCalledTimes(1);
+    // Renders a 50-message history and clicks through every show-more page;
+    // ~3.5s alone, past the 5s default when suites run in parallel.
+  }, 20_000);
+
+  it('renders current-cycle gesture messages in the feed', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({ CurRoundNum: 7 }),
+      isLoading: false,
+    });
+    mockUseHomeGestureFeed.mockReturnValue({
+      data: [
+        {
+          EvtLogId: 1,
+          TimeStamp: 1_700_000_000,
+          DateTime: '',
+          BidderAddr: '0x1111111111111111111111111111111111111111',
+          RoundNum: 7,
+          GestureType: 0,
+          GestureCostEth: 0.1,
+          Message: 'Older current-cycle signal',
+        },
+        {
+          EvtLogId: 2,
+          TimeStamp: 1_700_000_300,
+          DateTime: '',
+          BidderAddr: '0x2222222222222222222222222222222222222222',
+          RoundNum: 7,
+          GestureType: 0,
+          GestureCostEth: 0.2,
+          Message: 'Newest current-cycle signal',
+        },
+      ],
+    });
+
+    render(<HomePage />);
+
+    expect(mockUseHomeGestureFeed).toHaveBeenCalledWith(7, undefined);
+    const chat = screen.getByTestId('gesture-message-chat');
+    expect(screen.getByTestId('home-feed-column')).toContainElement(chat);
+    expect(within(chat).getByText('Newest current-cycle signal')).toBeInTheDocument();
+    expect(within(chat).getByText('Older current-cycle signal')).toBeInTheDocument();
+  });
+
+  it('interleaves derived system events into the chat feed alongside messages', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData({
+        CurRoundNum: 7,
+        CurNumBids: 2,
+        TsRoundStart: 1_700_000_000,
+        LastBidderAddr: '0x2222222222222222222222222222222222222222',
+      }),
+      isLoading: false,
+    });
+    mockUseCurrentTime.mockReturnValue({
+      data: 1_700_000_900,
+      dataUpdatedAt: Date.now(),
+      isLoading: false,
+    });
+    mockUseHomeGestureFeed.mockReturnValue({
+      data: [
+        {
+          EvtLogId: 1,
+          BidPosition: 1,
+          TimeStamp: 1_700_000_000,
+          BidderAddr: '0x1111111111111111111111111111111111111111',
+          RoundNum: 7,
+          GestureType: 0,
+          Message: 'first signal',
+        },
+        {
+          // 600s stint by 0x1111 completes here: a record event lands at this ts.
+          EvtLogId: 2,
+          BidPosition: 2,
+          TimeStamp: 1_700_000_600,
+          BidderAddr: '0x2222222222222222222222222222222222222222',
+          RoundNum: 7,
+          GestureType: 0,
+          Message: 'second signal',
+        },
+      ],
+    });
+
+    render(<HomePage />);
+
+    const chat = screen.getByTestId('gesture-message-chat');
+    fireEvent.click(within(chat).getByRole('button', { name: 'home.chat.view.all' }));
+    const events = within(chat).getAllByTestId('chat-system-event');
+    expect(events.map((event) => event.dataset.kind).sort()).toEqual([
+      'chronoLead',
+      'cycleStart',
+      'enduranceGrowing',
+      'enduranceRecord',
+      'newParticipant',
+      'newParticipant',
+    ]);
+    expect(events.every((event) => event.querySelector('time[datetime]'))).toBe(true);
+    const listItems = within(chat).getAllByRole('listitem');
+    expect(listItems[0]).toHaveTextContent('second signal');
+    expect(listItems[1]).toHaveTextContent('home.chat.system.enduranceRecord');
+    expect(within(chat).getByText(/home\.chat\.eventCount\(count=6\)/)).toBeInTheDocument();
+  });
+
+  it('discovers live Endurance and Chrono growth on clock ticks without a new Gesture', () => {
+    jest.useFakeTimers();
+    const realNow = Date.now();
+    const clockStartMs = Math.floor(realNow / 30_000) * 30_000;
+    const cycleStart = clockStartMs / 1000 - 180;
+    const firstAddress = '0x1111111111111111111111111111111111111111';
+    const secondAddress = '0x2222222222222222222222222222222222222222';
+    try {
+      jest.setSystemTime(clockStartMs);
+      mockUseCurrentTime.mockReturnValue({
+        data: clockStartMs / 1000,
+        dataUpdatedAt: clockStartMs,
+        isLoading: false,
+      });
+      mockUseDashboardInfo.mockReturnValue({
+        data: makeDashboardData({
+          CurRoundNum: 7,
+          CurNumBids: 2,
+          TsRoundStart: cycleStart,
+          LastBidderAddr: secondAddress,
+        }),
+        isLoading: false,
+      });
+      mockUseHomeGestureFeed.mockReturnValue({
+        data: [
+          {
+            EvtLogId: 1,
+            BidPosition: 1,
+            TimeStamp: cycleStart,
+            BidderAddr: firstAddress,
+            RoundNum: 7,
+            GestureType: 0,
+            Message: 'first signal',
+          },
+          {
+            EvtLogId: 2,
+            BidPosition: 2,
+            TimeStamp: cycleStart + 100,
+            BidderAddr: secondAddress,
+            RoundNum: 7,
+            GestureType: 0,
+            Message: 'second signal',
+          },
+        ],
+      });
+      render(<HomePage />);
+      act(() => jest.advanceTimersByTime(1_000));
+      const chat = screen.getByTestId('gesture-message-chat');
+      fireEvent.click(within(chat).getByRole('button', { name: 'home.chat.view.all' }));
+      const eventsOfKind = (kind: string) =>
+        within(chat)
+          .getAllByTestId('chat-system-event')
+          .filter((event) => event.dataset.kind === kind);
+      expect(eventsOfKind('enduranceGrowing')).toHaveLength(1);
+      expect(eventsOfKind('chronoLead')).toHaveLength(1);
+
+      act(() => jest.advanceTimersByTime(30_000));
+
+      expect(eventsOfKind('enduranceGrowing')).toHaveLength(2);
+      const newEndurance = eventsOfKind('enduranceGrowing')[0]!;
+      expect(newEndurance).toHaveTextContent(`address=${formatAddress(secondAddress)}`);
+      expect(newEndurance.querySelector('time')).toHaveAttribute(
+        'dateTime',
+        new Date((cycleStart + 201) * 1000).toISOString(),
+      );
+      expect(eventsOfKind('chronoLead')).toHaveLength(1);
+
+      act(() => jest.advanceTimersByTime(210_000));
+
+      expect(eventsOfKind('chronoLead')).toHaveLength(2);
+      const newChrono = eventsOfKind('chronoLead')[0]!;
+      expect(newChrono).toHaveTextContent(`address=${formatAddress(secondAddress)}`);
+      expect(newChrono.querySelector('time')).toHaveAttribute(
+        'dateTime',
+        new Date((cycleStart + 401) * 1000).toISOString(),
+      );
+      expect(eventsOfKind('enduranceGrowing')).toHaveLength(2);
+      expect(within(chat).getByText(/home\.chat\.messageCount\(count=2\)/)).toBeInTheDocument();
+    } finally {
+      act(() => {
+        jest.setSystemTime(realNow);
+        jest.advanceTimersByTime(1_000);
+      });
+      jest.useRealTimers();
+    }
+  });
+
+  it.each([false, true])(
+    'focuses the visible message editor from the chat CTA (reduced motion: %s)',
+    async (reducedMotion) => {
+      const user = userEvent.setup();
+      const { scrollIntoView, restore } = mockScrollIntoView(reducedMotion);
+      mockUseDashboardInfo.mockReturnValue({
+        data: makeDashboardData(),
+        isLoading: false,
+      });
+      mockUseHomeGestureFeed.mockReturnValue({ data: [] });
+
+      try {
+        render(<HomePage />);
+
+        const input = screen.getByTestId('gesture-message-input');
+        expect(input).not.toBeVisible();
+
+        const chat = screen.getByTestId('gesture-message-chat');
+        await user.click(within(chat).getByRole('button', { name: 'home.chat.empty.cta' }));
+
+        expect(scrollIntoView).toHaveBeenCalledWith({
+          behavior: reducedMotion ? 'instant' : 'smooth',
+          block: 'start',
+        });
+        await waitFor(() => expect(input).toHaveFocus());
+        expect(input).toBeVisible();
+        expect(screen.getByTestId('gesture-message-toggle')).toHaveAttribute(
+          'aria-expanded',
+          'true',
+        );
+        expect(screen.getAllByTestId('gesture-panel')).toHaveLength(1);
+        expect(mockGestureForm.onGesture).not.toHaveBeenCalled();
+      } finally {
+        restore();
+      }
+    },
+  );
+
+  it('shows an optimistic pending message until the indexer echoes it', async () => {
+    const user = userEvent.setup();
+    mockGestureForm.message = 'fresh signal';
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+    mockUseHomeGestureFeed.mockReturnValue({ data: [] });
+
+    const { rerender } = render(<HomePage />);
+    await user.click(getPanelSubmitButton());
+
+    const pendingRow = screen.getByTestId('chat-pending-message');
+    expect(pendingRow).toHaveTextContent('fresh signal');
+
+    // Metadata arrives independently and cannot reconcile a message body.
+    const metadata = {
+      EvtLogId: 9,
+      TimeStamp: Math.floor(Date.now() / 1000),
+      BidderAddr: '0xUser',
+      RoundNum: 5,
+      GestureType: 0,
+    };
+    mockUseHomeGestureFeed.mockReturnValue({
+      mode: 'paged',
+      gestures: [metadata],
+      chatGestures: [],
+    });
+    rerender(<HomePage />);
+    expect(screen.getByTestId('chat-pending-message')).toHaveTextContent('fresh signal');
+
+    // The message page echoes the gesture — the pending row clears.
+    mockUseHomeGestureFeed.mockReturnValue({
+      mode: 'paged',
+      gestures: [metadata],
+      chatGestures: [{ ...metadata, Message: 'fresh signal' }],
+    });
+    rerender(<HomePage />);
+    expect(screen.queryByTestId('chat-pending-message')).not.toBeInTheDocument();
+  });
+
+  it('records a sent message with its confirmed transaction for the chat', async () => {
+    const user = userEvent.setup();
+    mockGestureForm.message = 'linked signal';
+    mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+    mockUseHomeGestureFeed.mockReturnValue({ data: [] });
+
+    render(<HomePage />);
+    await user.click(getPanelSubmitButton());
+
+    const row = await screen.findByTestId('chat-pending-message');
+    expect(row).toHaveTextContent('linked signal');
+    expect(mockGestureForm.getLastGestureHash).toHaveBeenCalled();
+  });
+
+  /* ── Action dock and mobile sheet ───────────────────────────── */
+
+  it('keeps the action dock priced with the shared submit label', () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+
+    const dock = screen.getByTestId('action-dock');
+    // Verb and price on two lines of one control; the same label as the form.
+    expect(within(dock).getByTestId('dock-open-sheet')).toHaveTextContent(
+      /home\.form\.submit\.action\.eth\s*0\.01 ETH/,
+    );
+    expect(within(dock).getByTestId('dock-jump-to-panel')).toHaveTextContent(
+      /home\.form\.submit\.action\.eth\s*0\.01 ETH/,
+    );
+  });
+
+  it('shows the dock only once the clock and the whole form have scrolled away', () => {
+    type Observed = { target: Element; callback: IntersectionObserverCallback };
+    const observed: Observed[] = [];
+    class FakeIntersectionObserver {
+      constructor(private readonly callback: IntersectionObserverCallback) {}
+      observe(target: Element) {
+        observed.push({ target, callback: this.callback });
+      }
+      disconnect() {}
+      unobserve() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    const original = Object.getOwnPropertyDescriptor(window, 'IntersectionObserver');
+    Object.defineProperty(window, 'IntersectionObserver', {
+      configurable: true,
+      writable: true,
+      value: FakeIntersectionObserver,
+    });
+    try {
+      mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+      render(<HomePage />);
+
+      const report = (id: string, isIntersecting: boolean) => {
+        const entry = observed.filter(({ target }) => target.id === id);
+        expect(entry.length).toBeGreaterThan(0);
+        act(() => {
+          for (const { target, callback } of entry) {
+            callback(
+              [{ target, isIntersecting } as IntersectionObserverEntry],
+              {} as IntersectionObserver,
+            );
+          }
+        });
+      };
+      const dockWrapper = () => screen.getByTestId('action-dock').parentElement!;
+
+      // The phone's first screen: the clock, with the form's heading at the
+      // bottom edge. Regression: the dock repeated the clock and the
+      // allocation there and lay over the form's method selector.
+      report('cycle-clock', true);
+      report('make-gesture', true);
+      expect(dockWrapper()).toHaveAttribute('aria-hidden', 'true');
+
+      // Scrolled past the clock, into the form: the dock would cover its controls.
+      report('cycle-clock', false);
+      expect(dockWrapper()).toHaveAttribute('aria-hidden', 'true');
+
+      // Both scrolled away (in the chat, say): now the dock is the way to act.
+      report('make-gesture', false);
+      expect(dockWrapper()).not.toHaveAttribute('aria-hidden');
+      expect(dockWrapper()).not.toHaveAttribute('inert');
+
+      // Back up to the clock: it steps aside again rather than repeat it.
+      report('cycle-clock', true);
+      expect(dockWrapper()).toHaveAttribute('aria-hidden', 'true');
+    } finally {
+      if (original) Object.defineProperty(window, 'IntersectionObserver', original);
+      else Reflect.deleteProperty(window, 'IntersectionObserver');
+    }
+  });
+
+  it('keeps the dock aside from the first paint until the page has measured', () => {
+    // No observer yet: the state of the server HTML and the first paint.
+    const original = Object.getOwnPropertyDescriptor(window, 'IntersectionObserver');
+    Object.defineProperty(window, 'IntersectionObserver', {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+    try {
+      mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+      render(<HomePage />);
+      const layer = screen.getByTestId('action-dock').parentElement!;
+      // Every width's first screen holds the clock: nothing to add yet.
+      expect(layer).toHaveAttribute('data-state', 'aside');
+      expect(layer).toHaveAttribute('aria-hidden', 'true');
+      expect(layer).toHaveAttribute('inert');
+    } finally {
+      if (original) Object.defineProperty(window, 'IntersectionObserver', original);
+      else Reflect.deleteProperty(window, 'IntersectionObserver');
+    }
+  });
+
+  it('closes the sheet when the viewport grows past 768px and returns to the in-page form', async () => {
+    const user = userEvent.setup();
+    const WIDE = '(min-width: 48rem)';
+    const listeners = new Set<(event: { matches: boolean }) => void>();
+    let wide = false;
+    const originalMatchMedia = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+    const scrollIntoView = jest.fn();
+    const originalScroll = Object.getOwnPropertyDescriptor(
+      window.HTMLElement.prototype,
+      'scrollIntoView',
+    );
+    Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      writable: true,
+      value: scrollIntoView,
+    });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: jest.fn((query: string) => ({
+        get matches() {
+          return query === WIDE && wide;
+        },
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: (_type: string, callback: (event: { matches: boolean }) => void) => {
+          if (query === WIDE) listeners.add(callback);
+        },
+        removeEventListener: (_type: string, callback: (event: { matches: boolean }) => void) => {
+          listeners.delete(callback);
+        },
+        dispatchEvent: jest.fn(),
+      })),
+    });
+    try {
+      mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+      render(<HomePage />);
+      await user.click(screen.getByTestId('dock-open-sheet'));
+      expect(screen.getAllByTestId('gesture-panel')).toHaveLength(2);
+
+      // The phone turns to landscape: the sheet (and its overlay) goes.
+      act(() => {
+        wide = true;
+        listeners.forEach((callback) => callback({ matches: true }));
+      });
+
+      await waitFor(() => expect(screen.getAllByTestId('gesture-panel')).toHaveLength(1));
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+      await waitFor(() => expect(document.getElementById('make-gesture')).toHaveFocus());
+    } finally {
+      if (originalMatchMedia) Object.defineProperty(window, 'matchMedia', originalMatchMedia);
+      else Reflect.deleteProperty(window, 'matchMedia');
+      if (originalScroll) {
+        Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', originalScroll);
+      } else {
+        Reflect.deleteProperty(window.HTMLElement.prototype, 'scrollIntoView');
+      }
+    }
+  });
+
+  it('opens the bottom sheet hosting the same gesture panel from the dock', async () => {
+    const user = userEvent.setup();
+    mockGestureForm.message = 'A shared draft';
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+    expect(screen.getAllByTestId('gesture-panel')).toHaveLength(1);
+    const inlineEditor = screen.getByTestId('gesture-message-input');
+    expect(inlineEditor).toHaveValue('A shared draft');
+    expect(inlineEditor).toBeVisible();
+
+    await user.click(screen.getByTestId('dock-open-sheet'));
+
+    const panels = screen.getAllByTestId('gesture-panel');
+    expect(panels).toHaveLength(2);
+    const sheet = panels[panels.length - 1]!;
+    expect(sheet).toHaveAttribute('data-variant', 'sheet');
+    expect(within(sheet).getByTestId('gesture-message-input')).toBeVisible();
+    expect(within(sheet).getByTestId('gesture-message-input')).toHaveValue('A shared draft');
+
+    await user.keyboard('{Escape}');
+    expect(screen.getAllByTestId('gesture-panel')).toHaveLength(1);
+    expect(inlineEditor).toBeVisible();
+    expect(inlineEditor).toHaveValue('A shared draft');
+  });
+
+  it('submits from the sheet panel and closes it', async () => {
+    const user = userEvent.setup();
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+
+    render(<HomePage />);
+    await user.click(screen.getByTestId('dock-open-sheet'));
+
+    const sheetSubmit = document.getElementById('gesture-submit-sheet');
+    expect(sheetSubmit).toBeInstanceOf(HTMLButtonElement);
+    await user.click(sheetSubmit as HTMLButtonElement);
+
+    expect(mockGestureForm.onGesture).toHaveBeenCalledTimes(1);
+    // It stays open on success long enough to show the confirmation, then closes.
+    expect(screen.getAllByTestId('gesture-panel')).toHaveLength(2);
+    await waitFor(() => expect(screen.getAllByTestId('gesture-panel')).toHaveLength(1), {
+      timeout: 3_000,
+    });
+  });
+
+  /* ── Live pulse and memo boundaries ─────────────────────────── */
+
+  it('does not re-render heavy memoized sections on countdown ticks', () => {
+    // The page re-renders every second via useNow to keep countdown-derived
+    // CTA state fresh. The heavy sections are wrapped in memo boundaries
+    // with referentially stable props, so ticks must not reconcile them —
+    // that main-thread churn was part of the mobile INP problem.
+    jest.useFakeTimers();
+    try {
+      mockUseDashboardInfo.mockReturnValue({
+        data: makeDashboardData({ CurRoundNum: 7 }),
+        isLoading: false,
+      });
+      mockUseDonationsNFTByRound.mockReturnValue({ data: [{ RecordId: 1 }] });
+
+      render(<HomePage />);
+      const rendersAfterMount = attachedShowcaseRenderSpy.mock.calls.length;
+      expect(rendersAfterMount).toBeGreaterThan(0);
+
+      act(() => {
+        jest.advanceTimersByTime(3_000);
+      });
+
+      expect(attachedShowcaseRenderSpy.mock.calls.length).toBe(rendersAfterMount);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  /* ── Error branch ───────────────────────────────────────────── */
+
+  describe('when the dashboard read fails', () => {
+    it('shows an error state instead of rendering an idle cycle', () => {
+      mockUseDashboardInfo.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        refetch: jest.fn(),
+      });
+
+      render(<HomePage />);
+
+      expect(screen.getByText('home.error.title')).toBeInTheDocument();
+      expect(screen.getByText('home.error.message')).toBeInTheDocument();
+      expect(screen.queryByTestId('cycle-clock')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('standings-board')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('gesture-panel')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('tracks-ribbon')).not.toBeInTheDocument();
+    });
+
+    it('refetches the dashboard when the retry action is used', async () => {
+      const user = userEvent.setup();
+      const refetch = jest.fn();
+      mockUseDashboardInfo.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        refetch,
+      });
+
+      render(<HomePage />);
+      await user.click(screen.getByRole('button', { name: /Try again/ }));
+
+      expect(refetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the last good cycle data on screen when a refetch fails', () => {
+      mockUseDashboardInfo.mockReturnValue({
+        data: makeDashboardData({ CurRoundNum: 7 }),
+        isLoading: false,
+        isError: true,
+        refetch: jest.fn(),
+      });
+
+      render(<HomePage />);
+
+      expect(screen.queryByText('home.error.title')).not.toBeInTheDocument();
+      expect(screen.getByTestId('cycle-clock')).toBeInTheDocument();
+    });
+
+    it('has no accessibility violations in the error state', async () => {
+      mockUseDashboardInfo.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        refetch: jest.fn(),
+      });
+
+      const { container } = render(<HomePage />);
+      await checkA11y(container);
+    });
+  });
+
+  it('has no accessibility violations', async () => {
+    mockUseDashboardInfo.mockReturnValue({
+      data: makeDashboardData(),
+      isLoading: false,
+    });
+    const { container } = render(<HomePage />);
+    await checkA11y(container, { rules: { 'heading-order': { enabled: false } } });
+  });
+
+  it('keeps optional content accessible after all disclosures are expanded', async () => {
+    const user = userEvent.setup();
+    mockUseDashboardInfo.mockReturnValue({ data: makeDashboardData(), isLoading: false });
+    const { container } = render(<HomePage />);
+
+    for (const testId of ['allocations-disclosure', 'home-story-section']) {
+      await openDisclosure(user, testId);
+    }
+
+    expect(screen.getByTestId('latest-participant-intel')).toBeVisible();
+    expect(screen.getByTestId('allocation-ledger')).toBeVisible();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(container.querySelectorAll('#allocation-breakdown')).toHaveLength(1);
+    await checkA11y(container);
+  });
+});

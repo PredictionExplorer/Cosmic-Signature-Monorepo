@@ -1,0 +1,215 @@
+{
+  "error": {
+    "title": "Cycle data didn’t load",
+    "message": "Check your connection and try again."
+  },
+  "status": {
+    "notStarted": "Not started",
+    "heading": "Cycle status",
+    "figuresHeading": "The cycle so far"
+  },
+  "sectionNav": {
+    "aria": "On this page",
+    "standings": "Standings",
+    "allocations": "Allocations",
+    "participants": "Participants",
+    "gestures": "Gestures",
+    "rules": "Rules"
+  },
+  "hero": {
+    "title": "Cycle {n}",
+    "cta": {
+      "viewHomeClock": "View the home clock",
+      "finalizeCycle": "Finalize the cycle",
+      "makeFirstGesture": "Make the first gesture",
+      "makeGesture": "Make a gesture"
+    },
+    "countdown": {
+      "opensAt": "Cycle {n} opens at {date}"
+    }
+  },
+  "stats": {
+    "contributedEth": {
+      "label": "Contributed ETH",
+      "tooltip": "Direct ETH contributions from the community this cycle."
+    },
+    "attachedNfts": {
+      "label": "Attached NFTs",
+      "tooltip": "NFTs attached to gestures by the community this cycle."
+    }
+  },
+  "figures": {
+    "running": "Running for",
+    "participants": "Participants"
+  },
+  "allocations": {
+    "recipientCount": "{count, plural, one {# recipient} other {# recipients}}",
+    "columns": {
+      "allocation": "Allocation",
+      "share": "Share of reserve",
+      "receives": "Each recipient receives",
+      "recipients": "Recipients"
+    },
+    "explain": "How the reserve splits",
+    "amounts": {
+      "ethEach": "{amount} ETH each",
+      "fixedCst": "1,000 CST",
+      "fixedCstEach": "1,000 CST each",
+      "nft": "1 Cosmic Signature NFT",
+      "nftEach": "1 Cosmic Signature NFT each",
+      "attachedTokens": "Attached tokens (if any)",
+      "nftCount": "{count, plural, one {# Cosmic Signature NFT} other {# Cosmic Signature NFTs}}"
+    },
+    "cards": {
+      "signature": {
+        "name": "Signature Allocation",
+        "tooltip": "The finalization caller receives the ETH share, 1,000 CST in total, the configured Signature NFT allocation and attached-asset rights. The Final Gesture participant has exclusive priority for 48 hours after the deadline; afterwards any caller can finalize."
+      },
+      "chronoWarrior": {
+        "name": "Chrono-Warrior Allocation",
+        "tooltip": "The participant who held the Endurance Champion position for the longest consecutive interval receives a percentage of the Cycle Reserve in ETH, 1,000 CST and a Cosmic Signature NFT."
+      },
+      "ethStellar": {
+        "name": "ETH Stellar Selection",
+        "tooltip": "Participants are selected at random from the cycle entries to share an allocation of ETH."
+      },
+      "cosmicAnchor": {
+        "name": "Anchor Distribution",
+        "tooltip": "A share of the Cycle Reserve in ETH, split equally among all anchored Cosmic Signature NFTs at finalization.",
+        "recipientLabel": "Equal per anchored NFT"
+      },
+      "publicGoods": {
+        "name": "Public Goods",
+        "tooltip": "{percent}% is allocated to the Public Goods Vault. Anyone can separately forward its balance to the configured beneficiary, currently Protocol Guild.",
+        "recipientLabel": "Protocol Guild"
+      },
+      "nftStellar": {
+        "name": "NFT Stellar Selection",
+        "tooltip": "Participants are selected at random from the cycle entries to receive Recognition CST and Cosmic Signature NFTs."
+      },
+      "randomWalkAnchor": {
+        "name": "Anchored-NFT Stellar Selection",
+        "tooltip": "Anchor-holders of Random Walk NFTs may receive Recognition CST and Cosmic Signature NFTs."
+      },
+      "endurance": {
+        "name": "Endurance Champion",
+        "tooltip": "The participant who remained the most recent gesture maker for the longest consecutive interval. Receives a Recognition CST imprint of 1,000 CST and a Cosmic Signature NFT."
+      },
+      "finalCst": {
+        "name": "Final CST Gesture",
+        "tooltip": "The participant who made the last CST gesture of the cycle receives a Recognition CST imprint of 1,000 CST and a Cosmic Signature NFT."
+      }
+    }
+  },
+  "sections": {
+    "allocations": {
+      "title": "Allocation breakdown",
+      "description": "How the Cycle Reserve distributes across allocation tracks: Signature Allocation, Chrono-Warrior, Stellar Selection, Anchor Distribution and Public Goods, with the rest carried into the next cycle as the Compounding Cycle Reserve."
+    },
+    "participants": {
+      "title": "Participants this cycle"
+    },
+    "stellarSelectionEntries": {
+      "title": "Stellar Selection entries",
+      "tooltip": "Every selection at finalization is made from all of this cycle’s gestures, so the same participant can be selected more than once. The table shows each participant’s share of the selection."
+    },
+    "topEthSpenders": {
+      "title": "Top ETH spenders",
+      "tooltip": "Participant addresses ranked by total ETH spent on gestures this cycle."
+    },
+    "enduranceChampions": {
+      "title": "Endurance Champions",
+      "tooltip": "Participants ranked by how long they remained the most-recent gesture maker. The one with the longest consecutive interval receives a Recognition CST imprint of 1,000 CST and a Cosmic Signature NFT."
+    },
+    "gestureHistory": {
+      "title": "Gesture history",
+      "tooltip": "Chronological record of every gesture made in this cycle, newest first."
+    },
+    "ethContributions": {
+      "title": "ETH contributions",
+      "tooltip": "Direct ETH contributions made by community members during this cycle."
+    },
+    "cycleRules": {
+      "title": "Cycle rules",
+      "tooltip": "Key rules and allocation mechanics for this cycle."
+    }
+  },
+  "rules": {
+    "howItWorks": "How it works",
+    "participation": "When you gesture, you may imprint <em>dynamic Participation CST</em>. The amount uses a square-root formula based on how long it has been since the previous gesture.",
+    "participationV3": "A later gesture credits the previous participant with <em>dynamic Participation CST</em>, linear in elapsed time. The first gesture credits none, and finalization does not settle an additional amount.",
+    "calibration": "ETH gestures shorten the CST Calibration Window by about {decreasePercent}%; CST gestures lengthen it by about {increasePercent}%.",
+    "stellarSelection": "Each gesture records one Stellar Selection entry. {ethEntries} entries receive {rafflePercent}% of the Cycle Reserve. {nftEntries} additional Selection recipients and {anchorHolders} Random Walk NFT anchor-holders receive a Cosmic Signature NFT.",
+    "stellarSelectionV3": "Both participant tracks use undiscounted, premium-free ETH base-cost weights; CST gestures use the concurrent ETH base cost. {ethEntries} selections share {rafflePercent}% ETH. {nftEntries} participant NFT selections and up to {anchorHolders} active Random Walk NFT selections receive NFTs and CST. Repeats are possible.",
+    "publicGoods": "The current Public Goods allocation is {percent}% (about {amount}\u00a0ETH). It is allocated to the vault for a separate transfer to its configured beneficiary, currently Protocol Guild.",
+    "learnMore": "How a cycle works"
+  },
+  "attachedTokens": {
+    "title": "Attached tokens",
+    "tooltip": "NFTs and ERC-20 tokens attached to gestures for the cycle’s allocation recipient.",
+    "erc721Tab": "ERC-721 tokens",
+    "erc20Tab": "ERC-20 tokens"
+  },
+  "showcase": {
+    "badge": "Included in Signature Allocation",
+    "heading": "Assets attached to this cycle",
+    "cycleFallback": "current",
+    "description": {
+      "nftOnly": "Assets the community attaches travel with the Signature Allocation: whoever finalizes Cycle {cycle} receives {nftCount, plural, one {the attached NFT} other {all {nftCount} attached NFTs}}.",
+      "erc20Only": "Assets the community attaches travel with the Signature Allocation: whoever finalizes Cycle {cycle} receives {erc20Count, plural, one {the attached ERC-20 token deposit} other {all {erc20Count} attached ERC-20 token deposits}}.",
+      "mixed": "Assets the community attaches travel with the Signature Allocation: whoever finalizes Cycle {cycle} receives {nftCount, plural, one {the attached NFT} other {all {nftCount} attached NFTs}} and {erc20Count, plural, one {the attached ERC-20 token deposit} other {all {erc20Count} attached ERC-20 token deposits}}."
+    },
+    "bonusReceipt": {
+      "nftOnly": "{nftCount, plural, one {{nftCount} ERC-721 token} other {{nftCount} ERC-721 tokens}}",
+      "erc20Only": "{erc20Count, plural, one {{erc20Count} ERC-20 deposit} other {{erc20Count} ERC-20 deposits}}",
+      "mixed": "{nftCount, plural, one {{nftCount} ERC-721 token} other {{nftCount} ERC-721 tokens}} + {erc20Count, plural, one {{erc20Count} ERC-20 deposit} other {{erc20Count} ERC-20 deposits}}"
+    },
+    "summary": {
+      "assetsIncluded": "Assets included",
+      "cycle": "Cycle",
+      "cycleValue": "{cycle}",
+      "recipientRule": "Recipient rule",
+      "recipientRuleValue": "Whoever finalizes"
+    },
+    "remainder": {
+      "nftOnly": "Showing the featured receipt preview. Plus {nftCount, plural, one {{nftCount} more attached NFT} other {{nftCount} more attached NFTs}} in the full cycle details.",
+      "erc20Only": "Showing the featured receipt preview. Plus {erc20Count, plural, one {{erc20Count} more attached ERC-20 token deposit} other {{erc20Count} more attached ERC-20 token deposits}} in the full cycle details.",
+      "mixed": "Showing the featured receipt preview. Plus {nftCount, plural, one {{nftCount} more attached NFT} other {{nftCount} more attached NFTs}} and {erc20Count, plural, one {{erc20Count} more attached ERC-20 token deposit} other {{erc20Count} more attached ERC-20 token deposits}} in the full cycle details."
+    },
+    "nftCard": {
+      "badge": "ERC-721",
+      "fallbackTitle": "NFT #{id}",
+      "fallbackTitleUnknown": "Attached NFT",
+      "fallbackSubtitle": "Community-attached ERC-721",
+      "imageAlt": "Attached NFT {name}",
+      "imageAltFallback": "Attached NFT allocation",
+      "mediaAria": "{label}: {title}",
+      "floorEstimate": "Floor ~{price} {currency}",
+      "floorTooltip": "Collection floor estimate, not an appraisal of this specific token.",
+      "metadataUnavailable": "Metadata unavailable. The attached NFT is still part of this cycle allocation.",
+      "explorer": "Explorer",
+      "links": {
+        "opensea": "View on OpenSea",
+        "explorer": "View contract"
+      }
+    },
+    "erc20Card": {
+      "badge": "ERC-20 deposit",
+      "badgeTooltipLogo": "Logo from {source}; verify the token address before assigning value.",
+      "badgeTooltipDefault": "This ERC-20 token deposit is attached to the cycle and goes to the Signature Allocation recipient when finalized.",
+      "symbolFallback": "ERC20",
+      "nameFallback": "Attached ERC20 token",
+      "logoSourceFallback": "curated token metadata",
+      "unknownAmount": "Unknown amount",
+      "viewToken": "View {symbol} token",
+      "logoAlt": "{token} token logo"
+    },
+    "facts": {
+      "tokenId": "Token ID",
+      "tokenIdValue": "#{id}",
+      "token": "Token",
+      "attachedBy": "Attached by",
+      "unknown": "Unknown"
+    }
+  }
+}
