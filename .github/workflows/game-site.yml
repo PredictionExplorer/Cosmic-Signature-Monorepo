@@ -87,9 +87,16 @@ jobs:
         run: npm run bundle:budget
 
   e2e:
+    name: Browser tests (shard ${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-latest
     needs: lint-test-build
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     env:
+      SHARD: ${{ matrix.shard }}
+      SHARD_COUNT: ${{ strategy.job-total }}
       # The harness tier has its own job below (it needs Docker, Go, and the
       # sibling repos); this job runs the mocked-API projects only.
       HARNESS_E2E: '0'
@@ -113,7 +120,7 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('cosmicgame-frontend/package-lock.json') }}
+          key: playwright-chromium-webkit-${{ runner.os }}-${{ hashFiles('cosmicgame-frontend/package-lock.json') }}
 
       # WebKit backs the Mobile Safari project, which runs the mobile layout
       # audits. iOS Safari is where most mobile-only layout bugs actually
@@ -127,13 +134,13 @@ jobs:
         run: npx playwright install-deps chromium webkit
 
       - name: Run e2e tests
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard="$SHARD/$SHARD_COUNT"
 
       - name: Upload browser diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: browser-diagnostics
+          name: browser-diagnostics-${{ matrix.shard }}
           path: |
             cosmicgame-frontend/playwright-report
             cosmicgame-frontend/test-results
@@ -151,22 +158,20 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
-      - name: Read the reviewed indexer revision
-        id: backend
-        working-directory: cosmicgame-frontend
-        run: |
-          revision=$(jq -er '
-            .backend | select(.repository == "PredictionExplorer/augur-explorer") |
-            .ref | select(test("^[0-9a-f]{40}$"))
-          ' harness.lock.json)
-          echo "ref=$revision" >> "$GITHUB_OUTPUT"
       - name: Check out the external indexer and API
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           repository: PredictionExplorer/augur-explorer
-          ref: ${{ steps.backend.outputs.ref }}
+          ref: 28a470988c23ed7024317af87226f67a1b5d191d
           path: .external/augur-explorer
           persist-credentials: false
+      - name: Verify the indexer checkout matches the harness lock
+        working-directory: .
+        run: |
+          revision=$(git -C .external/augur-explorer rev-parse HEAD)
+          jq -e --arg revision "$revision" '
+            .backend.repository == "PredictionExplorer/augur-explorer" and .backend.ref == $revision
+          ' cosmicgame-frontend/harness.lock.json > /dev/null
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -211,7 +216,7 @@ jobs:
         id: harness-playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('cosmicgame-frontend/package-lock.json') }}
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('cosmicgame-frontend/package-lock.json') }}
 
       - name: Install Playwright (chromium)
         if: steps.harness-playwright-cache.outputs.cache-hit != 'true'

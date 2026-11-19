@@ -49,22 +49,20 @@ jobs:
         with:
           submodules: recursive
           persist-credentials: false
-      - name: Read the reviewed indexer revision
-        id: backend
-        working-directory: cosmicgame-frontend
-        run: |
-          revision=$(jq -er '
-            .backend | select(.repository == "PredictionExplorer/augur-explorer") |
-            .ref | select(test("^[0-9a-f]{40}$"))
-          ' harness.lock.json)
-          echo "ref=$revision" >> "$GITHUB_OUTPUT"
       - name: Check out the external indexer and API
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           repository: PredictionExplorer/augur-explorer
-          ref: ${{ steps.backend.outputs.ref }}
+          ref: 28a470988c23ed7024317af87226f67a1b5d191d
           path: .external/augur-explorer
           persist-credentials: false
+      - name: Verify the indexer checkout matches the harness lock
+        working-directory: .
+        run: |
+          revision=$(git -C .external/augur-explorer rev-parse HEAD)
+          jq -e --arg revision "$revision" '
+            .backend.repository == "PredictionExplorer/augur-explorer" and .backend.ref == $revision
+          ' cosmicgame-frontend/harness.lock.json > /dev/null
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
           package_json_file: ChaosZero/package.json
