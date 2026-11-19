@@ -22,23 +22,27 @@ export interface EnvValidation {
   missing: string[];
 }
 
-/** First entry of a comma-separated env list, or '' when unset/empty. */
-const firstOfList = (raw: string | undefined): string =>
-  (raw ?? '')
-    .split(',')
-    .map((u) => u.trim())
-    .filter(Boolean)[0] ?? '';
+/** Match server rotation's list precedence while preserving each primary URL's trailing slash. */
+const primaryUrl = (list: string | undefined, fallback: string | undefined): string =>
+  list
+    ?.split(',')
+    .map((url) => url.trim())
+    .find(Boolean) ||
+  fallback?.trim() ||
+  '';
+
+function getConfiguredEndpoints() {
+  return {
+    apiUrl: primaryUrl(process.env.NEXT_PUBLIC_API_URLS, process.env.NEXT_PUBLIC_API_URL),
+    rpcUrl: primaryUrl(process.env.NEXT_PUBLIC_RPC_URLS, process.env.NEXT_PUBLIC_RPC_URL),
+  };
+}
 
 /** Returns validation result. Call before using networkConfig. */
 export function getEnvValidation(): EnvValidation {
   const missing: string[] = [];
   const network = process.env.NEXT_PUBLIC_NETWORK?.trim();
-  // The plural list variables (server rotation, see lib/serverRotation)
-  // satisfy the singular requirement.
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL?.trim() || firstOfList(process.env.NEXT_PUBLIC_API_URLS);
-  const rpcUrl =
-    process.env.NEXT_PUBLIC_RPC_URL?.trim() || firstOfList(process.env.NEXT_PUBLIC_RPC_URLS);
+  const { apiUrl, rpcUrl } = getConfiguredEndpoints();
   const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim();
 
   if (!network) missing.push('NEXT_PUBLIC_NETWORK');
@@ -115,8 +119,7 @@ const defaults = networkDefaults[resolvedNetworkName] ?? networkDefaults.sepolia
  */
 export const networkConfig: NetworkConfig = {
   ...defaults,
-  apiUrl: process.env.NEXT_PUBLIC_API_URL?.trim() || firstOfList(process.env.NEXT_PUBLIC_API_URLS),
-  rpcUrl: process.env.NEXT_PUBLIC_RPC_URL?.trim() || firstOfList(process.env.NEXT_PUBLIC_RPC_URLS),
+  ...getConfiguredEndpoints(),
   explorerUrl: process.env.NEXT_PUBLIC_EXPLORER_URL?.trim() || defaults.explorerUrl,
 };
 

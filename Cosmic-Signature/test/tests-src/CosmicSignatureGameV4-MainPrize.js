@@ -153,6 +153,40 @@ describe("CosmicSignatureGameV4-MainPrize", function () {
 		}
 	});
 
+	it("preserves a live auction and its escrow when the game registers the next cycle's batch", async function () {
+		const contracts_ = await deployV4Fixture();
+		const game_ = contracts_.cosmicSignatureGameV4Proxy;
+		const auction_ = contracts_.cosmicSignatureArtAuction;
+		const [, gameBidder_, collector_, challenger_] = contracts_.signers;
+		const firstClose_ = await activateRoundBidAndClaimMainPrize(contracts_, game_);
+		const first_ = findParsedEvent(firstClose_, auction_, "AuctionBatchRegistered").args;
+		const nftId_ = first_.firstNftId;
+
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		await bidWithEthAt(game_, gameBidder_, await getLatestBlockTimestamp() + 1n);
+		const mainPrizeTime_ = await game_.mainPrizeTime();
+		await setNextBlockTimeToAtLeast(first_.eligibleAt > mainPrizeTime_ ? first_.eligibleAt : mainPrizeTime_);
+		await waitForTransactionReceipt(auction_.connect(collector_).bid(nftId_, first_.openingBid, { value: first_.openingBid }));
+		const liveLot_ = await auction_.getAuction(nftId_);
+		const nextBid_ = await auction_.minimumNextBid(nftId_);
+
+		const secondClose_ = await waitForTransactionReceipt(game_.connect(gameBidder_).claimMainPrize());
+		const second_ = findParsedEvent(secondClose_, auction_, "AuctionBatchRegistered").args;
+		expect(second_.roundNum).equal(first_.roundNum + 1n);
+		expect(await auction_.getAuction(nftId_)).deep.equal(liveLot_);
+		expect(await auction_.minimumNextBid(nftId_)).equal(nextBid_);
+		expect(await auction_.totalBidEscrow()).equal(first_.openingBid);
+		expect(await hre.ethers.provider.getBalance(auction_.target)).equal(first_.openingBid);
+
+		await expect(auction_.connect(challenger_).bid(second_.firstNftId, second_.openingBid, { value: second_.openingBid }))
+			.revertedWithCustomError(auction_, "AuctionNotEligible").withArgs(second_.firstNftId, second_.eligibleAt);
+		await waitForTransactionReceipt(auction_.connect(challenger_).bid(nftId_, nextBid_, { value: nextBid_ }));
+		expect((await auction_.getAuction(nftId_)).highestBidder).equal(challenger_.address);
+		expect(await auction_.refundCredits(collector_.address)).equal(first_.openingBid);
+		expect(await auction_.totalBidEscrow()).equal(nextBid_);
+		expect(await hre.ethers.provider.getBalance(auction_.target)).equal(first_.openingBid + nextBid_);
+	});
+
 	it("only the inactive game's owner can set the opening price for future batches", async function () {
 		const contracts_ = await deployV4Fixture();
 		const game_ = contracts_.cosmicSignatureGameV4Proxy.connect(contracts_.ownerSigner);

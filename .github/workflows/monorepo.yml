@@ -4,29 +4,16 @@ run-name: "${{ github.workflow }} (${{ github.event_name }} on ${{ github.ref_na
 on:
   push:
     branches: [main, V4]
-    paths:
-      - '.github/**'
-      - '.githooks/**'
-      - '.gitmodules'
-      - 'Makefile'
-      - 'scripts/**'
-      - 'docs/**'
   pull_request:
     branches: [main, V4]
-    paths:
-      - '.github/**'
-      - '.githooks/**'
-      - '.gitmodules'
-      - 'Makefile'
-      - 'scripts/**'
-      - 'docs/**'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  migration:
+  repository:
+    name: Repository tooling and documentation
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -35,7 +22,5 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
-      - name: Check component hook dispatch
-        run: python3 -m unittest discover -s scripts/tests
-      - name: Verify imported source trees and comparison tags
-        run: make verify-import
+      - name: Verify repository tooling, documentation and migration history
+        run: make test-repo

@@ -12,6 +12,7 @@ on:
       - Cosmic-Signature-frontend/**
       - axiomzero/**
       - .github/workflows/chaos-v4-playground.yml
+      - scripts/ci/install-game-solc.sh
       - .gitmodules
   push:
     branches:
@@ -23,6 +24,7 @@ on:
       - Cosmic-Signature-frontend/**
       - axiomzero/**
       - .github/workflows/chaos-v4-playground.yml
+      - scripts/ci/install-game-solc.sh
       - .gitmodules
   workflow_dispatch:
 
@@ -81,13 +83,9 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: v1.7.1
-      - name: Install the game's native Solidity compiler
-        run: |
-          compiler="$HOME/.solc-select/artifacts/solc-0.8.38/solc-0.8.38"
-          mkdir -p "$(dirname "$compiler")"
-          curl -fsSL --retry 3 'https://raw.githubusercontent.com/argotorg/solc-bin/68447de66b15599f2e23af0051ab2080053746e4/linux-amd64/solc-linux-amd64-v0.8.38+commit.1835d247' -o "$compiler"
-          echo "65c3180a336eabb6bdc4bbd49cc405aeb233976964ae6c11fba2a6c8be8f3243  $compiler" | sha256sum --check --strict
-          chmod +x "$compiler"
+      - name: Install the native game compiler
+        working-directory: .
+        run: ./scripts/ci/install-game-solc.sh
       - name: Install the backend's pinned PostgreSQL migration CLI
         run: |
           mkdir -p "$RUNNER_TEMP/goose-bin"

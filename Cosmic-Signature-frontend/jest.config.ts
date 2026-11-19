@@ -31,18 +31,20 @@ const config: Config = {
   collectCoverageFrom: [
     'app/**/*.{ts,tsx}',
     'components/**/*.{ts,tsx}',
+    'config/**/*.{ts,tsx}',
     'contexts/**/*.{ts,tsx}',
     'hooks/**/*.{ts,tsx}',
+    'i18n/**/*.{ts,tsx}',
+    'lib/**/*.{ts,tsx}',
+    'proxy.ts',
     'utils/**/*.{ts,tsx}',
     'services/**/*.{ts,tsx}',
     '!**/*.d.ts',
     '!**/node_modules/**',
   ],
   coverageThreshold: {
-    // Kept a couple of points under the measured numbers (branches 76.4,
-    // functions 80.1, lines 85.5, statements 84.0) so an unrelated change
-    // cannot fail CI on rounding alone.
-    global: { branches: 75, functions: 78, lines: 84, statements: 82 },
+    // Allow normal run-to-run variation below the full-suite baseline.
+    global: { branches: 81, functions: 84, lines: 88, statements: 86 },
   },
 };
 
