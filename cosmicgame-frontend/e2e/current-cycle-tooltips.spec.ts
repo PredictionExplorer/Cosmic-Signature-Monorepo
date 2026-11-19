@@ -58,12 +58,20 @@ test.describe('/current-cycle tooltips', () => {
     const summary = disclosure.locator('summary');
     await summary.scrollIntoViewIfNeeded();
     await expect(summary).toHaveText('How the reserve splits');
-    await expect(disclosure.getByText(/forwarded to Protocol Guild/)).toBeHidden();
+    await expect(
+      disclosure.getByText(
+        /forward its balance to the configured beneficiary, currently Protocol Guild/,
+      ),
+    ).toBeHidden();
 
     // A native disclosure: it opens from the keyboard.
     await summary.focus();
     await page.keyboard.press('Enter');
-    await expect(disclosure.getByText(/forwarded to Protocol Guild/)).toBeVisible();
+    await expect(
+      disclosure.getByText(
+        /forward its balance to the configured beneficiary, currently Protocol Guild/,
+      ),
+    ).toBeVisible();
     await expect(disclosure.getByRole('term')).toHaveCount(10);
   });
 });

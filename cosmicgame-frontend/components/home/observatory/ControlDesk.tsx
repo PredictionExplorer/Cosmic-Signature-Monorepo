@@ -35,13 +35,13 @@ export interface ControlDeskProps {
 export const DESK_REGION = 'border-t border-rule pt-4';
 
 /** The right-hand cell of row 1 from 1024px, beside the Cycle column: the form, or the art between cycles. */
-const DESK_RIGHT = 'lg:col-span-7 lg:col-start-6 lg:row-span-3 lg:row-start-1 lg:self-start';
+const DESK_RIGHT = 'lg:col-span-7 lg:col-start-6 lg:row-start-1 lg:self-start';
 /** Row 2's wide cell from 1024px. */
-const DESK_ROW_2_WIDE = 'lg:col-span-7 lg:col-start-1 lg:row-start-4';
+const DESK_ROW_2_WIDE = 'lg:col-span-7 lg:col-start-1';
 /** Row 2 whole from 1024px: the standings between cycles, when the art has moved up beside the clock. */
-const DESK_ROW_2_FULL = 'lg:col-span-12 lg:col-start-1 lg:row-start-4';
+const DESK_ROW_2_FULL = 'lg:col-span-12 lg:col-start-1';
 /** Row 2's narrow cell from 1024px. */
-const DESK_ROW_2_NARROW = 'lg:col-span-5 lg:col-start-8 lg:row-start-4';
+const DESK_ROW_2_NARROW = 'lg:col-span-5 lg:col-start-8';
 
 /**
  * The decision desk.
@@ -69,12 +69,15 @@ const DESK_ROW_2_NARROW = 'lg:col-span-5 lg:col-start-8 lg:row-start-4';
 export const ControlDesk = forwardRef<HTMLDivElement, ControlDeskProps>(
   ({ header, clock, calibration, standings, gestureConsole, standing, art, className }, ref) => {
     const hasForm = !!gestureConsole;
+    // An absent wallet has no standing row. An empty track still adds a grid gap.
+    const rightSpan = standing ? 'lg:row-span-3' : 'lg:row-span-2';
+    const nextRow = standing ? 'lg:row-start-4' : 'lg:row-start-3';
 
     const standingsCell = (
       <div
         key="standings"
         data-testid="control-desk-standings"
-        className={cn('min-w-0', DESK_REGION, hasForm ? DESK_ROW_2_WIDE : DESK_ROW_2_FULL)}
+        className={cn('min-w-0', DESK_REGION, nextRow, hasForm ? DESK_ROW_2_WIDE : DESK_ROW_2_FULL)}
       >
         {standings}
       </div>
@@ -83,7 +86,11 @@ export const ControlDesk = forwardRef<HTMLDivElement, ControlDeskProps>(
       <div
         key="art"
         data-testid="control-desk-art"
-        className={cn('min-w-0', DESK_REGION, hasForm ? DESK_ROW_2_NARROW : DESK_RIGHT)}
+        className={cn(
+          'min-w-0',
+          DESK_REGION,
+          hasForm ? [DESK_ROW_2_NARROW, nextRow] : [DESK_RIGHT, rightSpan],
+        )}
       >
         {art}
       </div>
@@ -101,7 +108,12 @@ export const ControlDesk = forwardRef<HTMLDivElement, ControlDeskProps>(
             // maximum takes none of a spanning cell's height), so row 3
             // absorbs what the right-hand cell needs beyond them and the
             // standing stays right under the Calibration Window.
-            className="mt-5 grid min-w-0 gap-y-8 lg:mt-3 lg:grid-cols-12 lg:grid-rows-[minmax(min-content,0px)_minmax(min-content,0px)_auto_auto] lg:gap-x-6 lg:gap-y-5"
+            className={cn(
+              'mt-5 grid min-w-0 gap-y-8 lg:mt-3 lg:grid-cols-12 lg:gap-x-6 lg:gap-y-5',
+              standing
+                ? 'lg:grid-rows-[minmax(min-content,0px)_minmax(min-content,0px)_auto_auto]'
+                : 'lg:grid-rows-[minmax(min-content,0px)_auto_auto]',
+            )}
           >
             <div
               data-testid="control-desk-clock"
@@ -133,6 +145,7 @@ export const ControlDesk = forwardRef<HTMLDivElement, ControlDeskProps>(
                 className={cn(
                   'min-w-0 rounded-surface bg-surface p-5 sm:p-6 lg:px-8 lg:pb-8 lg:pt-5',
                   DESK_RIGHT,
+                  rightSpan,
                 )}
               >
                 {gestureConsole}

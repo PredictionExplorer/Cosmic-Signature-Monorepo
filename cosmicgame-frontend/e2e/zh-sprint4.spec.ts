@@ -247,7 +247,7 @@ test.describe('zh Sprint 4 — transactions and holdings routes', () => {
     await expect(split.getByText('ETH 储备如何沿协议各条轨道分配', { exact: false })).toBeVisible();
     // A split legend entry explains itself: the track's name is the trigger (the ledger's
     // column headers, above it, name the same tracks).
-    await expectZhTermTooltip(page, '签名分配', /完成收官之笔的参与者取回/, split);
+    await expectZhTermTooltip(page, '签名分配', /实际收官者取回的 ETH 份额/, split);
   });
 
   test('opens representative Chinese anchoring tooltips', async ({ page }) => {

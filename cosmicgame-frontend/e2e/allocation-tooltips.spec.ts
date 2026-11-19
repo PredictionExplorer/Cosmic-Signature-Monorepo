@@ -18,9 +18,12 @@ const ALLOCATION_LIST_TOOLTIPS = [
 const ALLOCATION_LIST_TERMS = [
   {
     label: 'Signature Allocation',
-    expected: /retrieved by the participant who made the Final Gesture/,
+    expected: /ETH share received by the finalization caller/,
   },
-  { label: 'Stellar Selection', expected: /randomly selected participants/ },
+  {
+    label: 'Stellar Selection',
+    expected: /Participant ETH selections use undiscounted, premium-free ETH base-cost weights/,
+  },
   { label: 'Compounding Cycle Reserve', expected: /roll forward into the next cycle/ },
 ];
 
@@ -50,7 +53,11 @@ const ALLOCATION_DETAIL_TOOLTIPS = [
 /** The distribution legend's track names explain themselves. */
 const ALLOCATION_DETAIL_TERMS = [
   { label: 'Chrono-Warrior', expected: /ETH allocation to the Chrono-Warrior/ },
-  { label: 'Public Goods', expected: /Public Goods Beneficiary/ },
+  {
+    label: 'Public Goods',
+    expected:
+      /Public Goods Vault for a separate permissionless transfer to its configured beneficiary/,
+  },
 ];
 
 async function expectTermTooltips(

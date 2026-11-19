@@ -24,6 +24,29 @@ const feed = gestures.map((row, index) => ({
   },
 }));
 const historicalRound = { ...roundInfo, RoundNum: 1 };
+const participants = feed.map((gesture, index) => ({
+  BidderAid: index + 1,
+  BidderAddr: gesture.BidderAddr,
+  NumBids: 1,
+  MaxBidAmountEth: Math.max(gesture.EthPriceEth, 0),
+}));
+const recipients = [
+  {
+    WinnerAid: 1,
+    WinnerAddr: historicalRound.MainPrize.WinnerAddr,
+    AllocationsCount: 1,
+    MaxWinAmountEth: historicalRound.MainPrize.EthAmountEth,
+    PrizesSum: historicalRound.MainPrize.EthAmountEth,
+  },
+];
+const contributors = [
+  {
+    DonorAid: 1,
+    DonorAddr: historicalRound.MainPrize.WinnerAddr,
+    CountDonations: 1,
+    TotalDonatedEth: 0.05,
+  },
+];
 
 function fixture(path: string): unknown {
   if (path.endsWith('/statistics/dashboard')) {
@@ -32,10 +55,19 @@ function fixture(path: string): unknown {
       CurNumBids: feed.length,
       LastBidderAddr: specialRecipients.LastBidderAddress,
       CurRoundStats: { ...dashboard.CurRoundStats, TotalBids: feed.length },
-      MainStats: { ...dashboard.MainStats, NumCSTokenMints: tokens.length },
+      MainStats: {
+        ...dashboard.MainStats,
+        NumCSTokenMints: tokens.length,
+        NumUniqueBidders: participants.length,
+        NumUniqueWinners: recipients.length,
+        NumUniqueDonors: contributors.length,
+      },
     };
   }
-  if (path.endsWith('/bid/current_special_winners')) return specialRecipients;
+  if (path.endsWith('/statistics/unique/bidders')) return { UniqueBidders: participants }; // lexicon-allow-backend-type
+  if (path.endsWith('/statistics/unique/winners')) return { UniqueWinners: recipients }; // lexicon-allow-backend-type
+  if (path.endsWith('/statistics/unique/donors')) return { UniqueDonors: contributors }; // lexicon-allow-backend-type
+  if (path.endsWith('/bid/current_special_winners')) return specialRecipients; // lexicon-allow-backend-type
   const byRound = path.match(/\/bid\/list\/by_round\/(\d+)\/([01])\/(\d+)\/(\d+)$/);
   if (byRound) {
     const rows = Number(byRound[1]) === SPRINT4_MOCK_CYCLE ? [...feed] : [];
@@ -43,7 +75,7 @@ function fixture(path: string): unknown {
     const offset = Number(byRound[3]);
     return { BidsByRound: rows.slice(offset, offset + Number(byRound[4])) };
   }
-  if (path.includes('/bid/list/all/')) return { Gestures: feed };
+  if (path.includes('/bid/list/all/')) return { Gestures: feed }; // lexicon-allow-backend-type
   const gallery = path.match(/\/cst\/list\/all\/(\d+)\/(\d+)$/);
   if (gallery) {
     const offset = Number(gallery[1]);

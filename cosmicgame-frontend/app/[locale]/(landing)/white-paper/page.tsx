@@ -493,6 +493,7 @@ export default async function WhitePaperPage({ params }: PageProps) {
           </p>
           <a
             href={localeHref(LANDING_ORIGIN, content.metadata.path, routing.defaultLocale)}
+            hrefLang={routing.defaultLocale}
             className="link mt-3 inline-flex min-h-6 items-center type-label"
           >
             {tLanding('whitePaperHistorical.link')}

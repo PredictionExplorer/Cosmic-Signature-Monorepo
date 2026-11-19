@@ -128,6 +128,9 @@ describe('ControlDesk', () => {
   it('renders no standing without a wallet', () => {
     render(<ControlDesk {...regions} standing={undefined} />);
     expect(screen.queryByTestId('control-desk-standing')).not.toBeInTheDocument();
+    expect(placement('control-desk-gesture')).toContain('lg:row-span-2');
+    expect(placement('control-desk-standings')).toContain('lg:row-start-3');
+    expect(placement('control-desk-art')).toContain('lg:row-start-3');
   });
 
   it('keeps phones and tablets in one column', () => {
