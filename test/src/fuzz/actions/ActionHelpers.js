@@ -2,6 +2,8 @@
 
 "use strict";
 
+const { CST_PER_V4_CYCLE } = require("../GameModel.js");
+
 // #endregion
 // #region Imports
 
@@ -566,7 +568,18 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 	// CST mints (from == zero address): numCstPrizeMints prize mints + 1 marketing mint.
 	const cstMints_ = engine.parsedEvents(receipt, contracts.cosmicSignatureToken, "Transfer")
 		.filter((event_) => event_.args[0].toLowerCase() === hre.ethers.ZeroAddress);
-	expect(BigInt(cstMints_.length), "claim: CST mint count").to.equal(breakdown.numCstPrizeMints + 1n);
+	if (model.version === 4) {
+		const market_ = ctx_.v4Companions.market.target;
+		const grantMint_ = cstMints_.pop();
+		expect(grantMint_.args, "V4 mints the additional CST to the game").to.deep.equal([hre.ethers.ZeroAddress, game_.target, CST_PER_V4_CYCLE]);
+		const transfers_ = engine.parsedEvents(receipt, contracts.cosmicSignatureToken, "Transfer")
+			.filter((event_) => event_.args[0] === game_.target && event_.args[1] === market_);
+		expect(transfers_.map((event_) => event_.args[2]), "one CST grant transfer").to.deep.equal([CST_PER_V4_CYCLE]);
+		const cumulative_ = model.expectedCumulativeV4Funding();
+		expect(engine.singleEvent(receipt, game_, "ChaosZeroCycleFunded", "claim").args)
+			.to.deep.equal([market_, model.roundNum, CST_PER_V4_CYCLE, cumulative_]);
+	}
+	expect(BigInt(cstMints_.length), "claim: ordinary CST mint count").to.equal(breakdown.numCstPrizeMints + 1n);
 	let marketingMints_ = 0;
 	for (const mint_ of cstMints_) {
 		if (mint_.args[1].toLowerCase() === model.marketingWalletAddress) {
@@ -582,7 +595,19 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 	// beneficiary NFTs in V3+ (a sequential ID block starting at `prizeFirstCosmicSignatureNftId`).
 	const nftMints_ = engine.parsedEvents(receipt, contracts.cosmicSignatureNft, "Transfer")
 		.filter((event_) => event_.args[0].toLowerCase() === hre.ethers.ZeroAddress);
-	expect(BigInt(nftMints_.length), "claim: CS NFT mint count").to.equal(breakdown.numNftMints);
+	if (model.version === 4) {
+		const auction_ = ctx_.v4Companions.auction;
+		const batch_ = engine.singleEvent(receipt, auction_, "AuctionBatchRegistered", "claim");
+		const auctionMints_ = nftMints_.splice(-8);
+		expect(batch_.args.roundNum).to.equal(breakdown.roundNum);
+		expect(batch_.args.count).to.equal(8n);
+		expect(auctionMints_.length).to.equal(8);
+		for (const [index_, event_] of auctionMints_.entries()) {
+			expect(event_.args, "eight consecutive auction-owned mints after ordinary allocations")
+				.to.deep.equal([hre.ethers.ZeroAddress, auction_.target, batch_.args.firstNftId + BigInt(index_)]);
+		}
+	}
+	expect(BigInt(nftMints_.length), "claim: ordinary CS NFT mint count").to.equal(breakdown.numNftMints);
 	if (model.version >= 3) {
 		const beneficiaryNftIdsSet_ = new Set(
 			nftMints_

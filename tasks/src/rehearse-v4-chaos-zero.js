@@ -9,13 +9,14 @@ const legacyMarketAddress = "0x2BC4759A2b44e1197EAdc4E035Eb8c52299658d2";
 const unit = 10n ** 18n;
 const grant = 8_000n * unit;
 
+function readChaosZeroArtifact(name_) {
+	const chaosRoot_ = process.env.CHAOS_ZERO_ROOT || path.resolve(__dirname, "../../../ChaosZero");
+	return JSON.parse(fs.readFileSync(path.join(chaosRoot_, "out", name_ + ".sol", name_ + ".json"), "utf8"));
+}
+
 // Called exclusively from the in-process, pinned fork rehearsal.
 async function deployForkMarket(hre_, game_, owner_) {
-	const chaosRoot_ = process.env.CHAOS_ZERO_ROOT || path.resolve(__dirname, "../../../ChaosZero");
-	function artifactFor_(name_) {
-		return JSON.parse(fs.readFileSync(path.join(chaosRoot_, "out", name_ + ".sol", name_ + ".json"), "utf8"));
-	}
-	const artifact_ = artifactFor_("GameFundedOutcomeMarket");
+	const artifact_ = readChaosZeroArtifact("GameFundedOutcomeMarket");
 	const cst_ = await hre_.ethers.getContractAt("CosmicSignatureToken", await game_.token(), owner_);
 	const source_ = new hre_.ethers.Contract(sourceAddress, [
 		"function game() view returns(address)", "function cst() view returns(address)",
@@ -33,7 +34,7 @@ async function deployForkMarket(hre_, game_, owner_) {
 	], owner_);
 	assert.equal(await legacy_.source(), sourceAddress);
 	assert.notEqual(await market_.settlementVault(), await legacy_.settlementVault());
-	const views_ = new hre_.ethers.Contract(await market_.marketViews(), artifactFor_("GameFundedMarketViews").abi, owner_);
+	const views_ = new hre_.ethers.Contract(await market_.marketViews(), readChaosZeroArtifact("GameFundedMarketViews").abi, owner_);
 	return { market: market_, source: source_, legacy: legacy_, cst: cst_, views: views_ };
 }
 
@@ -96,4 +97,4 @@ async function exerciseSecondGrant(game_, contracts_, holder_, cycle_) {
 		nextCycle: String(next_), issuedCst: 16_000, paidPositionsCst: 8, excludedTransferCst: 1 };
 }
 
-module.exports = { deployForkMarket, exerciseFirstGrant, exerciseSecondGrant };
+module.exports = { readChaosZeroArtifact, deployForkMarket, exerciseFirstGrant, exerciseSecondGrant };

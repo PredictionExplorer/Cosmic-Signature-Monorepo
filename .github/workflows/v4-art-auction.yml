@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'contracts/**'
+      - 'src/**'
       - 'test/**'
       - 'tasks/**'
       - 'hardhat*.js'
@@ -11,14 +12,27 @@ on:
       - '.github/workflows/v4-art-auction.yml'
   push:
     branches: ['V4', 'codex/v4-art-auctions']
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+    inputs:
+      soak:
+        description: Run the longer four-version campaign
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
+    env:
+      V4_SOAK: ${{ github.event_name == 'schedule' || inputs.soak || false }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event_name == 'schedule' && 'V4' || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22
@@ -38,11 +52,36 @@ jobs:
             "$compiler_path" --version
           }
           main
-      - run: npm run test:credentials
-      - run: npm run hardhat-test-quick
-        env:
-          TERM: xterm
       - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1
         with:
           version: v1.7.1
+      - name: Build pinned Chaos Zero outcome source and game-funded market
+        run: |
+          chaos_root=$(node test/runners/prepare-chaos-zero.js --pinned)
+          echo "CHAOS_ZERO_ROOT=$chaos_root" >> "$GITHUB_ENV"
+      - run: npm run test:credentials
+      - name: Test the quick suite across all compiler profiles
+        if: env.V4_SOAK != 'true'
+        run: npm run hardhat-test-quick
+        env:
+          TERM: xterm
+          FUZZ_SEED: '0x4101'
+      - name: Replay the second four-version seed and the immediate V2 upgrade case
+        if: env.V4_SOAK != 'true'
+        run: |
+          FUZZ_SEED=0x71aa npx --no-install hardhat test --no-compile test/tests-src/FuzzTest.js
+          FUZZ_SEED=0xceda43 FUZZ_V2_ROUNDS=0 npx --no-install hardhat test --no-compile test/tests-src/FuzzTest.js
+        env:
+          HARDHAT_MODE_CODE: '1'
+          LONG_TEST_MODE_CODE: '1'
+          ENABLE_HARDHAT_PREPROCESSOR: 'false'
+      - name: Fuzz V1 through V4 with fresh replayable seeds
+        if: env.V4_SOAK == 'true'
+        run: |
+          npx --no-install hardhat test test/tests-src/FuzzTest.js
+        env:
+          HARDHAT_MODE_CODE: '1'
+          LONG_TEST_MODE_CODE: '3'
+          ENABLE_HARDHAT_PREPROCESSOR: 'false'
+          FUZZ_MAX_SECONDS: '1200'
       - run: npm run test:auction:fuzz

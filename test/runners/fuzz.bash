@@ -1,11 +1,11 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 # Runs the unified Cosmic Signature fuzz campaign (`test/tests-src/FuzzTest.js`)
 # in several configurations. See the header of that file for the env knobs.
 #
 # Usage:
 #   ./fuzz.bash               # one production-like run + two assert-enabled runs
-#                               # (each is the default 20-minute soak of repeated V1->V2->V3 campaigns)
+#                               # (each is the default 20-minute soak of repeated V1->V2->V3->V4 campaigns)
 #   FUZZ_SEED=0x... ./fuzz.bash
 #   FUZZ_MAX_SECONDS=300 ./fuzz.bash   # shorter soak
 #   FUZZ_MULTI=8 ./fuzz.bash  # additional N soak runs with random seeds

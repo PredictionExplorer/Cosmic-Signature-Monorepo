@@ -14,7 +14,7 @@ V3 keeps the V2 call shapes and only adds views (`getRoundLateBidDuration`) and 
 class GameAbiAdapter {
 	/**
 	@param {import("ethers").Contract} gameContract_ Proxy bound to the right ABI for `version_`.
-	@param {1 | 2 | 3} version_
+	@param {1 | 2 | 3 | 4} version_
 	*/
 	constructor(gameContract_, version_) {
 		this.contract = gameContract_;

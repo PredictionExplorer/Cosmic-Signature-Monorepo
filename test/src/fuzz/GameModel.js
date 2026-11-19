@@ -21,8 +21,10 @@ const {
 // #endregion
 // #region `GameModel`
 
+const CST_PER_V4_CYCLE = 8_000n * 10n ** 18n;
+
 /**
-Exact JS shadow model of the `CosmicSignatureGame` (V1, V2, and V3) deterministic state machine.
+Exact JS shadow model of the `CosmicSignatureGame` (V1 through V4) deterministic state machine.
 
 The fuzz engine controls every block timestamp, so all prices, rewards, durations, champion
 transitions, and `mainPrizeTime` values are exactly predictable. This class mirrors:
@@ -40,8 +42,8 @@ class GameModel {
 
 	constructor() {
 		/**
-		Game code version: 1 = V1, 2 = V2, 3 = V3.
-		@type {1 | 2 | 3}
+		Current implementation version of the proxy under test.
+		@type {1 | 2 | 3 | 4}
 		*/
 		this.version = 1;
 
@@ -86,6 +88,7 @@ class GameModel {
 
 		// Round / bidding state.
 		this.roundNum = 0n;
+		this.completedV4Rounds = 0n;
 		this.roundActivationTime = 0n;
 		this.mainPrizeTime = 0n;
 		this.mainPrizeTimeIncrementInMicroSeconds = 0n;
@@ -874,6 +877,9 @@ class GameModel {
 		this.chronoWarriorBidIndex = null;
 		this.chronoWarriorDuration = -1n;
 		this.roundNum += 1n;
+		if (this.version === 4) {
+			++this.completedV4Rounds;
+		}
 		this.mainPrizeTimeIncrementInMicroSeconds =
 			tryIncreaseValueExponentially(this.mainPrizeTimeIncrementInMicroSeconds, this.mainPrizeTimeIncrementIncreaseDivisor);
 		// Comment-202606235: V2+ intentionally accepts this owner-adversarial wrap so a bad delay cannot brick claims.
@@ -939,6 +945,11 @@ class GameModel {
 		this.chronoWarriorEthPrizeAmountPercentage = c.DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3;
 	}
 
+	/** V4 issues one grant upon initialization and one for each subsequently completed cycle. */
+	expectedCumulativeV4Funding() {
+		return (1n + this.completedV4Rounds) * CST_PER_V4_CYCLE;
+	}
+
 	// #endregion
 }
 
@@ -947,6 +958,7 @@ class GameModel {
 
 module.exports = {
 	GameModel,
+	CST_PER_V4_CYCLE,
 };
 
 // #endregion

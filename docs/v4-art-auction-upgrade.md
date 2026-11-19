@@ -103,6 +103,23 @@ For the original 0.8.34 candidate, the focused V4 suites passed 21 tests in prod
 
 Before release, review the intended deployment addresses and pinned source, obtain the required independent security review, rehearse against the then-current deployed state, and measure finalization under the actual configured counts and supported operational limits. Nothing in this document supplies a production deployment command, signing key, launch cycle, or deployment authorization.
 
+## Four-version stateful campaign
+
+`npm run hardhat-test-quick` exercises one game proxy through V1, V2, V3 and V4 with the same participant wallets. The campaign checks the recorded balances and historical entitlements at each cutover, synchronizes the real Chaos Zero grant twice, preserves a winning position across a cycle boundary, and completes the real auction contract's bid, outbid, refund, settlement, delivery and proceeds transfer. Its independently funded local wallets and chain are discarded after the run.
+
+Install Foundry 1.7.1 and the game's normal Hardhat prerequisites. The quick and fuzz runners compile Chaos Zero's production contracts using that project's default Foundry profile. They use an explicit `CHAOS_ZERO_ROOT` or an existing sibling `../ChaosZero` checkout, including local source changes. Initialize the sibling's submodules before the first build. A standalone checkout fetches the reviewed companion revision and its recorded submodules into the game's ignored `cache/v4-companions` directory. The pin lives in `test/runners/prepare-chaos-zero.js`.
+
+Run a single production-profile campaign from the game repository root.
+
+```bash
+HARDHAT_MODE_CODE=1 LONG_TEST_MODE_CODE=1 ENABLE_HARDHAT_PREPROCESSOR=false \
+  FUZZ_SEED=0x4101 npx --no-install hardhat test test/tests-src/FuzzTest.js
+```
+
+The V4 workflow runs fixed seeds on relevant pull requests and V4 pushes. Every ordinary seed exercises all four versions. A separate seed sets `FUZZ_V2_ROUNDS=0` to retain coverage of an immediate V2-to-V3 upgrade. The longer profile uses fresh seeds and a 20-minute budget, with the seed, build options and action trace in the Actions log on failure. Use the printed single-campaign replay command with the same Chaos Zero revision to reproduce it.
+
+The schedule is 04:17 UTC each day. GitHub discovers schedules on the default branch, so the schedule becomes active when the workflow is present there and explicitly checks out V4 for the run. The longer profile can also be selected with the workflow's `soak` dispatch input or run locally with `LONG_TEST_MODE_CODE=3` and `FUZZ_MAX_SECONDS=1200`.
+
 ## Additional EVM fuzzing and invariant checks
 
 `npm run test:auction:fuzz` uses pinned Foundry 1.7.1 tooling with Solidity 0.8.38, Osaka semantics and isolated cache/output paths under `cache/`. Three properties run 1,024 cases each: exact percentage rounding/self-raise conservation, late-bid timing and rollback of underfunded bids. A separate stateful handler runs 128 sequences of depth 128, interleaving bids, time, settlement, refunds, delivery, failed/successful proceeds and forced ETH. It reconciles individual liabilities, custody and cash movements after every handler call. Calls that do not meet a workflow's preconditions are deliberate no-ops; 16,384 calls does not mean 16,384 accepted bids.

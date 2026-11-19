@@ -4,6 +4,7 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { CST_PER_V4_CYCLE } = require("./GameModel.js");
 
 // #endregion
 // #region Invariant suite
@@ -34,6 +35,13 @@ async function runInvariants(ctx_) {
 			sum_ += balance_;
 		}
 		expect(sum_, "CST ledger sum vs totalSupply (closed holder set)").to.equal(onChainTotalSupply_);
+	}
+
+	if (model.version === 4) {
+		const { auction, market } = ctx_.v4Companions;
+		expect(await game_.chaosZeroFunding(market.target, model.roundNum), "game-funded grants vs completed V4 cycles")
+			.to.deep.equal([CST_PER_V4_CYCLE, model.expectedCumulativeV4Funding()]);
+		expect(await auction.registeredBatchCount(), "auction batches vs completed V4 cycles").to.equal(model.completedV4Rounds);
 	}
 
 	// Mock ERC-20 ledger == chain for tracked holders, and PrizesWallet holds the unclaimed donations.

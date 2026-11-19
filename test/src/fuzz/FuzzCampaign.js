@@ -16,7 +16,9 @@ const {
 	parseIntegerEnvironmentVariable,
 	uint256ToPaddedHexString,
 } = require("../../../src/Helpers.js");
-const { loadFixtureDeployContractsForTesting } = require("../../../src/ContractTestingHelpers.js");
+const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting } = require("../../../src/ContractTestingHelpers.js");
+const { saveV1Rewards, useV1Rewards, retrieveV3Allocation, performUpgradeToV4 } = require("./V4UpgradePhase.js");
+const { exerciseOpeningGrant, exerciseRolloverAndAuction } = require("../V4CompanionTestHelpers.js");
 const { GameModel } = require("./GameModel.js");
 const { ShadowState } = require("./ShadowState.js");
 const { GameAbiAdapter } = require("./GameAbiAdapter.js");
@@ -57,7 +59,6 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 	if (longTestModeCode_ < 2) {
 		base_ = {
 			numActors: 6,
-			// Equal V1/V2/V3 rounds => roughly a third of the fuzzing time on each code version.
 			v1Rounds: 2,
 			v2Rounds: 2,
 			v3Rounds: 2,
@@ -98,7 +99,6 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 	} else {
 		base_ = {
 			numActors: 9,
-			// Equal V1/V2/V3 rounds per campaign => roughly a third of the time on each code version.
 			v1Rounds: 7,
 			v2Rounds: 7,
 			v3Rounds: 7,
@@ -117,8 +117,13 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			maxSeconds: 1200,
 		};
 	}
-	const merged_ = { ...base_, ...envOverrides_ };
-	return merged_;
+	const profile_ = { ...base_, v4Rounds: base_.v3Rounds, ...envOverrides_ };
+	for (const [key_, minimum_] of Object.entries({ numActors: 2, v1Rounds: 1, v2Rounds: 0, v3Rounds: 1, v4Rounds: 2 })) {
+		if ( ! Number.isSafeInteger(profile_[key_]) || profile_[key_] < minimum_ ) {
+			throw new Error(`Fuzz profile requires ${key_} >= ${minimum_}`);
+		}
+	}
+	return profile_;
 }
 
 /** Reads numeric campaign environment overrides. */
@@ -133,6 +138,7 @@ function readEnvOverrides() {
 	num_("FUZZ_V1_ROUNDS", "v1Rounds");
 	num_("FUZZ_V2_ROUNDS", "v2Rounds");
 	num_("FUZZ_V3_ROUNDS", "v3Rounds");
+	num_("FUZZ_V4_ROUNDS", "v4Rounds");
 	num_("FUZZ_ACTORS", "numActors");
 	num_("FUZZ_MAX_SECONDS", "maxSeconds");
 	return overrides_;
@@ -156,18 +162,12 @@ and the post-V3 PrizesWallet swap, without extra env toggles.
 @param {{ value: bigint }} seedWrapper_
 */
 function deriveCampaignProfile(profile_, seedWrapper_) {
-	// V2 -> V3 upgrade timing: half of the campaigns upgrade after exactly 1 more (V2) round;
-	// the rest after a different seed-picked count: zero, 2, 3, ..., up to `v2Rounds`.
-	const upgradeToV3AfterOneMoreRound_ = chanceFromSeed(seedWrapper_, profile_.upgradeToV3AfterOneMoreRoundPercent ?? 0);
-	let v2RoundsBeforeV3Upgrade_;
-	if (upgradeToV3AfterOneMoreRound_) {
-		v2RoundsBeforeV3Upgrade_ = 1;
-	} else {
-		const otherChoices_ = [0];
-		for (let count_ = 2; count_ <= Math.max(profile_.v2Rounds, 2); ++ count_) {
-			otherChoices_.push(count_);
-		}
-		v2RoundsBeforeV3Upgrade_ = otherChoices_[Number(generateRandomUInt256FromSeedWrapper(seedWrapper_) % BigInt(otherChoices_.length))];
+	// An explicit zero retains the immediate-upgrade edge case. Otherwise play at least one V2 cycle.
+	let v2RoundsBeforeV3Upgrade_ = profile_.v2Rounds;
+	if (profile_.v2Rounds > 1) {
+		const playOneRound_ = chanceFromSeed(seedWrapper_, profile_.upgradeToV3AfterOneMoreRoundPercent);
+		v2RoundsBeforeV3Upgrade_ = playOneRound_ ? 1 :
+			2 + Number(generateRandomUInt256FromSeedWrapper(seedWrapper_) % BigInt(profile_.v2Rounds - 1));
 	}
 	return {
 		...profile_,
@@ -633,6 +633,28 @@ class FuzzCampaign {
 				console.info(`  [${label_} ${elapsedSec_}s] completed ${completed_}/${targetRounds_} rounds | chainRound ${this.model.roundNum} | actions ${this.engine.actionSeq} | invariants ${this.context.invariantRunCount}`);
 			}
 		}
+		if (targetRounds_ > 0) {
+			expect(this.model.roundNum, `${label_} must complete a cycle`).to.be.greaterThan(startRound_);
+		}
+	}
+
+	/** Seed gestures by ordinary participants and leave exactly one newly finalized round. */
+	async _playParticipantCycle() {
+		await this._reactivateIfInactive();
+		const round_ = this.model.roundNum;
+		const gestureCount_ = this.engine.randomIntRange(1, this.actors.length);
+		for (let index_ = 0; index_ < gestureCount_; ++index_) {
+			await this.engine.runAction(biddingActions[0], this.context, this.engine.pick(this.actors));
+		}
+		expect(await forceCompleteRound(this.context), "participant cycle finalized").to.equal(true);
+		expect(this.model.roundNum).to.equal(round_ + 1n);
+		await runInvariants(this.context);
+	}
+
+	_latestAllocationHolders() {
+		const round_ = this.model.roundNum - 1n;
+		return this.actors.filter((actor_) => this.ledger.prizesWalletEthOf(round_, actor_.address) > 0n &&
+			this.engine.canAfford(actor_.address, 0n));
 	}
 
 	/** Runs a same-block contention burst: usually 2-3 ETH bids; sometimes a two-claimer race. */
@@ -746,12 +768,12 @@ class FuzzCampaign {
 			`ENABLE_SMTCHECKER=${ENABLE_SMTCHECKER}`;
 
 		console.info("\n" + "=".repeat(80));
-		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2 -> upgrade -> V3)`);
+		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> V2 -> V3 -> V4)`);
 		console.info("=".repeat(80));
 		console.info(`  seed: ${uint256ToPaddedHexString(this.seed)}`);
 		console.info(
 			`  profile: actors=${this.profile.numActors} v1Rounds=${this.profile.v1Rounds} ` +
-			`v2Rounds=${this.profile.v2Rounds} v3Rounds=${this.profile.v3Rounds} chaos=${this.profile.chaos} ` +
+			`v2Rounds=${this.profile.v2Rounds} v3Rounds=${this.profile.v3Rounds} v4Rounds=${this.profile.v4Rounds} chaos=${this.profile.chaos} ` +
 			`earlyBidMode=${this.profile.earlyBidMode === true} ` +
 			`upgradeAfterRoundZero=${this.profile.upgradeAfterRoundZero === true} ` +
 			`v2RoundsBeforeV3Upgrade=${this.profile.v2RoundsBeforeV3Upgrade} ` +
@@ -767,10 +789,12 @@ class FuzzCampaign {
 		// Phase 1: V1. Some campaigns upgrade immediately after round zero, matching the production path.
 		const v1RoundsBeforeUpgrade_ = this.profile.upgradeAfterRoundZero ? 1 : this.profile.v1Rounds;
 		await this._runPhase("V1", v1RoundsBeforeUpgrade_);
+		const rewards_ = await saveV1Rewards(this.context);
 
 		// Mid-campaign upgrade (we are in a fresh post-claim, round-inactive state).
 		console.info("\n  >>> Performing V1 -> V2 upgrade <<<\n");
 		await performUpgradeToV2(this.context);
+		expect(await this.contracts.cosmicSignatureNft.ownerOf(rewards_.nftId), "V1 NFT custody on V2").to.equal(rewards_.holder.address);
 
 		if (this.profile.v2RoundsBeforeV3Upgrade > 0) {
 			await this._activateRound();
@@ -779,13 +803,14 @@ class FuzzCampaign {
 		await runInvariants(this.context);
 		console.info("  >>> Upgrade complete; continuing on V2 <<<\n");
 
-		// Phase 2: V2. Half of the campaigns run exactly 1 round here; the rest zero, 2, 3, ... rounds.
+		// Phase 2: play V2 before the next in-place upgrade.
 		await this._runPhase("V2", this.profile.v2RoundsBeforeV3Upgrade);
 
 		// Second mid-campaign upgrade, plus (half of the time) a swap to a freshly deployed PrizesWallet.
 		// Assert-enabled builds use the bypass described in Comment-202610038.
 		console.info("\n  >>> Performing V2 -> V3 upgrade <<<\n");
 		await performUpgradeToV3(this.context);
+		expect(await this.contracts.cosmicSignatureNft.ownerOf(rewards_.nftId), "V1 NFT custody on V3").to.equal(rewards_.holder.address);
 		if (this.profile.swapPrizesWalletAfterV3Upgrade) {
 			await performPrizesWalletSwap(this.context);
 		}
@@ -795,6 +820,32 @@ class FuzzCampaign {
 
 		// Phase 3: V3.
 		await this._runPhase("V3", this.profile.v3Rounds);
+
+		// The last V3 cycle leaves an ETH allocation on the current PrizesWallet for an existing actor.
+		let holders_ = this._latestAllocationHolders();
+		if (holders_.length === 0) {
+			// All recipients of a random cycle can be contracts. Create an entitlement a human actor can exercise.
+			await this._playParticipantCycle();
+			holders_ = this._latestAllocationHolders();
+		}
+		const round_ = this.model.roundNum - 1n;
+		expect(holders_, "outstanding V3 allocation").not.to.be.empty;
+		const holder_ = this.engine.pick(holders_);
+		const amount_ = this.ledger.prizesWalletEthOf(round_, holder_.address);
+
+		console.info("\n  >>> Performing V3 -> V4 upgrade with Chaos Zero and Axiom Zero <<<\n");
+		const companions_ = await performUpgradeToV4(this.context);
+		await runInvariants(this.context);
+		await useV1Rewards(this.context, rewards_);
+		await retrieveV3Allocation(this.context, round_, holder_, amount_);
+		const opening_ = await exerciseOpeningGrant(this.context, companions_);
+		await this._activateRound();
+
+		// Keep these first-cycle actions bounded so the market position and auction refer to the same close.
+		await this._playParticipantCycle();
+		await exerciseRolloverAndAuction(this.context, companions_, opening_);
+		await runInvariants(this.context);
+		await this._runPhase("V4", this.profile.v4Rounds - 1);
 
 		// Final invariants. Coverage floors are asserted by the driver on the aggregate across
 		// campaigns (breadth floors are probabilistic for a single bounded campaign).
@@ -808,7 +859,7 @@ class FuzzCampaign {
 		console.info("  CAMPAIGN COMPLETE\n");
 
 		expect(this.engine.actionSeq).to.be.greaterThan(0);
-		expect(this.model.version, "campaign must end on V3").to.equal(3);
+		expect(this.model.version, "campaign must end on V4").to.equal(4);
 		expect(this.model.roundNum, "at least one round must have completed").to.be.greaterThan(0n);
 	}
 
@@ -886,7 +937,11 @@ async function runOneCampaignWithTrace(campaign_) {
 	} catch (errorObject_) {
 		campaign_.engine?.dumpTrace(80);
 		console.error(
-			`\n  Reproduce this campaign with: FUZZ_SEED=0x${campaign_.seed.toString(16).padStart(64, "0")} (omit FUZZ_MAX_SECONDS)\n`
+			`\n  Reproduce with HARDHAT_MODE_CODE=${HARDHAT_MODE_CODE} ENABLE_HARDHAT_PREPROCESSOR=${ENABLE_HARDHAT_PREPROCESSOR} ` +
+			`ENABLE_ASSERTS=${ENABLE_ASSERTS} ENABLE_SMTCHECKER=${ENABLE_SMTCHECKER} LONG_TEST_MODE_CODE=${LONG_TEST_MODE_CODE} ` +
+			`FUZZ_SEED=0x${campaign_.seed.toString(16).padStart(64, "0")} FUZZ_MAX_SECONDS=0 FUZZ_ACTORS=${campaign_.profile.numActors} ` +
+			`FUZZ_V1_ROUNDS=${campaign_.profile.v1Rounds} FUZZ_V2_ROUNDS=${campaign_.profile.v2Rounds} FUZZ_V3_ROUNDS=${campaign_.profile.v3Rounds} ` +
+			`FUZZ_V4_ROUNDS=${campaign_.profile.v4Rounds} npx hardhat test test/tests-src/FuzzTest.js\n`
 		);
 		throw errorObject_;
 	}
