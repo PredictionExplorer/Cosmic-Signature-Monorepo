@@ -1,0 +1,44 @@
+# Axiom Zero
+
+> Zero-fee NFT marketplace for fair-launch generative art on Arbitrum.
+
+Axiom Zero lists Random Walk NFTs and Cosmic Signature NFTs with no platform fees, no allowlists, and no founder privilege.
+
+## Collections
+
+- Random Walk: mathematics-driven stochastic path generative art
+- Cosmic Signature: three-body physics orbital signatures
+
+## Marketplace facts
+
+- Platform fee: 0%
+- Chain: Arbitrum
+- Wallet actions: connect wallet, buy listings, place bids, list NFTs, cancel orders
+- Trading is executed through verified marketplace contracts; the UI reads normalized marketplace data server-side
+
+## Primary URLs
+
+- Home: https://axiomzero.market/
+- Random Walk: https://axiomzero.market/random-walk
+- Cosmic Signature: https://axiomzero.market/cosmic-signature
+- My NFTs: https://axiomzero.market/my-nfts
+- FAQ and glossary: https://axiomzero.market/faq
+- Token pages: https://axiomzero.market/token/{collectionId}/{tokenId}
+
+## FAQ
+
+Full FAQ with categories (getting started, buying and bidding, selling and listings, fees and trust, collections and artwork) plus a marketplace glossary: https://axiomzero.market/faq
+
+- Axiom Zero does not charge marketplace fees; buyers and sellers pay only the on-chain price plus Arbitrum gas.
+- No account or sign-up exists; a connected Arbitrum wallet is the only identity.
+- Listings are sell offers anyone can buy instantly; bids are buy offers escrowed on-chain until accepted or cancelled.
+- Collections are fair-launch generative art with equal market access.
+- Random Walk includes beauty score metadata and provenance history when available from the collection API.
+- Cosmic Signature metadata is served from the Cosmic Signature NFT API.
+- Each token page shows the seed that deterministically generates the artwork.
+- Anchoring is a one-time action on cosmicsignature.com; a token can be anchored once, ever, and the anchor never resets. Axiom Zero labels every token as never anchored or anchored (read live from the Arbitrum anchoring contracts) and supports filtering collections by anchor status (?anchor=never or ?anchor=anchored).
+- Activity statistics (NFTs sold, ETH volume, latest sales, last sale per token) are reconstructed live from the marketplace contract's on-chain ItemBought sale events and shown on the home page, collection pages, and token detail pages.
+
+## Contracts
+
+See the site footer for verified NFT and marketplace contract addresses on Arbiscan.

@@ -1,0 +1,466 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  fetchMarketplaceSales,
+  getCollectionSales,
+  resetSalesCachesForTests,
+  summarizeSales,
+  type SalesClient,
+} from "@/lib/marketplace/sales-live";
+import type { MarketSale } from "@/lib/marketplace/types";
+import { jsonResponse, routedFetchMock } from "../helpers/go-api-fixtures";
+
+const MARKETPLACE = "0x47eF85Dfb775aCE0934fBa9EEd09D22e6eC0Cc08" as const;
+const RANDOM_WALK_NFT = "0x895a6F444BE4ba9d124F61DF736605792B35D66b" as const;
+const COSMIC_NFT = "0xbb84Be3500A63581d3F2d5AC3bdF8685AAedad25" as const;
+const UNKNOWN_NFT = "0x0000000000000000000000000000000000000abc" as const;
+const SELLER = "0x0000000000000000000000000000000000000011" as const;
+const BUYER = "0x0000000000000000000000000000000000000022" as const;
+
+type OfferTuple = readonly [
+  `0x${string}`,
+  bigint,
+  bigint,
+  `0x${string}`,
+  `0x${string}`,
+  boolean,
+];
+
+function saleLog(offerId: number, blockNumber: number) {
+  return {
+    args: { offerId: BigInt(offerId), seller: SELLER, buyer: BUYER },
+    blockNumber: BigInt(blockNumber),
+  };
+}
+
+function offerTuple(
+  nftAddress: `0x${string}`,
+  tokenId: number,
+  priceEth: number,
+): OfferTuple {
+  return [
+    nftAddress,
+    BigInt(tokenId),
+    BigInt(Math.round(priceEth * 1e18)),
+    SELLER,
+    BUYER,
+    false,
+  ];
+}
+
+function fakeClient({
+  logs,
+  offers,
+  blockTimestamps = {},
+  failGetLogs = false,
+}: {
+  logs: ReturnType<typeof saleLog>[];
+  offers: Record<number, OfferTuple | Error>;
+  blockTimestamps?: Record<number, number>;
+  failGetLogs?: boolean;
+}) {
+  const getLogs = vi.fn(async () => {
+    if (failGetLogs) {
+      throw new Error("rpc down");
+    }
+    return logs;
+  });
+  const multicall = vi.fn(
+    async ({
+      contracts,
+    }: {
+      contracts: readonly { args?: readonly unknown[] }[];
+    }) =>
+      contracts.map((contract) => {
+        const offerId = Number(contract.args?.[0]);
+        const result = offers[offerId];
+
+        return result instanceof Error || result === undefined
+          ? { status: "failure" as const, error: result ?? new Error("missing") }
+          : { status: "success" as const, result };
+      }),
+  );
+  const getBlock = vi.fn(async ({ blockNumber }: { blockNumber: bigint }) => {
+    const timestamp = blockTimestamps[Number(blockNumber)];
+
+    if (timestamp === undefined) {
+      throw new Error(`no timestamp for block ${blockNumber}`);
+    }
+
+    return { timestamp: BigInt(timestamp) };
+  });
+
+  return {
+    client: { getLogs, multicall, getBlock } as unknown as SalesClient,
+    getLogs,
+    multicall,
+    getBlock,
+  };
+}
+
+describe("fetchMarketplaceSales", () => {
+  beforeEach(() => {
+    resetSalesCachesForTests();
+  });
+
+  it("joins ItemBought events with offer records, newest first", async () => {
+    const { client } = fakeClient({
+      logs: [saleLog(1, 100), saleLog(2, 300), saleLog(3, 200)],
+      offers: {
+        1: offerTuple(RANDOM_WALK_NFT, 7, 0.5),
+        2: offerTuple(COSMIC_NFT, 3, 1.25),
+        3: offerTuple(RANDOM_WALK_NFT, 9, 2),
+      },
+      blockTimestamps: { 100: 1_700_000_000, 200: 1_700_000_100, 300: 1_700_000_200 },
+    });
+
+    const sales = await fetchMarketplaceSales({
+      marketplaceAddress: MARKETPLACE,
+      client,
+    });
+
+    expect(sales.map((sale) => sale.offerId)).toEqual([2, 3, 1]);
+    expect(sales[0]).toMatchObject({
+      collectionId: "cosmic-signature",
+      tokenId: 3,
+      priceEth: 1.25,
+      seller: SELLER,
+      buyer: BUYER,
+      blockNumber: 300,
+      soldAt: new Date(1_700_000_200 * 1000).toISOString(),
+    });
+    expect(sales[2]).toMatchObject({
+      collectionId: "random-walk",
+      tokenId: 7,
+      priceEth: 0.5,
+    });
+  });
+
+  it("drops sales of unknown NFT contracts and failed offer reads", async () => {
+    const { client } = fakeClient({
+      logs: [saleLog(1, 100), saleLog(2, 200), saleLog(3, 300)],
+      offers: {
+        1: offerTuple(UNKNOWN_NFT, 1, 1),
+        2: new Error("read failed"),
+        3: offerTuple(RANDOM_WALK_NFT, 5, 0.75),
+      },
+    });
+
+    const sales = await fetchMarketplaceSales({
+      marketplaceAddress: MARKETPLACE,
+      client,
+    });
+
+    expect(sales).toHaveLength(1);
+    expect(sales[0]).toMatchObject({ tokenId: 5, collectionId: "random-walk" });
+  });
+
+  it("only fetches timestamps for the newest sales and tolerates failures", async () => {
+    const logs = Array.from({ length: 5 }, (_, index) =>
+      saleLog(index + 1, (index + 1) * 100),
+    );
+    const offers = Object.fromEntries(
+      logs.map((_, index) => [
+        index + 1,
+        offerTuple(RANDOM_WALK_NFT, index + 1, 1),
+      ]),
+    );
+    const { client, getBlock } = fakeClient({
+      logs,
+      offers,
+      // Newest blocks are 500 and 400; 400 has no timestamp available.
+      blockTimestamps: { 500: 1_700_000_500 },
+    });
+
+    const sales = await fetchMarketplaceSales({
+      marketplaceAddress: MARKETPLACE,
+      client,
+      timestampLimit: 2,
+    });
+
+    expect(getBlock).toHaveBeenCalledTimes(2);
+    expect(sales[0]?.soldAt).toBe(new Date(1_700_000_500 * 1000).toISOString());
+    expect(sales[1]?.soldAt).toBeUndefined();
+    expect(sales[4]?.soldAt).toBeUndefined();
+  });
+
+  it("returns an empty list when no sales have happened", async () => {
+    const { client, multicall } = fakeClient({ logs: [], offers: {} });
+
+    await expect(
+      fetchMarketplaceSales({ marketplaceAddress: MARKETPLACE, client }),
+    ).resolves.toEqual([]);
+    expect(multicall).not.toHaveBeenCalled();
+  });
+
+  it("ignores malformed ItemBought logs", async () => {
+    const { client, multicall } = fakeClient({
+      logs: [
+        { args: { seller: SELLER, buyer: BUYER }, blockNumber: 100n },
+        { args: { offerId: 2n, buyer: BUYER }, blockNumber: 100n },
+        { args: { offerId: 3n, seller: SELLER }, blockNumber: 100n },
+        {
+          args: { offerId: 4n, seller: SELLER, buyer: BUYER },
+          blockNumber: null,
+        },
+      ] as unknown as ReturnType<typeof saleLog>[],
+      offers: {},
+    });
+
+    await expect(
+      fetchMarketplaceSales({ marketplaceAddress: MARKETPLACE, client }),
+    ).resolves.toEqual([]);
+    expect(multicall).not.toHaveBeenCalled();
+  });
+});
+
+describe("getCollectionSales", () => {
+  beforeEach(() => {
+    resetSalesCachesForTests();
+  });
+
+  it("filters the shared marketplace scan down to one collection", async () => {
+    const { client } = fakeClient({
+      logs: [saleLog(1, 100), saleLog(2, 200)],
+      offers: {
+        1: offerTuple(RANDOM_WALK_NFT, 7, 0.5),
+        2: offerTuple(COSMIC_NFT, 3, 1.25),
+      },
+    });
+
+    const randomWalkSales = await getCollectionSales("random-walk", client);
+    const cosmicSales = await getCollectionSales("cosmic-signature", client);
+
+    expect(randomWalkSales?.map((sale) => sale.tokenId)).toEqual([7]);
+    expect(cosmicSales?.map((sale) => sale.tokenId)).toEqual([3]);
+  });
+
+  it("degrades to undefined when the sales scan fails", async () => {
+    const { client } = fakeClient({ logs: [], offers: {}, failGetLogs: true });
+
+    await expect(
+      getCollectionSales("random-walk", client),
+    ).resolves.toBeUndefined();
+  });
+
+  it("constructs the default RPC client and degrades when it is offline", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("offline");
+      }),
+    );
+
+    try {
+      await expect(getCollectionSales("random-walk")).resolves.toBeUndefined();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("prefers the Cosmic Signature backend when no client is injected", async () => {
+    vi.stubGlobal(
+      "fetch",
+      routedFetchMock([
+        [
+          /\/api\/cosmicgame\/marketplace\/trading\/sales\/0\/\d+$/,
+          () =>
+            jsonResponse({
+              status: 1,
+              error: "",
+              Trading: [
+                {
+                  OfferId: 8,
+                  OfferType: 1,
+                  TokenId: 7,
+                  Price: 0.5,
+                  SellerAddr: SELLER,
+                  BuyerAddr: BUYER,
+                  TimeStamp: 1_700_000_100,
+                  BlockNum: 100,
+                },
+                {
+                  OfferId: 9,
+                  OfferType: 1,
+                  TokenId: 3,
+                  Price: 1.25,
+                  SellerAddr: SELLER,
+                  BuyerAddr: BUYER,
+                  TimeStamp: 1_700_000_200,
+                  BlockNum: 300,
+                },
+              ],
+            }),
+        ],
+      ]),
+    );
+
+    try {
+      const sales = await getCollectionSales("cosmic-signature");
+
+      expect(sales?.map((sale) => sale.tokenId)).toEqual([3, 7]);
+      expect(sales?.[0]).toMatchObject({
+        collectionId: "cosmic-signature",
+        offerId: 9,
+        priceEth: 1.25,
+        blockNumber: 300,
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("falls back to the RPC snapshot when the Cosmic Signature backend fails", async () => {
+    resetSalesCachesForTests();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("offline");
+      }),
+    );
+
+    try {
+      await expect(
+        getCollectionSales("cosmic-signature"),
+      ).resolves.toBeUndefined();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("getCollectionSales production caching", () => {
+  beforeEach(() => {
+    resetSalesCachesForTests();
+    vi.stubEnv("NODE_ENV", "production");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.useRealTimers();
+  });
+
+  it("shares one marketplace scan across collections within the TTL", async () => {
+    const { client, getLogs } = fakeClient({
+      logs: [saleLog(1, 100), saleLog(2, 200)],
+      offers: {
+        1: offerTuple(RANDOM_WALK_NFT, 7, 0.5),
+        2: offerTuple(COSMIC_NFT, 3, 1.25),
+      },
+    });
+
+    const randomWalkSales = await getCollectionSales("random-walk", client);
+    const cosmicSales = await getCollectionSales("cosmic-signature", client);
+
+    expect(getLogs).toHaveBeenCalledTimes(1);
+    expect(randomWalkSales?.map((sale) => sale.tokenId)).toEqual([7]);
+    expect(cosmicSales?.map((sale) => sale.tokenId)).toEqual([3]);
+  });
+
+  it("serves the last good scan when a refresh fails", async () => {
+    vi.useFakeTimers();
+    const good = fakeClient({
+      logs: [saleLog(1, 100)],
+      offers: { 1: offerTuple(RANDOM_WALK_NFT, 7, 0.5) },
+    });
+
+    await expect(
+      getCollectionSales("random-walk", good.client),
+    ).resolves.toHaveLength(1);
+
+    vi.advanceTimersByTime(61_000);
+    const bad = fakeClient({ logs: [], offers: {}, failGetLogs: true });
+
+    const stale = await getCollectionSales("random-walk", bad.client);
+
+    expect(bad.getLogs).toHaveBeenCalledTimes(1);
+    expect(stale?.map((sale) => sale.tokenId)).toEqual([7]);
+  });
+
+  it("falls back to stale data when a refresh exceeds the time budget", async () => {
+    vi.useFakeTimers();
+    const good = fakeClient({
+      logs: [saleLog(1, 100)],
+      offers: { 1: offerTuple(RANDOM_WALK_NFT, 7, 0.5) },
+    });
+
+    await getCollectionSales("random-walk", good.client);
+    vi.advanceTimersByTime(61_000);
+
+    const hanging = {
+      getLogs: vi.fn(() => new Promise(() => {})),
+      multicall: vi.fn(),
+      getBlock: vi.fn(),
+    } as unknown as SalesClient;
+
+    const pending = getCollectionSales("random-walk", hanging);
+    await vi.advanceTimersByTimeAsync(6_000);
+
+    await expect(pending).resolves.toMatchObject([{ tokenId: 7 }]);
+  });
+
+  it("resolves undefined when the first scan hangs with nothing cached", async () => {
+    vi.useFakeTimers();
+    const hanging = {
+      getLogs: vi.fn(() => new Promise(() => {})),
+      multicall: vi.fn(),
+      getBlock: vi.fn(),
+    } as unknown as SalesClient;
+
+    const pending = getCollectionSales("random-walk", hanging);
+    await vi.advanceTimersByTimeAsync(6_000);
+
+    await expect(pending).resolves.toBeUndefined();
+  });
+});
+
+describe("summarizeSales", () => {
+  it("aggregates count, volume, last sale, and top sale", () => {
+    const sales: MarketSale[] = [
+      {
+        collectionId: "random-walk",
+        tokenId: 9,
+        offerId: 3,
+        priceEth: 2,
+        seller: SELLER,
+        buyer: BUYER,
+        blockNumber: 300,
+        soldAt: "2026-06-01T00:00:00.000Z",
+      },
+      {
+        collectionId: "random-walk",
+        tokenId: 7,
+        offerId: 1,
+        priceEth: 5,
+        seller: SELLER,
+        buyer: BUYER,
+        blockNumber: 200,
+      },
+      {
+        collectionId: "random-walk",
+        tokenId: 8,
+        offerId: 2,
+        priceEth: 0.5,
+        seller: SELLER,
+        buyer: BUYER,
+        blockNumber: 100,
+      },
+    ];
+
+    const summary = summarizeSales(sales);
+
+    expect(summary.count).toBe(3);
+    expect(summary.volumeEth).toBeCloseTo(7.5);
+    expect(summary.lastSale?.offerId).toBe(3);
+    expect(summary.topSale?.offerId).toBe(1);
+  });
+
+  it("handles empty sales lists", () => {
+    expect(summarizeSales([])).toEqual({
+      count: 0,
+      volumeEth: 0,
+      lastSale: undefined,
+      topSale: undefined,
+    });
+  });
+});
