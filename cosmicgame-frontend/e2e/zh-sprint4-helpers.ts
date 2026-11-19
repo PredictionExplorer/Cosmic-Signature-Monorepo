@@ -84,7 +84,7 @@ function mockTransaction(id: number, timestamp = MOCK_NOW_SECONDS - 300) {
   };
 }
 
-const roundInfo = {
+export const roundInfo = {
   RoundNum: SPRINT4_MOCK_CYCLE,
   ClaimPrizeTx: { Tx: mockTransaction(4_200) },
   MainPrize: {
@@ -182,116 +182,91 @@ export async function mockSprint4Api(page: Page): Promise<void> {
   await page.route('**/api/v2/cosmicgame/**', (route) =>
     route.fulfill({ status: 404, json: { error: 'V2 API unavailable in legacy fixture' } }),
   );
-  await page.route('**/api/cosmicgame/**', async (route) => {
-    const path = new URL(route.request().url()).pathname;
+  await page.route('**/api/cosmicgame/**', (route) =>
+    route.fulfill({ json: sprint4Fixture(new URL(route.request().url()).pathname) ?? {} }),
+  );
+}
 
-    if (path.endsWith('/statistics/dashboard')) {
-      await route.fulfill({ json: dashboard });
-      return;
-    }
+export function sprint4Fixture(path: string): unknown {
+  if (path.endsWith('/statistics/dashboard')) {
+    return dashboard;
+  }
 
-    // lexicon-allow-start: backend route paths and wire keys are sealed API contracts.
-    if (path.includes('/rounds/list/')) {
-      await route.fulfill({ json: { Rounds: [roundInfo] } });
-      return;
-    }
-    if (path.endsWith(`/rounds/info/${SPRINT4_MOCK_CYCLE}`)) {
-      await route.fulfill({ json: { RoundInfo: roundInfo } });
-      return;
-    }
-    if (path.includes(`/bid/list/by_round/${SPRINT4_MOCK_CYCLE}/`)) {
-      await route.fulfill({ json: { BidsByRound: [] } });
-      return;
-    }
-    if (path.endsWith(`/donations/nft/by_round/${SPRINT4_MOCK_CYCLE}`)) {
-      await route.fulfill({ json: { NFTDonations: [] } });
-      return;
-    }
-    if (path.endsWith(`/donations/erc20/by_round/all/${SPRINT4_MOCK_CYCLE}`)) {
-      await route.fulfill({ json: { DonationsERC20ByRoundAll: [] } });
-      return;
-    }
-    if (path.endsWith(`/staking/cst/rewards/by_round/${SPRINT4_MOCK_CYCLE}`)) {
-      await route.fulfill({ json: { Rewards: [] } });
-      return;
-    }
-    if (path.endsWith('/staking/cst/rewards/global')) {
-      await route.fulfill({ json: { StakingCSTRewards: [] } });
-      return;
-    }
-    if (path.includes('/staking/randomwalk/mints/global/')) {
-      await route.fulfill({ json: { StakingRWalkRewardsMints: [] } });
-      return;
-    }
-    if (path.endsWith('/statistics/unique/stakers/cst')) {
-      await route.fulfill({ json: { UniqueStakersCST: [] } });
-      return;
-    }
-    if (path.endsWith(`/staking/cst/actions/info/${SPRINT4_MOCK_ACTION_ID}`)) {
-      await route.fulfill({ json: anchorAction });
-      return;
-    }
-    if (path.includes('/cst/transfers/by_user/')) {
-      await route.fulfill({ json: { CosmicSignatureTransfers: [] } });
-      return;
-    }
-    if (path.includes('/ct/transfers/by_user/')) {
-      await route.fulfill({ json: { CosmicTokenTransfers: [] } });
-      return;
-    }
-    if (path.includes('/staking/cst/rewards/by_user/by_token/details/')) {
-      await route.fulfill({ json: rewardsByToken });
-      return;
-    }
-    // The anchor-holder's actions: where the token's anchor stands.
-    if (path.includes('/staking/cst/actions/by_user/')) {
-      await route.fulfill({
-        json: { StakingCSTActions: [anchorAction.CombinedStakingRecordInfo.Stake] },
-      });
-      return;
-    }
+  // lexicon-allow-start: backend route paths and wire keys are sealed API contracts.
+  if (path.includes('/rounds/list/')) {
+    return { Rounds: [roundInfo] };
+  }
+  if (path.endsWith(`/rounds/info/${SPRINT4_MOCK_CYCLE}`)) {
+    return { RoundInfo: roundInfo };
+  }
+  if (path.includes(`/bid/list/by_round/${SPRINT4_MOCK_CYCLE}/`)) {
+    return { BidsByRound: [] };
+  }
+  if (path.endsWith(`/donations/nft/by_round/${SPRINT4_MOCK_CYCLE}`)) {
+    return { NFTDonations: [] };
+  }
+  if (path.endsWith(`/donations/erc20/by_round/all/${SPRINT4_MOCK_CYCLE}`)) {
+    return { DonationsERC20ByRoundAll: [] };
+  }
+  if (path.endsWith(`/staking/cst/rewards/by_round/${SPRINT4_MOCK_CYCLE}`)) {
+    return { Rewards: [] };
+  }
+  if (path.endsWith('/staking/cst/rewards/global')) {
+    return { StakingCSTRewards: [] };
+  }
+  if (path.includes('/staking/randomwalk/mints/global/')) {
+    return { StakingRWalkRewardsMints: [] };
+  }
+  if (path.endsWith('/statistics/unique/stakers/cst')) {
+    return { UniqueStakersCST: [] };
+  }
+  if (path.endsWith(`/staking/cst/actions/info/${SPRINT4_MOCK_ACTION_ID}`)) {
+    return anchorAction;
+  }
+  if (path.includes('/cst/transfers/by_user/')) {
+    return { CosmicSignatureTransfers: [] };
+  }
+  if (path.includes('/ct/transfers/by_user/')) {
+    return { CosmicTokenTransfers: [] };
+  }
+  if (path.includes('/staking/cst/rewards/by_user/by_token/details/')) {
+    return rewardsByToken;
+  }
+  // The anchor-holder's actions: where the token's anchor stands.
+  if (path.includes('/staking/cst/actions/by_user/')) {
+    return { StakingCSTActions: [anchorAction.CombinedStakingRecordInfo.Stake] };
+  }
 
-    // Connected-wallet providers used by the transfer-form browser checks.
-    if (path.includes('/user/balances/')) {
-      await route.fulfill({
-        json: {
-          ETH_Balance: '1000000000000000000',
-          CosmicTokenBalance: '100000000000000000000',
-        },
-      });
-      return;
-    }
-    if (path.includes('/user/notif_red_box/')) {
-      await route.fulfill({
-        json: {
-          Winnings: {
-            ETHRaffleToClaim: 0,
-            ETHRaffleToClaimWei: 0,
-            NumDonatedNFTToClaim: 0,
-            UnretrievedAnchorDistribution: 0,
-          },
-        },
-      });
-      return;
-    }
-    if (path.includes('/cst/list/by_user/')) {
-      await route.fulfill({ json: { UserTokens: [] } });
-      return;
-    }
-    if (path.includes('/staking/cst/staked_tokens/by_user/')) {
-      await route.fulfill({ json: { StakedTokensCST: [] } });
-      return;
-    }
-    if (path.includes('/staking/randomwalk/staked_tokens/by_user/')) {
-      await route.fulfill({ json: { StakedTokensRWalk: [] } });
-      return;
-    }
-    if (path.includes('/staking/cst/rewards/to_claim/by_user/')) {
-      await route.fulfill({ json: { UnclaimedEthDeposits: [] } });
-      return;
-    }
-    // lexicon-allow-end
+  // Connected-wallet providers used by the transfer-form browser checks.
+  if (path.includes('/user/balances/')) {
+    return {
+      ETH_Balance: '1000000000000000000',
+      CosmicTokenBalance: '100000000000000000000',
+    };
+  }
+  if (path.includes('/user/notif_red_box/')) {
+    return {
+      Winnings: {
+        ETHRaffleToClaim: 0,
+        ETHRaffleToClaimWei: 0,
+        NumDonatedNFTToClaim: 0,
+        UnretrievedAnchorDistribution: 0,
+      },
+    };
+  }
+  if (path.includes('/cst/list/by_user/')) {
+    return { UserTokens: [] };
+  }
+  if (path.includes('/staking/cst/staked_tokens/by_user/')) {
+    return { StakedTokensCST: [] };
+  }
+  if (path.includes('/staking/randomwalk/staked_tokens/by_user/')) {
+    return { StakedTokensRWalk: [] };
+  }
+  if (path.includes('/staking/cst/rewards/to_claim/by_user/')) {
+    return { UnclaimedEthDeposits: [] };
+  }
+  // lexicon-allow-end
 
-    await route.fulfill({ json: {} });
-  });
+  return undefined;
 }

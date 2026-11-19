@@ -185,8 +185,9 @@ test.describe('dApp home page @ app.cosmicsignature.com', () => {
     await ensureVisible(latest);
     await expect(latest).toBeVisible();
     await expect(latest.getByRole('heading', { name: 'Last Gesture' })).toBeVisible();
-    await expect(latest.getByText('Paid', { exact: true })).toBeVisible();
-    await expect(latest.getByText('Received', { exact: true })).toBeVisible();
+    await expect(latest.getByText('Gesture Cost', { exact: true })).toBeVisible();
+    await expect(latest.getByTestId('latest-participant-paid-amount')).toContainText('20 CST');
+    await expect(latest.getByRole('group', { name: 'CST credit' })).toContainText('100 CST');
     await expect(page.getByTestId('clock-reserve')).toContainText('Signature Allocation');
     await expect(
       latest.getByRole('progressbar', { name: /Progress toward Endurance/ }),

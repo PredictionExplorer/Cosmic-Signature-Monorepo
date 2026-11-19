@@ -1,4 +1,4 @@
-import type { Page, Route } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 import { mockZhQualityApi } from './zh-quality-mocks';
 import { ZH_ROUTE_FIXTURES } from './zh-route-inventory';
@@ -186,15 +186,8 @@ const DENSE_FIXTURES: readonly { match: RegExp; body: () => unknown }[] = [
   { match: /\/rounds\/list\//, body: () => ({ Rounds: roundRows() }) },
 ];
 
-async function fulfillDenseFixture(route: Route): Promise<boolean> {
-  const path = new URL(route.request().url()).pathname;
-  for (const fixture of DENSE_FIXTURES) {
-    if (fixture.match.test(path)) {
-      await route.fulfill({ json: fixture.body() });
-      return true;
-    }
-  }
-  return false;
+export function denseFixture(path: string): unknown {
+  return DENSE_FIXTURES.find((fixture) => fixture.match.test(path))?.body();
 }
 
 /**
@@ -206,8 +199,9 @@ export async function mockMobileAuditApi(page: Page): Promise<void> {
   // fixtures must be installed after the baseline mocks to take precedence.
   await mockZhQualityApi(page);
   await page.route('**/api/cosmicgame/**', async (route) => {
-    if (await fulfillDenseFixture(route)) return;
-    await route.fallback();
+    const json = denseFixture(new URL(route.request().url()).pathname);
+    if (json === undefined) await route.fallback();
+    else await route.fulfill({ json });
   });
 }
 

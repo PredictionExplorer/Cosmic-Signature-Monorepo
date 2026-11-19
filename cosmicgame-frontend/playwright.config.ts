@@ -8,6 +8,11 @@ if (process.env.FORCE_COLOR && process.env.NO_COLOR) {
 }
 
 const port = Number(process.env.PLAYWRIGHT_PORT ?? 3000);
+const mockApiPort = Number(process.env.PLAYWRIGHT_API_PORT ?? port + 1);
+const mockOrigin = `http://127.0.0.1:${mockApiPort}`;
+const mockApiUrl = `${mockOrigin}/api/cosmicgame`;
+const mockRpcUrl = `${mockOrigin}/rpc`;
+const reuseServer = !process.env.CI && !!process.env.PLAYWRIGHT_REUSE_SERVER;
 
 /**
  * Harness tier (e2e/harness): full-stack specs against the local game
@@ -129,14 +134,33 @@ export default defineConfig({
   ...(harnessOnly
     ? {}
     : {
-        webServer: {
-          command: `NEXT_PUBLIC_PLAYWRIGHT_UX_SCENARIOS=1 PLAYWRIGHT=1 npm run build && PLAYWRIGHT=1 npm run start -- -p ${port}`,
-          port,
-          // CI always builds from scratch. Locally, `PLAYWRIGHT_REUSE_SERVER=1`
-          // attaches to an already-running production server so an audit sweep
-          // doesn't pay for a full rebuild on every iteration.
-          reuseExistingServer: !process.env.CI && !!process.env.PLAYWRIGHT_REUSE_SERVER,
-          timeout: 300_000,
-        },
+        webServer: [
+          {
+            command: 'node --import tsx e2e/mock-backend.ts',
+            env: { PLAYWRIGHT_API_PORT: String(mockApiPort), NEXT_PUBLIC_NETWORK: 'mainnet' },
+            url: `${mockOrigin}/healthz`,
+            reuseExistingServer: reuseServer,
+          },
+          {
+            command: `npm run build && npm run start -- --hostname localhost -p ${port}`,
+            // Compile the same endpoints that serve SSR requests and browser reads.
+            // Explicit plural values keep a developer's failover list out of the test.
+            env: {
+              PLAYWRIGHT: '1',
+              NEXT_PUBLIC_PLAYWRIGHT_UX_SCENARIOS: '1',
+              NEXT_PUBLIC_NETWORK: 'mainnet',
+              NEXT_PUBLIC_API_URL: mockApiUrl,
+              NEXT_PUBLIC_API_URLS: mockApiUrl,
+              NEXT_PUBLIC_RPC_URL: mockRpcUrl,
+              NEXT_PUBLIC_RPC_URLS: mockRpcUrl,
+              NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: 'cosmic-playwright-local',
+              NEXT_PUBLIC_HARNESS: '0',
+              COSMICGAME_API_UPSTREAM: '',
+            },
+            port,
+            reuseExistingServer: reuseServer,
+            timeout: 300_000,
+          },
+        ],
       }),
 });

@@ -1,4 +1,4 @@
-import type { Page, Route } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 import { mockSprint4Api } from './zh-sprint4-helpers';
 import { ZH_ROUTE_FIXTURES } from './zh-route-inventory';
@@ -31,7 +31,7 @@ const contractAddresses = {
   ImplementationAddr: '0xdddddddddddddddddddddddddddddddddddddddd',
 };
 
-const dashboard = {
+export const dashboard = {
   CurRoundNum: cycle,
   CurNumBids: 7,
   CurPrizeAmountEth: 2.5,
@@ -113,7 +113,7 @@ const dashboard = {
   },
 };
 
-const tokenInfo = {
+export const tokenInfo = {
   ...transaction(tokenId),
   TokenId: tokenId,
   TokenName: '天穹',
@@ -127,7 +127,7 @@ const tokenInfo = {
   WasUnstaked: false,
 };
 
-const gestureInfo = {
+export const gestureInfo = {
   BidInfo: {
     Tx: transaction(gestureId),
     BidderAddr: address,
@@ -158,217 +158,165 @@ const contribution = {
   Tx: transaction(contributionId, 1_710_000_000),
 };
 
-async function fulfillQualityFixture(route: Route): Promise<boolean> {
-  const path = new URL(route.request().url()).pathname;
-
+export function qualityFixture(path: string): unknown {
   if (path.endsWith('/statistics/dashboard')) {
-    await route.fulfill({ json: dashboard });
-    return true;
+    return dashboard;
   }
   if (path.endsWith('/time/current')) {
-    await route.fulfill({ json: { CurrentTimeStamp: NOW_SECONDS } });
-    return true;
+    return { CurrentTimeStamp: NOW_SECONDS };
   }
   if (path.endsWith('/rounds/current/time')) {
-    await route.fulfill({ json: { CurRoundPrizeTime: NOW_SECONDS + 7_265 } });
-    return true;
+    return { CurRoundPrizeTime: NOW_SECONDS + 7_265 };
   }
   if (path.endsWith('/get_banned_bids')) {
-    await route.fulfill({ json: [] });
-    return true;
+    return [];
   }
   if (path.endsWith('/bid/eth_price')) {
-    await route.fulfill({
-      json: {
-        AuctionDuration: '3600',
-        ETHPrice: '100000000000000000',
-        SecondsElapsed: '120',
-      },
-    });
-    return true;
+    return {
+      AuctionDuration: '3600',
+      ETHPrice: '100000000000000000',
+      SecondsElapsed: '120',
+    };
   }
   if (path.endsWith('/bid/cst_price')) {
-    await route.fulfill({
-      json: {
-        AuctionDuration: '3600',
-        CSTPrice: '20000000000000000000',
-        SecondsElapsed: '120',
-      },
-    });
-    return true;
+    return {
+      AuctionDuration: '3600',
+      CSTPrice: '20000000000000000000',
+      SecondsElapsed: '120',
+    };
   }
   if (path.endsWith(`/bid/info/${gestureId}`)) {
-    await route.fulfill({ json: gestureInfo });
-    return true;
+    return gestureInfo;
   }
   if (path.endsWith(`/cst/info/${tokenId}`)) {
-    await route.fulfill({ json: { TokenInfo: tokenInfo } });
-    return true;
+    return { TokenInfo: tokenInfo };
   }
   if (path.includes(`/cst/names/history/${tokenId}`)) {
-    await route.fulfill({ json: { TokenNameHistory: [] } });
-    return true;
+    return { TokenNameHistory: [] };
   }
   if (path.includes(`/cst/transfers/all/${tokenId}/`)) {
-    await route.fulfill({ json: { TokenTransfers: [] } });
-    return true;
+    return { TokenTransfers: [] };
   }
   if (path.includes('/cst/names/named_only')) {
-    await route.fulfill({ json: { NamedTokens: [tokenInfo] } });
-    return true;
+    return { NamedTokens: [tokenInfo] };
   }
   if (path.includes('/bid/used_randomwalk_nfts')) {
-    await route.fulfill({ json: { UsedRwalkNFTs: [] } });
-    return true;
+    return { UsedRwalkNFTs: [] };
   }
   if (path.includes('/donations/nft/list/')) {
-    await route.fulfill({ json: { NFTDonations: [] } });
-    return true;
+    return { NFTDonations: [] };
   }
   if (path.includes('/ct/total_supply_history_by_date/')) {
-    await route.fulfill({
-      json: {
-        TotalSupplyHistory: [
-          {
-            Date: '20260101',
-            DateTime: '2026-01-01T12:34:00Z',
-            TimeStamp: Date.UTC(2026, 0, 1, 12, 34) / 1_000,
-            TotalSupplyEth: 1_000,
-            MintAmountEth: 1_000,
-            BurnAmountEth: 0,
-            AmountEth: 1_000,
-            NumBids: 1,
-          },
-        ],
-      },
-    });
-    return true;
+    return {
+      TotalSupplyHistory: [
+        {
+          Date: '20260101',
+          DateTime: '2026-01-01T12:34:00Z',
+          TimeStamp: Date.UTC(2026, 0, 1, 12, 34) / 1_000,
+          TotalSupplyEth: 1_000,
+          MintAmountEth: 1_000,
+          BurnAmountEth: 0,
+          AmountEth: 1_000,
+          NumBids: 1,
+        },
+      ],
+    };
   }
   if (path.endsWith('/ct/total_supply_history_by_bid')) {
-    await route.fulfill({ json: { TotalSupplyHistory: [] } });
-    return true;
+    return { TotalSupplyHistory: [] };
   }
   if (path.endsWith('/ct/statistics')) {
-    await route.fulfill({
-      json: { Statistics: { TotalSupply: '1000000000000000000000', TotalSupplyEth: 1_000 } },
-    });
-    return true;
+    return { Statistics: { TotalSupply: '1000000000000000000000', TotalSupplyEth: 1_000 } };
   }
   if (path.endsWith('/cst/distribution')) {
-    await route.fulfill({ json: { CosmicSignatureTokenDistribution: [] } });
-    return true;
+    return { CosmicSignatureTokenDistribution: [] };
   }
   if (path.endsWith('/ct/balances')) {
-    await route.fulfill({ json: { CosmicTokenBalances: [] } });
-    return true;
+    return { CosmicTokenBalances: [] };
   }
   if (path.endsWith('/statistics/unique/bidders')) {
-    await route.fulfill({ json: { UniqueBidders: [] } });
-    return true;
+    return { UniqueBidders: [] };
   }
   if (path.endsWith('/statistics/unique/winners')) {
-    await route.fulfill({ json: { UniqueWinners: [] } });
-    return true;
+    return { UniqueWinners: [] };
   }
   if (path.endsWith('/statistics/unique/donors')) {
-    await route.fulfill({ json: { UniqueDonors: [] } });
-    return true;
+    return { UniqueDonors: [] };
   }
   if (path.endsWith('/statistics/leaderboard/roi')) {
-    await route.fulfill({ json: { RoiLeaderboard: [] } });
-    return true;
+    return { RoiLeaderboard: [] };
   }
   if (path.endsWith('/statistics/claims/by_round')) {
-    await route.fulfill({ json: { ClaimsByRound: [] } });
-    return true;
+    return { ClaimsByRound: [] };
   }
   if (path.includes('/prizes/history/by_user/')) {
-    await route.fulfill({ json: { UserPrizeHistory: [] } });
-    return true;
+    return { UserPrizeHistory: [] };
   }
   if (path.includes('/prizes/eth/raffle/by_user/')) {
-    await route.fulfill({ json: { UserRaffleDeposits: [] } });
-    return true;
+    return { UserRaffleDeposits: [] };
   }
   if (path.includes('/raffle/nft/by_user/')) {
-    await route.fulfill({ json: { UserRaffleNFTWinnings: [] } });
-    return true;
+    return { UserRaffleNFTWinnings: [] };
   }
   if (path.includes('/user/info/')) {
-    await route.fulfill({ json: { Gestures: [], UserInfo: null } });
-    return true;
+    return { Gestures: [], UserInfo: null };
   }
   if (path.includes('/user/balances/')) {
-    await route.fulfill({ json: { ETH_Balance: '0', CosmicTokenBalance: '0' } });
-    return true;
+    return { ETH_Balance: '0', CosmicTokenBalance: '0' };
   }
   if (path.includes(`/donations/eth/with_info/info/${contributionId}`)) {
-    await route.fulfill({ json: { ETHDonation: contribution } });
-    return true;
+    return { ETHDonation: contribution };
   }
   if (path.includes('/donations/eth/both/by_round/')) {
-    await route.fulfill({ json: { CosmicGameDonations: [] } });
-    return true;
+    return { CosmicGameDonations: [] };
   }
   if (path.includes('/donations/eth/both/all')) {
-    await route.fulfill({ json: { CosmicGameDonations: [] } });
-    return true;
+    return { CosmicGameDonations: [] };
   }
   if (path.includes('/donations/charity/cg_deposits')) {
-    await route.fulfill({ json: { CharityDonations: [] } });
-    return true;
+    return { CharityDonations: [] };
   }
   if (path.includes('/donations/charity/voluntary')) {
-    await route.fulfill({ json: { CharityDonations: [] } });
-    return true;
+    return { CharityDonations: [] };
   }
   if (path.includes('/donations/charity/withdrawals')) {
-    await route.fulfill({ json: { CharityWithdrawals: [] } });
-    return true;
+    return { CharityWithdrawals: [] };
   }
   if (path.includes('/marketing/rewards/by_user/')) {
-    await route.fulfill({ json: { UserMarketingRewards: [] } });
-    return true;
+    return { UserMarketingRewards: [] };
   }
   if (path.includes('/marketing/rewards/global/')) {
-    await route.fulfill({ json: { MarketingRewards: [] } });
-    return true;
+    return { MarketingRewards: [] };
   }
   if (path.includes('/system/modelist/')) {
-    await route.fulfill({ json: { SystemModeChanges: [] } });
-    return true;
+    return { SystemModeChanges: [] };
   }
   if (path.includes('/system/admin_events/')) {
-    await route.fulfill({
-      json: {
-        AdminEvents: [
-          {
-            EvtLogId: 3,
-            RecordType: 1,
-            TransferType: 0,
-            IntegerValue: 7,
-            AddressValue: '',
-            StringValue: '',
-            Tx: transaction(3),
-          },
-        ],
-      },
-    });
-    return true;
+    return {
+      AdminEvents: [
+        {
+          EvtLogId: 3,
+          RecordType: 1,
+          TransferType: 0,
+          IntegerValue: 7,
+          AddressValue: '',
+          StringValue: '',
+          Tx: transaction(3),
+        },
+      ],
+    };
   }
   if (path.includes('/bid/list/by_round/')) {
-    await route.fulfill({ json: { BidsByRound: [] } });
-    return true;
+    return { BidsByRound: [] };
   }
   if (path.includes('/bid/list/all/')) {
-    await route.fulfill({ json: { Gestures: [] } });
-    return true;
+    return { Gestures: [] };
   }
   if (path.includes(`/staking/cst/actions/info/${actionId}`)) {
-    return false;
+    return undefined;
   }
 
-  return false;
+  return undefined;
 }
 
 /**
@@ -379,8 +327,9 @@ async function fulfillQualityFixture(route: Route): Promise<boolean> {
 export async function mockZhQualityApi(page: Page): Promise<void> {
   await mockSprint4Api(page);
   await page.route('**/api/cosmicgame/**', async (route) => {
-    if (await fulfillQualityFixture(route)) return;
-    await route.fallback();
+    const json = qualityFixture(new URL(route.request().url()).pathname);
+    if (json === undefined) await route.fallback();
+    else await route.fulfill({ json });
   });
 }
 
