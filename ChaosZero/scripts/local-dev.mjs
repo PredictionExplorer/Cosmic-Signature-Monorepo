@@ -5,6 +5,7 @@ import { createServer } from "node:net";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import { AbiCoder, getAddress, id, isHexString } from "ethers";
 import { localPort } from "./local-runtime.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -42,6 +43,7 @@ async function assertUnused(value) {
 async function rpc(url, method, params = []) {
   const response = await fetch(url, {
     method: "POST",
+    redirect: "error",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
     signal: AbortSignal.timeout(2000),
@@ -140,30 +142,20 @@ try {
     const address = broadcast.transactions.find(
       (tx) => tx.transactionType === "CREATE" && tx.contractName === name,
     )?.contractAddress;
-    if (!/^0x[\da-fA-F]{40}$/.test(address ?? "")) throw new Error(`No ${name} deployment found.`);
-    return address;
+    if (!isHexString(address, 20)) throw new Error(`No ${name} deployment found.`);
+    return getAddress(address);
   };
   const marketAddress = deployed("GameFundedOutcomeMarket");
   const previousMarketAddress = deployed("IndependentOutcomeMarket");
   if ((await rpc(rpcUrl, "eth_getCode", [marketAddress, "latest"])) === "0x")
     throw new Error("Market deployment has no bytecode.");
   const firstBlock = BigInt(broadcast.receipts[0].blockNumber).toString();
-  const artifact = JSON.parse(
-    await readFile(
-      path.join(root, "out/GameFundedOutcomeMarket.sol/GameFundedOutcomeMarket.json"),
-      "utf8",
-    ),
-  );
-  const vaultSelector = artifact.methodIdentifiers["settlementVault()"];
-  if (!/^[\da-fA-F]{8}$/.test(vaultSelector ?? ""))
-    throw new Error("Missing settlement-vault getter.");
   const vaultResult = await rpc(rpcUrl, "eth_call", [
-    { to: marketAddress, data: `0x${vaultSelector}` },
+    { to: marketAddress, data: id("settlementVault()").slice(0, 10) },
     "latest",
   ]);
-  if (!/^0x[\da-fA-F]{64}$/.test(vaultResult ?? ""))
-    throw new Error("Invalid settlement-vault address.");
-  const vaultAddress = `0x${vaultResult.slice(-40)}`;
+  if (!isHexString(vaultResult, 32)) throw new Error("Invalid settlement-vault address.");
+  const [vaultAddress] = AbiCoder.defaultAbiCoder().decode(["address"], vaultResult);
   if ((await rpc(rpcUrl, "eth_getCode", [vaultAddress, "latest"])) === "0x")
     throw new Error("Settlement vault has no bytecode.");
   const deployment = {

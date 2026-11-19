@@ -1,14 +1,16 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
-import { getAddress, id } from "ethers";
+import { AbiCoder, getAddress, id, toQuantity } from "ethers";
 import {
   HISTORY_CST,
   HISTORY_GAME,
   V3_READS,
   canonicalLogs,
   historyHash,
+  publicRpcLog,
+  rpcHash,
   reconstructBaseline,
   validateReceipts,
   validateWallets,
@@ -31,14 +33,54 @@ async function cached(name) {
     throw error;
   }
 }
+// Both a resumed verifier and an offline reader must see a complete JSON document.
+async function writeJsonAtomically(path, value, indent) {
+  const temp = await mkdtemp(join(dirname(path), ".round-two-"));
+  try {
+    const document = join(temp, "document.json");
+    await writeFile(document, JSON.stringify(value, null, indent) + "\n", { flag: "wx" });
+    await rename(document, path);
+  } finally {
+    await rm(temp, { recursive: true, force: true });
+  }
+}
 async function cache(name, value) {
-  await writeFile(resolve(CACHE, name), `${JSON.stringify(value)}\n`);
+  await writeJsonAtomically(resolve(CACHE, name), value);
+}
+
+export function publicHeader(header) {
+  return {
+    number: toQuantity(header.number),
+    hash: rpcHash(header.hash),
+    timestamp: toQuantity(header.timestamp),
+    stateRoot: rpcHash(header.stateRoot),
+    receiptsRoot: rpcHash(header.receiptsRoot),
+    parentHash: rpcHash(header.parentHash),
+  };
+}
+
+export function publicReceipt(receipt) {
+  if (!Array.isArray(receipt.logs) || toQuantity(receipt.status) !== "0x1")
+    throw new Error("Invalid or unsuccessful transaction receipt");
+  return {
+    transactionHash: rpcHash(receipt.transactionHash),
+    blockHash: rpcHash(receipt.blockHash),
+    blockNumber: toQuantity(receipt.blockNumber),
+    status: "0x1",
+    logs: receipt.logs
+      .filter(
+        (log) =>
+          getAddress(log.address) === HISTORY_GAME &&
+          log.topics?.[1]?.toLowerCase() === ROUND_TOPIC,
+      )
+      .map(publicRpcLog),
+  };
 }
 const call = (method, params) => ({ method, params });
 
 async function collectLogs(refresh) {
   const existing = !refresh && (await cached("round-2-logs.json"));
-  if (existing) return existing;
+  if (existing) return existing.map(publicRpcLog);
   const logs = [];
   for (let from = FIRST_BLOCK; from <= FINAL_BLOCK; from += 10_000_000n) {
     const to = from + 9_999_999n > FINAL_BLOCK ? FINAL_BLOCK : from + 9_999_999n;
@@ -52,7 +94,7 @@ async function collectLogs(refresh) {
         },
       ]),
     ]);
-    logs.push(...part);
+    logs.push(...part.map(publicRpcLog));
   }
   await cache("round-2-logs.json", logs);
   return logs;
@@ -60,7 +102,7 @@ async function collectLogs(refresh) {
 
 async function collectUpgrades(refresh) {
   const existing = !refresh && (await cached("round-2-upgrades.json"));
-  if (existing) return existing;
+  if (existing) return existing.map(publicRpcLog);
   const upgrades = [];
   for (let from = FIRST_BLOCK; from <= FINAL_BLOCK; from += 10_000_000n) {
     const to = from + 9_999_999n > FINAL_BLOCK ? FINAL_BLOCK : from + 9_999_999n;
@@ -74,14 +116,20 @@ async function collectUpgrades(refresh) {
         },
       ]),
     ]);
-    upgrades.push(...part);
+    upgrades.push(...part.map(publicRpcLog));
   }
   await cache("round-2-upgrades.json", upgrades);
   return upgrades;
 }
 
 async function collectHeaders(logs, refresh) {
-  const headers = refresh ? {} : ((await cached("round-2-headers.json")) ?? {});
+  const old = refresh ? {} : ((await cached("round-2-headers.json")) ?? {});
+  const headers = Object.fromEntries(
+    Object.values(old).map((raw) => {
+      const header = publicHeader(raw);
+      return [header.number, header];
+    }),
+  );
   const missing = [...new Set(logs.map((log) => log.blockNumber))].filter(
     (number) => !headers[number],
   );
@@ -95,14 +143,7 @@ async function collectHeaders(logs, refresh) {
       const header = received[position];
       if (BigInt(header.number) !== BigInt(number))
         throw new Error("Header request returned wrong block");
-      headers[number] = {
-        number: header.number,
-        hash: header.hash,
-        timestamp: header.timestamp,
-        stateRoot: header.stateRoot,
-        receiptsRoot: header.receiptsRoot,
-        parentHash: header.parentHash,
-      };
+      headers[number] = publicHeader(header);
     }
     await cache("round-2-headers.json", headers);
     if (index % 100 === 0)
@@ -116,7 +157,9 @@ async function collectHeaders(logs, refresh) {
 
 async function collectReceipts(logs, refresh) {
   const old = refresh ? [] : ((await cached("round-2-receipts.json")) ?? []);
-  const byHash = new Map(old.map((receipt) => [receipt.transactionHash.toLowerCase(), receipt]));
+  const byHash = new Map(
+    old.map(publicReceipt).map((receipt) => [receipt.transactionHash.toLowerCase(), receipt]),
+  );
   const unique = [...new Set(logs.map((log) => log.transactionHash.toLowerCase()))];
   const missing = unique.filter((hash) => !byHash.has(hash));
   // dRPC's public plan permits at most three requests per JSON-RPC batch.
@@ -129,7 +172,7 @@ async function collectReceipts(logs, refresh) {
     for (const [position, hash] of batch.entries()) {
       if (receipts[position].transactionHash.toLowerCase() !== hash)
         throw new Error("Receipt request returned wrong transaction");
-      byHash.set(hash, receipts[position]);
+      byHash.set(hash, publicReceipt(receipts[position]));
     }
     await cache("round-2-receipts.json", [...byHash.values()]);
     if (index % 100 === 0)
@@ -171,6 +214,9 @@ async function collectState(reconstruction) {
     HISTORY_RPCS.logs,
     calls,
   );
+  const header = publicHeader(block);
+  if (header.number !== toQuantity(blockNumber))
+    throw new Error("State verification returned wrong block");
   const wallets = rawWallets.map((data, index) => {
     const [ethSpent, cstBurned, lastGestureAt] = V3_READS.decodeFunctionResult("biddersInfo", data);
     return {
@@ -183,9 +229,9 @@ async function collectState(reconstruction) {
   const [nativeCount, ...newFields] = V3_READS.decodeFunctionResult("roundStats", stats);
   const result = {
     verificationBlock: BigInt(blockNumber).toString(),
-    verificationBlockHash: block.hash,
-    verificationTimestamp: BigInt(block.timestamp).toString(),
-    gameImplementation: getAddress(`0x${implementation.slice(-40)}`),
+    verificationBlockHash: header.hash,
+    verificationTimestamp: BigInt(header.timestamp).toString(),
+    gameImplementation: AbiCoder.defaultAbiCoder().decode(["address"], rpcHash(implementation))[0],
     currentRound: V3_READS.decodeFunctionResult("roundNum", currentRound)[0].toString(),
     token: V3_READS.decodeFunctionResult("token", token)[0],
     nativeCount: nativeCount.toString(),
@@ -222,7 +268,13 @@ export async function main(args = process.argv.slice(2)) {
       "The game implementation changed during this cycle; a single-version replay is unsafe",
     );
   const state = offline ? await cached("round-2-state.json") : await collectState(reconstruction);
-  if (!state || reconstruction.values.gestureCount !== state.nativeCount)
+  if (
+    !state ||
+    state.token !== HISTORY_CST ||
+    BigInt(state.currentRound) <= 2n ||
+    state.v3FieldsAreZero !== true ||
+    reconstruction.values.gestureCount !== state.nativeCount
+  )
     throw new Error("Native on-chain count cross-check missing or mismatched");
   const walletsHash = validateWallets(reconstruction, state.wallets);
   const receipts = offline
@@ -248,12 +300,12 @@ export async function main(args = process.argv.slice(2)) {
       gameUpgradeEventCount: upgrades.length,
       gameUpgradeEventsHash: historyHash(upgrades),
       walletsHash,
-      verificationBlock: state.verificationBlock,
-      verificationBlockHash: state.verificationBlockHash,
-      verificationTimestamp: state.verificationTimestamp,
-      gameImplementation: state.gameImplementation,
-      nativeCount: state.nativeCount,
-      nativeV3FieldsAreZero: state.v3FieldsAreZero,
+      verificationBlock: BigInt(state.verificationBlock).toString(),
+      verificationBlockHash: rpcHash(state.verificationBlockHash),
+      verificationTimestamp: BigInt(state.verificationTimestamp).toString(),
+      gameImplementation: getAddress(state.gameImplementation),
+      nativeCount: reconstruction.values.gestureCount,
+      nativeV3FieldsAreZero: state.v3FieldsAreZero === true,
       publicRpcSources: HISTORY_RPCS,
       checks: [
         "All recorded gestures equal permanent game count",
@@ -267,7 +319,7 @@ export async function main(args = process.argv.slice(2)) {
   };
   if (args.includes("--write-evidence")) {
     await mkdir(resolve(ROOT, "deployment"), { recursive: true });
-    await writeFile(OUTPUT, `${JSON.stringify(evidence, null, 2)}\n`);
+    await writeJsonAtomically(OUTPUT, evidence, 2);
     console.log("Wrote deployment/arbitrum-round-2-baseline.json with public evidence only.");
   } else {
     const pinned = JSON.parse(await readFile(OUTPUT, "utf8"));

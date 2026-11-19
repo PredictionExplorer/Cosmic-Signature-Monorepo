@@ -7,6 +7,7 @@ import {
   http,
   parseAbi,
   parseEther,
+  numberToHex,
   type Address,
 } from "viem";
 import { foundry } from "viem/chains";
@@ -21,14 +22,15 @@ type Fixture = {
   firstTokenId: number;
   eligibleAt: number;
 };
+const LOCAL_RPC = "http://127.0.0.1:8559";
 const f: Fixture = JSON.parse(
   readFileSync(process.env.AXIOM_AUCTION_FIXTURE!, "utf8"),
 );
-if (f.rpc !== "http://127.0.0.1:8559" || f.chainId !== 31337)
+if (f.rpc !== LOCAL_RPC || f.chainId !== 31337)
   throw Error("Disposable local chain required");
 const publicClient = createPublicClient({
   chain: foundry,
-  transport: http(f.rpc),
+  transport: http(LOCAL_RPC),
 });
 const abi = parseAbi([
   "function minimumNextBid(uint256) view returns(uint256)",
@@ -38,7 +40,8 @@ const abi = parseAbi([
   "function ownerOf(uint256) view returns(address)",
 ]);
 async function rpc(method: string, params: unknown[]) {
-  const response = await fetch(f.rpc, {
+  const response = await fetch(LOCAL_RPC, {
+    redirect: "error",
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
@@ -48,7 +51,9 @@ async function rpc(method: string, params: unknown[]) {
   return body.result;
 }
 async function moveTo(time: number) {
-  await rpc("evm_setNextBlockTimestamp", [time]);
+  if (!Number.isSafeInteger(time) || time < 0)
+    throw Error("Invalid local timestamp");
+  await rpc("evm_setNextBlockTimestamp", [numberToHex(time)]);
   await rpc("evm_mine", []);
 }
 async function collector(browser: Browser, account: Address) {
@@ -127,6 +132,7 @@ async function collector(browser: Browser, account: Address) {
             );
           }
           const r = await fetch(rpc, {
+            redirect: "error",
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
@@ -158,7 +164,7 @@ async function collector(browser: Browser, account: Address) {
       window.addEventListener("eip6963:requestProvider", announce);
       announce();
     },
-    { account, rpc: f.rpc, address: f.auction },
+    { account, rpc: LOCAL_RPC, address: f.auction },
   );
   const page = await context.newPage();
   page.on("pageerror", (err) => console.error("Browser error:", err.message));

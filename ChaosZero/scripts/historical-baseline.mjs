@@ -1,4 +1,14 @@
-import { AbiCoder, Interface, getAddress, keccak256, toUtf8Bytes } from "ethers";
+import {
+  AbiCoder,
+  Interface,
+  getAddress,
+  getBytes,
+  hexlify,
+  isHexString,
+  keccak256,
+  toQuantity,
+  toUtf8Bytes,
+} from "ethers";
 
 export const HISTORY_GAME = "0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2";
 export const HISTORY_CST = "0xAD91843e6A58Ba560F577E676986AFb1dba6FBA0";
@@ -22,38 +32,42 @@ function requireFact(condition, message) {
 const lower = (value) => value.toLowerCase();
 const quantity = (value) => BigInt(value).toString();
 const hashPattern = /^0x[0-9a-f]{64}$/i;
-const bytesPattern = /^0x(?:[0-9a-f]{2})*$/i;
+/** Convert only public Ethereum data of the requested wire type. */
+export function rpcHash(value) {
+  requireFact(isHexString(value, 32), "Invalid 32-byte hash");
+  return hexlify(getBytes(value));
+}
+
+export function publicRpcLog(log) {
+  requireFact(log.removed === false, "Removed or unconfirmed event");
+  requireFact(Array.isArray(log.topics) && log.topics.length <= 4, "Invalid event topics");
+  requireFact(isHexString(log.data, true), "Invalid event payload");
+  return {
+    removed: false,
+    blockNumber: toQuantity(log.blockNumber),
+    transactionIndex: toQuantity(log.transactionIndex),
+    logIndex: toQuantity(log.logIndex),
+    blockHash: rpcHash(log.blockHash),
+    transactionHash: rpcHash(log.transactionHash),
+    address: lower(getAddress(log.address)),
+    topics: log.topics.map(rpcHash),
+    data: hexlify(getBytes(log.data)),
+  };
+}
 
 export function canonicalLogs(logs) {
-  const normalized = logs.map((log) => {
-    requireFact(log.removed === false, "Removed or unconfirmed event");
-    requireFact(
-      hashPattern.test(log.transactionHash) && hashPattern.test(log.blockHash),
-      "Invalid event hash",
-    );
-    requireFact(
-      Array.isArray(log.topics) &&
-        log.topics.every((topic) => hashPattern.test(topic)) &&
-        bytesPattern.test(log.data),
-      "Invalid event payload",
-    );
-    const result = {
+  const normalized = logs.map((raw) => {
+    const log = publicRpcLog(raw);
+    return {
       blockNumber: quantity(log.blockNumber),
       transactionIndex: quantity(log.transactionIndex),
       logIndex: quantity(log.logIndex),
-      blockHash: lower(log.blockHash),
-      transactionHash: lower(log.transactionHash),
-      address: lower(getAddress(log.address)),
-      topics: log.topics.map(lower),
-      data: lower(log.data),
+      blockHash: log.blockHash,
+      transactionHash: log.transactionHash,
+      address: log.address,
+      topics: log.topics,
+      data: log.data,
     };
-    requireFact(
-      [result.blockNumber, result.transactionIndex, result.logIndex].every(
-        (value) => BigInt(value) >= 0n,
-      ),
-      "Negative event position",
-    );
-    return result;
   });
   normalized.sort((a, b) => {
     for (const field of ["blockNumber", "transactionIndex", "logIndex"]) {

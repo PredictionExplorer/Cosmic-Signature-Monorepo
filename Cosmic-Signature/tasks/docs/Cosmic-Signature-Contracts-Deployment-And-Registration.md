@@ -68,6 +68,8 @@ Run the intended scripts in this same session, then `exit`. Never print these va
 
 - Observe the newly created `../output/deploy-cosmic-signature-contracts-report-<network-name>.json` file. It contains addresses of all deployed contracts. Other scripts are going to use it.
 
+- Deployment and upgrade tasks reserve their report name with a sibling `.pending` directory and publish the finished JSON atomically. If a process is interrupted, check its transaction receipts and any recovered report before clearing a stale reservation or retrying.
+
 - After you deploy to a mainnet or a testnet, you will notice the `.openzeppelin` subfolder under the folder in which you ran the deployment scripts. OpenZeppelin Hardhat Upgrades stores important tracking info in there. I deployed on Arbitrum Sepolia, deleted the folder, and then tried to upgrade. It failed. But when I deployed and upgraded on `hardhat_on_localhost`, everything worked without creating the folder. It's said to be possible to force an upgrade without the folder, but I haven't tried it.
 
 - Only if you are dealing with a mainnet or a testnet, execute `../runners/run-register-cosmic-signature-contracts-<network-name>.bash`. It will verify and register the source code of the deployed Cosmic Signature contracts on ArbiScan.
