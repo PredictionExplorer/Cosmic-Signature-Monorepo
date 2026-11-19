@@ -126,11 +126,6 @@ function parseSample(items: JsonRpcResponseItem[], ids: BatchIds): EndgameChainS
   };
 }
 
-/** Race the payload across `urls`; first successful response wins. */
-async function race(urls: string[], payload: string): Promise<JsonRpcResponseItem[]> {
-  return Promise.any(urls.map((url) => postBatch(url, payload)));
-}
-
 /**
  * Reads the endgame snapshot, racing all configured RPC nodes directly and
  * falling back to the app's `/api/rpc` proxy when direct access fails.
@@ -139,11 +134,13 @@ export async function fetchEndgameChainSample(
   contractAddress: string,
 ): Promise<EndgameChainSample> {
   const { payload, ids } = buildBatch(contractAddress);
+  const readSample = async (url: string) => parseSample(await postBatch(url, payload), ids);
   const directUrls = Date.now() >= directDisabledUntilMs ? rpcUrls : [];
 
   if (directUrls.length > 0) {
     try {
-      return parseSample(await race(directUrls, payload), ids);
+      // A node can return HTTP 200 with an incomplete or errored JSON-RPC batch.
+      return await Promise.any(directUrls.map(readSample));
     } catch {
       // Likely CORS or all nodes unreachable from this browser; use the proxy
       // for a while instead of paying the failed round-trips every second.
@@ -153,7 +150,7 @@ export async function fetchEndgameChainSample(
 
   const proxyUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/rpc` : '';
   if (!proxyUrl) throw new Error('no RPC endpoint available for endgame sample');
-  return parseSample(await race([proxyUrl], payload), ids);
+  return readSample(proxyUrl);
 }
 
 /** Test helper: clears the direct-access cooldown. */
