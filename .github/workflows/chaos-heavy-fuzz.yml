@@ -1,4 +1,5 @@
 name: Chaos Zero — Nightly contract fuzzing
+run-name: "${{ github.workflow }} (${{ github.event_name }} on ${{ github.ref_name }})"
 
 permissions: {}
 
