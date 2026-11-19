@@ -160,7 +160,7 @@ test('burner wallet and dev panel drive the game from the browser', async ({ pag
   await expect(page.getByTestId('harness-cycle-index')).not.toHaveText('…', { timeout: 30_000 });
 
   // Burner connection flips the gesture panel from its connect prompt to the form.
-  await expect(page.getByTestId('gesture-message-input').first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('#gesture-submit')).toBeVisible({ timeout: 30_000 });
 
   // The expanded ledger should fit in the participant's desktop viewport.
   const ledger = await openAllocations(page);
@@ -184,11 +184,19 @@ test('experimental UI submits a real gesture and receives the indexed chat messa
   test.setTimeout(8 * 60_000);
 
   await switchScenario('live');
-  await awaitCycleState(
-    'an open cycle for the experimental UI',
-    (status) => status.cycle.opened && Number(status.cycle.secondsUntilFinalization) > 0,
+  const live = await awaitCycleState(
+    'the experimental UI live scenario to finish driving the chain',
+    (status) =>
+      status.scenario === 'live' &&
+      status.transition.state === 'running' &&
+      status.phase === 'live' &&
+      status.cycle.opened,
   );
-  await awaitIndexed('the experimental cycle to reach the API', dashboardShowsOpenedCycle);
+  const cycle = Number(live.cycle.index);
+  await awaitIndexed(
+    'the experimental cycle to reach the API',
+    (dashboard) => dashboard.CurRoundNum === cycle && dashboardShowsOpenedCycle(dashboard),
+  );
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await openExperimentalUi(page);
@@ -207,13 +215,9 @@ test('experimental UI submits a real gesture and receives the indexed chat messa
   await expect(submit).toBeVisible({ timeout: 30_000 });
   await submit.evaluate((element) => element.scrollIntoView({ block: 'center' }));
 
-  const before = await readDashboard();
   await submit.click({ timeout: 30_000 });
-  await awaitIndexed(
-    'the experimental UI gesture to be indexed',
-    (dashboard) => (dashboard.CurNumBids ?? 0) > (before.CurNumBids ?? 0),
-  );
-
+  // The indexed feed identifies this specific transaction; a total count can
+  // already be present from another gesture or from the preceding cycle.
   await expect(page.getByTestId('gesture-message-chat')).toContainText(message, {
     timeout: 60_000,
   });
