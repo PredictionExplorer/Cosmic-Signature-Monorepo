@@ -9,6 +9,8 @@
 import { existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
+import { harnessPort } from './ports';
+
 export interface HarnessConfig {
   /** Absolute path of this frontend repo (workspace root). */
   frontendDir: string;
@@ -69,11 +71,11 @@ export function resolveHarnessConfig(
     contractsDir,
     backendDir,
     runDir: join(frontendDir, '.harness'),
-    chainPort: intFromEnv(env, 'HARNESS_CHAIN_PORT', 8545),
-    dbPort: intFromEnv(env, 'HARNESS_DB_PORT', 55432),
-    apiPort: intFromEnv(env, 'HARNESS_API_PORT', 8099),
-    webPort: intFromEnv(env, 'HARNESS_WEB_PORT', 3000),
-    controlPort: intFromEnv(env, 'HARNESS_CONTROL_PORT', 8686),
+    chainPort: harnessPort(env.HARNESS_CHAIN_PORT?.trim() || 8545, 'HARNESS_CHAIN_PORT'),
+    dbPort: harnessPort(env.HARNESS_DB_PORT?.trim() || 55432, 'HARNESS_DB_PORT'),
+    apiPort: harnessPort(env.HARNESS_API_PORT?.trim() || 8099, 'HARNESS_API_PORT'),
+    webPort: harnessPort(env.HARNESS_WEB_PORT?.trim() || 3000, 'HARNESS_WEB_PORT'),
+    controlPort: harnessPort(env.HARNESS_CONTROL_PORT?.trim() || 8686, 'HARNESS_CONTROL_PORT'),
     composeProject: env.HARNESS_COMPOSE_PROJECT?.trim() || 'cosmic-harness',
     rngSeed: intFromEnv(env, 'HARNESS_RNG_SEED', 20260827),
     ci: env.HARNESS_CI === '1' || env.CI === 'true' || env.CI === '1',

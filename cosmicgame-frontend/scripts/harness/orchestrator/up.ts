@@ -23,6 +23,7 @@ import {
   type HarnessState,
   type ManagedProcess,
 } from '../processes';
+import { loopbackOrigin } from '../ports';
 import { httpJson, waitFor, WaitAbortedError } from '../rpc';
 import { seedChainStartIso } from '../director/seedPlan';
 import type { PaceName } from '../director/pace';
@@ -238,7 +239,7 @@ export async function statusCommand(config: HarnessConfig): Promise<void> {
   }
   try {
     const status = await httpJson<Record<string, unknown>>(
-      `http://127.0.0.1:${state.controlPort}/status`,
+      `${loopbackOrigin(state.controlPort)}/status`,
     );
     log.info(`Director: ${JSON.stringify(status)}`);
   } catch {

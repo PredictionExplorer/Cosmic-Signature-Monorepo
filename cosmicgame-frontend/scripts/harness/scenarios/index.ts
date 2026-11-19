@@ -4,6 +4,7 @@
  * and a few showcase behaviors for specific surfaces.
  */
 
+import { HarnessCommandError } from '../director/commandError';
 import {
   performAnchorCosmicNft,
   performAnchorRwlkNft,
@@ -160,7 +161,9 @@ export const SCENARIOS: ReadonlyMap<string, Scenario> = new Map(
 export function scenarioByName(name: string): Scenario {
   const scenario = SCENARIOS.get(name);
   if (!scenario) {
-    throw new Error(`Unknown scenario "${name}". Available: ${[...SCENARIOS.keys()].join(', ')}`);
+    throw new HarnessCommandError(
+      `Unknown scenario "${name}". Available: ${[...SCENARIOS.keys()].join(', ')}`,
+    );
   }
   return scenario;
 }

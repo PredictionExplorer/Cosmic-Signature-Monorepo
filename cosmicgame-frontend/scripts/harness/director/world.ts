@@ -24,6 +24,7 @@ import type { HarnessConfig } from '../config';
 import { chainRpcUrl } from '../orchestrator/chain';
 import { readDeployReport, type DeployedAddresses } from '../orchestrator/deploy';
 
+import { HarnessCommandError } from './commandError';
 import {
   HARDHAT_ACCOUNTS,
   OWNER_ACCOUNT_INDEX,
@@ -101,7 +102,7 @@ export function personaByName(world: World, name: string): Persona {
   const persona = world.personas.find((p) => p.name.toLowerCase() === name.toLowerCase());
   if (!persona) {
     const names = world.personas.map((p) => p.name).join(', ');
-    throw new Error(`Unknown persona "${name}". Available: ${names}`);
+    throw new HarnessCommandError(`Unknown persona "${name}". Available: ${names}`);
   }
   return persona;
 }

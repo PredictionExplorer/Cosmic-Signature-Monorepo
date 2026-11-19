@@ -80,7 +80,7 @@ export const PACES: Record<PaceName, Pace> = {
 };
 
 export function isPaceName(value: string): value is PaceName {
-  return value in PACES;
+  return Object.hasOwn(PACES, value);
 }
 
 const MICROS = 1_000_000n;

@@ -8,6 +8,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 
 import { createLogger } from '../log';
 
+import { HarnessCommandError, publicCommandFailure } from './commandError';
 import type { GestureKind } from './actions';
 import { HarnessTransitionAbortedError } from './planner';
 import type { DirectorRuntime } from './runtime';
@@ -18,11 +19,16 @@ async function readJsonBody(request: IncomingMessage): Promise<Record<string, un
   const chunks: Buffer[] = [];
   for await (const chunk of request) chunks.push(chunk as Buffer);
   if (chunks.length === 0) return {};
+  let body: unknown;
   try {
-    return JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
+    body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {
-    throw new Error('Request body is not valid JSON');
+    throw new HarnessCommandError('Request body is not valid JSON');
   }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw new HarnessCommandError('Request body must be a JSON object');
+  }
+  return body as Record<string, unknown>;
 }
 
 function sendJson(response: ServerResponse, status: number, body: unknown): void {
@@ -41,7 +47,10 @@ const asString = (value: unknown): string | undefined =>
 export function startControlServer(runtime: DirectorRuntime, port: number): Server {
   const server = createServer((request, response) => {
     void handle(request, response).catch((err: unknown) => {
-      sendJson(response, 500, { error: err instanceof Error ? err.message : String(err) });
+      const status = err instanceof HarnessCommandError ? 400 : 500;
+      if (status === 500)
+        log.error(err instanceof Error ? (err.stack ?? err.message) : String(err));
+      sendJson(response, status, { error: publicCommandFailure(err) });
     });
   });
 
@@ -66,7 +75,7 @@ export function startControlServer(runtime: DirectorRuntime, port: number): Serv
       switch (path) {
         case '/scenario': {
           const name = asString(body.name);
-          if (!name) throw new Error('Missing scenario "name"');
+          if (!name) throw new HarnessCommandError('Missing scenario "name"');
           await runtime.switchScenario(name);
           sendJson(response, 200, { ok: true, scenario: name });
           return;
@@ -91,14 +100,14 @@ export function startControlServer(runtime: DirectorRuntime, port: number): Serv
         }
         case '/phase': {
           const name = asString(body.name);
-          if (!name) throw new Error('Missing phase "name"');
+          if (!name) throw new HarnessCommandError('Missing phase "name"');
           await runtime.driveTo(name);
           sendJson(response, 200, { ok: true, phase: name });
           return;
         }
         case '/pace': {
           const name = asString(body.name);
-          if (!name) throw new Error('Missing pace "name"');
+          if (!name) throw new HarnessCommandError('Missing pace "name"');
           await runtime.setPace(name);
           sendJson(response, 200, { ok: true, pace: name });
           return;
@@ -119,7 +128,7 @@ export function startControlServer(runtime: DirectorRuntime, port: number): Serv
         sendJson(response, 200, { ok: false, superseded: true });
         return;
       }
-      sendJson(response, 400, { error: err instanceof Error ? err.message : String(err) });
+      throw err;
     }
   }
 

@@ -10,18 +10,20 @@
 import { spawn } from 'node:child_process';
 import {
   closeSync,
-  existsSync,
   mkdirSync,
   openSync,
   readFileSync,
   readSync,
-  statSync,
+  fstatSync,
+  constants,
   watchFile,
   unwatchFile,
   writeFileSync,
 } from 'node:fs';
 import { dirname, join } from 'node:path';
 
+import { harnessPort } from './ports';
+import { openOptionalHarnessFile } from './files';
 import { createLogger } from './log';
 import type { HarnessConfig } from './config';
 import { harnessPaths } from './config';
@@ -113,23 +115,32 @@ export async function stopProcessGroup(pid: number, graceMs = 8_000): Promise<vo
 /** Mirror a growing log file to the console with a prefix. Returns a stop fn. */
 export function mirrorLogFile(name: string, logFile: string): () => void {
   const logger = createLogger(name);
-  let offset = existsSync(logFile) ? statSync(logFile).size : 0;
-  const drain = () => {
-    if (!existsSync(logFile)) return;
-    const size = statSync(logFile).size;
-    if (size <= offset) return;
-    const fd = openSync(logFile, 'r');
+  let offset = 0;
+  let inode: number | undefined;
+  function drain(initial = false) {
+    const fd = openOptionalHarnessFile(logFile, constants.O_RDONLY);
+    if (fd === null) return;
     try {
-      const buffer = Buffer.alloc(size - offset);
-      const bytes = readSync(fd, buffer, 0, buffer.length, offset);
-      logger.line(buffer.subarray(0, bytes).toString('utf8'));
-      offset += bytes;
+      const { ino, size } = fstatSync(fd);
+      if (initial) offset = size;
+      else if (ino !== inode || size < offset) offset = 0;
+      inode = ino;
+      if (size <= offset) return;
+      const buffer = Buffer.alloc(Math.min(size - offset, 64 * 1024));
+      while (offset < size) {
+        const bytes = readSync(fd, buffer, 0, Math.min(buffer.length, size - offset), offset);
+        if (bytes === 0) break;
+        logger.line(buffer.toString('utf8', 0, bytes));
+        offset += bytes;
+      }
     } finally {
       closeSync(fd);
     }
-  };
-  watchFile(logFile, { interval: 300 }, drain);
-  return () => unwatchFile(logFile, drain);
+  }
+  drain(true);
+  const onChange = () => drain();
+  watchFile(logFile, { interval: 300 }, onChange);
+  return () => unwatchFile(logFile, onChange);
 }
 
 export interface RunBlockingOptions {
@@ -175,14 +186,35 @@ export async function runBlocking(options: RunBlockingOptions): Promise<void> {
   }
 }
 
-export function readState(config: HarnessConfig): HarnessState | null {
-  const { stateFile } = harnessPaths(config);
-  if (!existsSync(stateFile)) return null;
+export function readStateFile(stateFile: string): HarnessState | null {
+  let content: string;
   try {
-    return JSON.parse(readFileSync(stateFile, 'utf8')) as HarnessState;
-  } catch {
-    return null;
+    content = readFileSync(stateFile, 'utf8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw err;
   }
+  const state = JSON.parse(content) as HarnessState;
+  if (
+    !Array.isArray(state?.processes) ||
+    !state.processes.every(
+      (proc) => typeof proc?.name === 'string' && Number.isSafeInteger(proc.pid) && proc.pid > 0,
+    )
+  ) {
+    throw new Error('Invalid process list in harness state');
+  }
+  return {
+    ...state,
+    apiPort: harnessPort(state.apiPort),
+    chainPort: harnessPort(state.chainPort),
+    controlPort: harnessPort(state.controlPort),
+    dbPort: harnessPort(state.dbPort),
+    webPort: harnessPort(state.webPort),
+  };
+}
+
+export function readState(config: HarnessConfig): HarnessState | null {
+  return readStateFile(harnessPaths(config).stateFile);
 }
 
 export function writeState(config: HarnessConfig, state: HarnessState): void {

@@ -5,9 +5,13 @@
  */
 
 import { execFile } from 'node:child_process';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
+
+import { readStateFile } from '../../../scripts/harness/processes';
+import { loopbackOrigin } from '../../../scripts/harness/ports';
+import { SCENARIOS } from '../../../scripts/harness/scenarios';
 
 const execFileAsync = promisify(execFile);
 
@@ -26,35 +30,39 @@ export interface HarnessStackState {
 }
 
 export function readStackState(): HarnessStackState | null {
-  try {
-    return JSON.parse(readFileSync(STATE_FILE, 'utf8')) as HarnessStackState;
-  } catch {
-    return null;
-  }
+  return readStateFile(STATE_FILE);
 }
 
 export function controlUrl(state: HarnessStackState): string {
-  return `http://127.0.0.1:${state.controlPort}`;
+  return loopbackOrigin(state.controlPort);
 }
 
 export function apiUrl(state: HarnessStackState): string {
-  return `http://127.0.0.1:${state.apiPort}/api/cosmicgame`;
+  return `${loopbackOrigin(state.apiPort)}/api/cosmicgame`;
 }
 
 export function webUrl(state: HarnessStackState): string {
-  return `http://localhost:${state.webPort}`;
+  return loopbackOrigin(state.webPort, 'localhost');
 }
 
-async function isHealthy(state: HarnessStackState): Promise<boolean> {
+/** Return locally registered names before storing or restoring a scenario across test workers. */
+function savedScenario(value: unknown): string | null {
+  if (value === null || value === undefined || value === 'none') return null;
+  const scenario = typeof value === 'string' ? SCENARIOS.get(value) : undefined;
+  if (!scenario) throw new Error('Cannot restore an unknown harness scenario');
+  return scenario.name;
+}
+
+async function healthyStatus(state: HarnessStackState): Promise<{ scenario?: unknown } | null> {
   try {
-    const status = (await (await fetch(`${controlUrl(state)}/status`)).json()) as {
-      ready?: boolean;
-    };
-    if (status.ready !== true) return false;
+    const response = await fetch(`${controlUrl(state)}/status`, { redirect: 'error' });
+    if (!response.ok) return null;
+    const status = (await response.json()) as { ready?: boolean; scenario?: unknown };
+    if (status.ready !== true) return null;
     const web = await fetch(`${webUrl(state)}/`, { redirect: 'manual' });
-    return web.status < 500;
+    return web.status < 500 ? status : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -69,12 +77,11 @@ export interface EnsuredStack {
 /** Reuse a healthy stack, or boot a dedicated one on port 3100. */
 export async function ensureStack(): Promise<EnsuredStack> {
   const existing = readStackState();
-  if (existing && (await isHealthy(existing))) {
-    const status = (await (await fetch(`${controlUrl(existing)}/status`)).json()) as {
-      scenario?: string;
-    };
-    writeOwnership({ owned: false, previousScenario: status.scenario ?? null });
-    return { state: existing, owned: false, previousScenario: status.scenario ?? null };
+  const status = existing && (await healthyStatus(existing));
+  if (existing && status) {
+    const previousScenario = savedScenario(status.scenario);
+    writeOwnership({ owned: false, previousScenario });
+    return { state: existing, owned: false, previousScenario };
   }
   if (existing) {
     // A stack exists but is not usable for e2e (e.g. started without the
@@ -121,9 +128,10 @@ function writeOwnership(ownership: Ownership): void {
 }
 
 export function readOwnership(): Ownership | null {
-  if (!existsSync(OWNERSHIP_FILE)) return null;
   try {
-    return JSON.parse(readFileSync(OWNERSHIP_FILE, 'utf8')) as Ownership;
+    const record = JSON.parse(readFileSync(OWNERSHIP_FILE, 'utf8')) as Partial<Ownership> | null;
+    if (typeof record?.owned !== 'boolean') return null;
+    return { owned: record.owned, previousScenario: savedScenario(record.previousScenario) };
   } catch {
     return null;
   }

@@ -57,6 +57,7 @@ export async function jsonRpc<T = unknown>(
   params: unknown[] = [],
 ): Promise<T> {
   const response = await fetch(url, {
+    redirect: 'error',
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: nextRequestId++, method, params }),
@@ -69,7 +70,7 @@ export async function jsonRpc<T = unknown>(
 
 /** GET a URL and return parsed JSON, or throw on non-2xx. */
 export async function httpJson<T = unknown>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await fetch(url, { redirect: 'error' });
   if (!response.ok) throw new Error(`GET ${url}: HTTP ${response.status}`);
   return (await response.json()) as T;
 }

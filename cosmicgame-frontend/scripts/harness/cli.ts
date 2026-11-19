@@ -35,6 +35,7 @@ import { parseArgs } from 'node:util';
 
 import { resolveHarnessConfig } from './config';
 import { fail } from './log';
+import { loopbackOrigin } from './ports';
 import { readState } from './processes';
 import { isPaceName, type PaceName } from './director/pace';
 
@@ -42,8 +43,9 @@ async function controlRequest(path: string, body?: Record<string, unknown>): Pro
   const config = resolveHarnessConfig();
   const state = readState(config);
   const port = state?.controlPort ?? config.controlPort;
-  const url = `http://127.0.0.1:${port}${path}`;
+  const url = `${loopbackOrigin(port)}${path}`;
   const response = await fetch(url, {
+    redirect: 'error',
     method: body === undefined ? 'GET' : 'POST',
     headers: { 'content-type': 'application/json' },
     body: body === undefined ? null : JSON.stringify(body),
