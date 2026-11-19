@@ -88,7 +88,7 @@ jobs:
 
   e2e:
     name: Browser tests (shard ${{ matrix.shard }}/${{ strategy.job-total }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: lint-test-build
     strategy:
       fail-fast: false
@@ -148,7 +148,7 @@ jobs:
 
   # The game and site share a revision. The external indexer uses the harness lock.
   harness-e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: lint-test-build
     env:
       COSMIC_CONTRACTS_DIR: ${{ github.workspace }}/Cosmic-Signature
