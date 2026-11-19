@@ -144,7 +144,9 @@ test.describe('Landing responsive regressions', () => {
       expect(overflow, formatOverflowViolations('/', overflow)).toEqual([]);
 
       await testInfo.attach(`landing-${viewport.width}px`, {
-        body: await page.screenshot({ fullPage: true }),
+        // Keep the entire layout in CSS pixels. At phone DPRs the native bitmap
+        // can exceed Linux WebKit's 32,767-pixel snapshot limit.
+        body: await page.screenshot({ fullPage: true, scale: 'css' }),
         contentType: 'image/png',
       });
     });

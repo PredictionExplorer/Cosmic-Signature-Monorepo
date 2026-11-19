@@ -46,6 +46,15 @@ describe('package manager', () => {
     expect(workflow).not.toMatch(/^\s*run:\s*yarn\b/m);
   });
 
+  it('uses the locked Playwright browser release and an immutable CI image', () => {
+    const workflow = readFileSync(CI_WORKFLOW_PATH, 'utf-8');
+    const lockfile = JSON.parse(readFileSync(resolve(ROOT, 'package-lock.json'), 'utf-8'));
+    const image = workflow.match(
+      /^\s*image: mcr\.microsoft\.com\/playwright:v([\d.]+)-noble@sha256:[a-f0-9]{64}$/m,
+    );
+    expect(image?.[1]).toBe(lockfile.packages['node_modules/playwright-core'].version);
+  });
+
   it('has no yarn-only resolutions field', () => {
     // npm ignores `resolutions` entirely. Keeping it alongside `overrides`
     // meant maintaining two lists of the same pins that could silently

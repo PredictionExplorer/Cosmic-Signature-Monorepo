@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { mockZhQualityApi } from './zh-quality-mocks';
 import { ZH_ROUTE_FIXTURES } from './zh-route-inventory';
@@ -19,10 +19,80 @@ const VIEWPORTS = [
   { name: 'desktop-1440', width: 1_440, height: 1_000 },
 ] as const;
 
+const HAN_PROBE = '中文字体锚定落笔演绎周期';
+const PROBE_ID = 'sprint8-cjk-font-probe';
+
+async function renderedFonts(page: Page) {
+  const client = await page.context().newCDPSession(page);
+  try {
+    await client.send('DOM.enable');
+    await client.send('CSS.enable');
+    const { root } = await client.send('DOM.getDocument');
+    const { nodeId } = await client.send('DOM.querySelector', {
+      nodeId: root.nodeId,
+      selector: '#' + PROBE_ID,
+    });
+    const { fonts } = await client.send('CSS.getPlatformFontsForNode', { nodeId });
+    return fonts;
+  } finally {
+    await client.detach();
+  }
+}
+
+// font-display:optional keeps the platform fallback for the lifetime of a slow
+// document. Use the Chinese page's own stylesheet in a fresh same-origin
+// document to verify the shipped SC face when it is ready before first paint.
+async function checkWarmFace(page: Page) {
+  const stylesheets = await page.evaluate(() =>
+    [...document.styleSheets]
+      .filter((sheet) => sheet.href && new URL(sheet.href).origin === location.origin)
+      .filter((sheet) =>
+        [...sheet.cssRules].some(
+          (rule) =>
+            rule instanceof CSSFontFaceRule && rule.style.fontFamily.includes('Noto Sans SC'),
+        ),
+      )
+      .map((sheet) => sheet.href!),
+  );
+  expect(stylesheets.length, 'SC font declarations linked by the Chinese route').toBeGreaterThan(0);
+  const warm = await page.context().newPage();
+  try {
+    const url = new URL('/__e2e__/cjk-font-probe', page.url()).href;
+    await warm.route(url, (route) =>
+      route.fulfill({
+        contentType: 'text/html',
+        body: '<!doctype html><html lang="zh"><body></body></html>',
+      }),
+    );
+    await warm.goto(url);
+    for (const url of stylesheets) await warm.addStyleTag({ url });
+    await warm.evaluate(
+      async ({ id, text }) => {
+        const font = '700 32px "Noto Sans SC"';
+        await document.fonts.load(font, text);
+        const probe = document.createElement('span');
+        probe.id = id;
+        probe.style.font = font;
+        probe.textContent = text;
+        document.body.append(probe);
+      },
+      { id: PROBE_ID, text: HAN_PROBE },
+    );
+    const fonts = await renderedFonts(warm);
+    const scGlyphs = fonts
+      .filter((font) => font.isCustomFont && /^Noto Sans SC(?:$| )/i.test(font.familyName))
+      .reduce((total, font) => total + font.glyphCount, 0);
+    expect(scGlyphs, 'every Han glyph must be painted by the self-hosted SC face').toBe(
+      HAN_PROBE.length,
+    );
+  } finally {
+    await warm.close();
+  }
+}
+
 test.describe('Sprint 8 Chinese font and performance guard', () => {
   for (const viewport of VIEWPORTS) {
     test(`${viewport.name} uses the approved CJK stack without unstable layout`, async ({
-      context,
       page,
     }) => {
       await page.setViewportSize(viewport);
@@ -73,22 +143,26 @@ test.describe('Sprint 8 Chinese font and performance guard', () => {
       const response = await page.goto('/zh', { waitUntil: 'domcontentloaded' });
       expect(response?.status()).toBe(200);
 
-      await page.evaluate(async () => {
-        const probe = document.createElement('span');
-        probe.id = 'sprint8-cjk-font-probe';
-        probe.textContent = 'Noto中文字体锚定落笔演绎周期';
-        probe.style.cssText =
-          "position:fixed;left:0;top:0;opacity:0;pointer-events:none;font-family:var(--font-noto-sc),'PingFang SC','Microsoft YaHei',sans-serif;font-size:32px;font-weight:700;line-height:1.4";
-        document.body.appendChild(probe);
-        const fallbackWidth = probe.getBoundingClientRect().width;
-        await document.fonts.ready;
-        await new Promise<void>((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-        );
-        const loadedWidth = probe.getBoundingClientRect().width;
-        window.__sprint8Performance!.fontWidthShift =
-          fallbackWidth === 0 ? 0 : Math.abs(loadedWidth - fallbackWidth) / fallbackWidth;
-      });
+      const coldText = 'Noto' + HAN_PROBE;
+      await page.evaluate(
+        async ({ id, text }) => {
+          const probe = document.createElement('span');
+          probe.id = id;
+          probe.textContent = text;
+          probe.style.cssText =
+            "position:fixed;left:0;top:0;opacity:0;pointer-events:none;font-family:var(--font-noto-sc),'PingFang SC','Microsoft YaHei',sans-serif;font-size:32px;font-weight:700;line-height:1.4";
+          document.body.appendChild(probe);
+          const fallbackWidth = probe.getBoundingClientRect().width;
+          await document.fonts.ready;
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+          );
+          const loadedWidth = probe.getBoundingClientRect().width;
+          window.__sprint8Performance!.fontWidthShift =
+            fallbackWidth === 0 ? 0 : Math.abs(loadedWidth - fallbackWidth) / fallbackWidth;
+        },
+        { id: PROBE_ID, text: coldText },
+      );
       // The home is ISR: its HTML carries the live backend's seed, which the
       // mocked cycle then replaces on hydration (a different phase and
       // gesture count, so a different header). That swap is data, not type,
@@ -105,18 +179,7 @@ test.describe('Sprint 8 Chinese font and performance guard', () => {
       });
       await page.waitForTimeout(500);
 
-      const client = await context.newCDPSession(page);
-      await client.send('DOM.enable');
-      await client.send('CSS.enable');
-      const documentNode = await client.send('DOM.getDocument');
-      const probeNode = await client.send('DOM.querySelector', {
-        nodeId: documentNode.root.nodeId,
-        selector: '#sprint8-cjk-font-probe',
-      });
-      const platformFonts = await client.send('CSS.getPlatformFontsForNode', {
-        nodeId: probeNode.nodeId,
-      });
-      await client.detach();
+      const coldFonts = await renderedFonts(page);
 
       const metrics = await page.evaluate(() => {
         const navigation = performance.getEntriesByType(
@@ -146,20 +209,10 @@ test.describe('Sprint 8 Chinese font and performance guard', () => {
         };
       });
 
-      const usedFontFamilies = platformFonts.fonts
-        .map((font: { familyName: string }) => font.familyName)
-        .join(', ');
-      const renderedGlyphs = platformFonts.fonts.reduce(
-        (total: number, font: { glyphCount: number }) => total + font.glyphCount,
-        0,
-      );
-      expect(usedFontFamilies, 'the probe must use an approved CJK face').toMatch(
-        /Noto|PingFang|Microsoft YaHei|蘋方-簡/i,
-      );
       expect(
-        renderedGlyphs,
-        'the approved fallback chain must cover every probe glyph',
-      ).toBeGreaterThan(10);
+        coldFonts.reduce((total, font) => total + font.glyphCount, 0),
+        'the slow-load font stack must paint the entire probe',
+      ).toBe(coldText.length);
       expect(metrics.bodyFont).toMatch(/Noto Sans SC/);
       expect(metrics.bodyFont).toMatch(/PingFang SC/);
       expect(metrics.bodyFont).toMatch(/Microsoft YaHei/);
@@ -176,6 +229,7 @@ test.describe('Sprint 8 Chinese font and performance guard', () => {
 
       expect(fontResponses.length, 'expected local webfont responses').toBeGreaterThan(0);
       expect(fontResponses.filter((font) => font.status >= 400)).toEqual([]);
+      await checkWarmFace(page);
     });
   }
 });

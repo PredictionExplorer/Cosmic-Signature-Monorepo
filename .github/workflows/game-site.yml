@@ -89,6 +89,10 @@ jobs:
   e2e:
     name: Browser tests (shard ${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-24.04
+    # Browsers and system fonts come from the version locked in the site's package-lock.
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
+      options: --shm-size=1g
     needs: lint-test-build
     strategy:
       fail-fast: false
@@ -114,24 +118,6 @@ jobs:
           cache-dependency-path: cosmicgame-frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-webkit-${{ runner.os }}-${{ hashFiles('cosmicgame-frontend/package-lock.json') }}
-
-      # WebKit backs the Mobile Safari project, which runs the mobile layout
-      # audits. iOS Safari is where most mobile-only layout bugs actually
-      # appear, and Chromium does not reproduce them.
-      - name: Install Playwright
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium webkit
-
-      - name: Install Playwright deps only
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
 
       - name: Run e2e tests
         run: npm run test:e2e -- --shard="$SHARD/$SHARD_COUNT"

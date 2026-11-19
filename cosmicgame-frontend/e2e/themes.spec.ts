@@ -258,19 +258,12 @@ test('shared cookie carries the choice across real sibling origins and back', as
   await context.unrouteAll({ behavior: 'ignoreErrors' });
 });
 
-test('desktop ambient scene keeps its canvas through palette changes', async ({
+test('desktop landing atmosphere keeps its layer through palette changes', async ({
   page,
   context,
   isMobile,
 }, testInfo) => {
-  test.skip(isMobile, 'The animated backdrop is desktop-only.');
-  const supportsWebGL = await page.evaluate(() => {
-    const context = document.createElement('canvas').getContext('webgl2');
-    const supported = context !== null;
-    context?.getExtension('WEBGL_lose_context')?.loseContext();
-    return supported;
-  });
-  test.skip(!supportsWebGL, 'This browser environment does not provide a WebGL2 context.');
+  test.skip(isMobile, 'This case exercises the desktop landing layout.');
   await context.setExtraHTTPHeaders(landingHeaders);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -282,14 +275,34 @@ test('desktop ambient scene keeps its canvas through palette changes', async ({
     }
   });
   await page.goto('/');
-  const canvas = page.locator('canvas');
-  await expect(canvas).toBeVisible();
-  const originalCanvas = await canvas.elementHandle();
+  const hero = page.locator('section[aria-labelledby="landing-headline"]');
+  const starfield = hero.locator('.starfield');
+  await expect(starfield).toBeVisible();
+  await expect(starfield).toHaveAttribute('aria-hidden', 'true');
+  const original = await starfield.elementHandle();
+  const gradients = new Set<string>();
   for (const theme of SITE_THEMES) {
+    // The desktop control returns to the accessibility tree after the popup closes.
+    await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
     await chooseTheme(page, theme);
-    expect(await originalCanvas!.evaluate((element) => element.isConnected)).toBe(true);
+    expect(await original!.evaluate((element) => element.isConnected)).toBe(true);
+    await expect(hero.locator('canvas')).toHaveCount(0);
+    await expect(starfield).toHaveCSS('animation-name', 'none');
+    const atmosphere = await hero.evaluate((element) => {
+      const paint = getComputedStyle(element, '::before');
+      return {
+        gradient: paint.backgroundImage,
+        opacity: Number(paint.opacity),
+        animation: paint.animationName,
+      };
+    });
+    expect(atmosphere.gradient).toContain('radial-gradient(');
+    expect(atmosphere.opacity).toBeGreaterThan(0);
+    expect(atmosphere.animation).toBe('none');
+    gradients.add(atmosphere.gradient);
   }
-  await page.screenshot({ path: testInfo.outputPath('animated-ember.png') });
+  expect(gradients.size).toBe(SITE_THEMES.length);
+  await page.screenshot({ path: testInfo.outputPath('landing-atmosphere-ember.png') });
   expect(renderingErrors).toEqual([]);
 });
 
