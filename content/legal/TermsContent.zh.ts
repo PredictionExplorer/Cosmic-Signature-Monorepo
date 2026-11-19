@@ -1,3 +1,4 @@
+import { v4CycleIssuanceNote } from '@/content/chaos-zero/text.zh';
 import { ethDistributionFacts, nftAllocationFacts, protocolFacts } from '@/content/protocol-facts';
 
 import type { TermsCopy } from './TermsContent';
@@ -84,7 +85,7 @@ export const termsCopyZh = {
         {
           id: 'distribution',
           subtitle: '分配发放',
-          text: `分配按照智能合约规则自动发放。通常，每个周期会沿下列分配轨道铭刻 ${nftAllocationFacts.typicalNftsPerCycle} 枚 Cosmic Signature NFT 与 ${protocolFacts.typicalCstImprintsPerCycle.toLocaleString('zh-CN')} CST。`,
+          text: `分配按照智能合约规则自动发放。通常，每个周期会沿下列分配轨道铭刻 ${nftAllocationFacts.typicalNftsPerCycle} 枚 Cosmic Signature NFT 与 ${protocolFacts.typicalCstImprintsPerCycle.toLocaleString('zh-CN')} CST。${v4CycleIssuanceNote}`,
         },
         {
           id: 'signature',

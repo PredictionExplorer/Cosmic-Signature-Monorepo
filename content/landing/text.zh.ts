@@ -1,3 +1,4 @@
+import { v4CycleIssuanceNote } from '@/content/chaos-zero/text.zh';
 import { nftAllocationFacts } from '@/content/protocol-facts';
 import { ethDistributionFacts, protocolFacts } from '@/content/protocol-facts';
 
@@ -109,8 +110,7 @@ export const landingTextZh = {
   tracks: {
     eyebrow: '分配轨道',
     heading: '每一份周期储备，都按规则分配。',
-    description:
-      '收官时，合约按配置发放 ETH 份额，并铭刻固定 CST 与 NFT。通常约一半 ETH 储备留至下一周期，实际留存也受取整和条件转账影响。',
+    description: `收官时，合约按配置发放 ETH 份额，并铭刻固定 CST 与 NFT。通常约一半 ETH 储备留至下一周期，实际留存也受取整和条件转账影响。${v4CycleIssuanceNote}`,
     ethLabel: '每个周期储备中的 ETH',
     fixedLabel: '每个周期的 CST 与 NFT',
     fixedEach: `每位获配者获配 ${protocolFacts.specialAllocationCst.toLocaleString('zh-CN')} CST 与 1 枚 Cosmic Signature NFT。`,

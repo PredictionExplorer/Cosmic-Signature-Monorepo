@@ -277,8 +277,7 @@ export const basicQuestionsTextZhHk = {
       c: '只能取回分配，不能落筆。',
       d: '只能用 CST 落筆，不能用 ETH。',
     },
-    explanation:
-      '合約之外的生態——應用程式、Axiom Zero、Uniswap 流動性、Chaos Zero——是便利，不是依賴。它們都不是必需的：落筆、收官、錨定與取回，都可以直接調用已驗證的合約完成。',
+    explanation: '即使網站離線，仍可直接調用合約來落筆、收官、錨定 NFT 和取回分配。',
     referenceLabel: '白皮書 §2 · 協議概覽',
   },
   'what-it-is-not': {

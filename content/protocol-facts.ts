@@ -246,12 +246,23 @@ export const protocolFacts = {
   currentNextCycleDelayDays: 7,
 } as const;
 
-/** V3 is deployed. Only an explicit V2 environment opts into historical copy. */
-export const contractMechanicsVersion: 2 | 3 =
-  process.env.NEXT_PUBLIC_CONTRACT_MECHANICS_VERSION === '2' ? 2 : 3;
+/** V3 remains the public default. V2 and the V4 release each require an explicit build setting. */
+const configuredMechanics = process.env.NEXT_PUBLIC_CONTRACT_MECHANICS_VERSION;
+export const contractMechanicsVersion: 2 | 3 | 4 =
+  configuredMechanics === '4' ? 4 : configuredMechanics === '2' ? 2 : 3;
 
-/** True once the copy should describe V3 mechanics (linear CST accrual, reward split, multi-NFT allocation). */
-export const isV3Mechanics = contractMechanicsVersion === 3;
+/** V4 inherits V3's linear accrual, distribution percentages and recognition-track counts. */
+export const isV3Mechanics = contractMechanicsVersion >= 3;
+export const isV4Mechanics = contractMechanicsVersion === 4;
+
+export const chaosZeroGrantCst = 8_000;
+export const chaosZeroQuestionCount = 8;
+export const chaosZeroCstPerQuestion = chaosZeroGrantCst / chaosZeroQuestionCount;
+
+/** Full-track V4 issuance. The eight art NFTs are separate from the 26 allocation NFTs. */
+export const v4ArtNftsPerCycle = 8;
+export const v4TypicalNftsPerCycle = protocolFacts.typicalNftsPerCycle + v4ArtNftsPerCycle;
+export const v4TypicalFixedCstPerCycle = protocolFacts.typicalCstImprintsPerCycle + chaosZeroGrantCst;
 
 /**
  * Version-appropriate dynamic Participation CST facts. Static content must use

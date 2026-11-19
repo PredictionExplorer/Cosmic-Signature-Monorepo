@@ -287,7 +287,7 @@ export const basicQuestionsTextEn = {
       d: 'Only gesture with CST, not ETH.',
     },
     explanation:
-      'The ecosystem around the contracts \u2014 the app, Axiom Zero, Uniswap liquidity, Chaos Zero \u2014 is convenience, not dependency. None of it is required: gestures, finalization, anchoring, and retrieval all work by calling the verified contracts directly.',
+      'Gestures, finalization, anchoring and retrieval remain available through the contracts when the websites are offline.',
     referenceLabel: 'White paper \u00a72 \u2014 Protocol overview',
   },
   'what-it-is-not': {

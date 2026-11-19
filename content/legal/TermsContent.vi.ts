@@ -1,3 +1,4 @@
+import { v4CycleIssuanceNote } from '@/content/chaos-zero/text.vi';
 import { protocolFacts } from '@/content/protocol-facts';
 
 import { formatCount } from '@/utils/format/numbers';
@@ -89,7 +90,7 @@ export const termsCopyVi = {
         {
           id: 'distribution',
           subtitle: 'Phân phối phân bổ',
-          text: `Khi có đủ các luồng, một chu kỳ khắc ${protocolFacts.typicalNftsPerCycle} Cosmic Signature NFT và ${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'vi')} CST trong các phân bổ cố định. Phân bổ Signature gồm ${protocolFacts.mainPrizeNftsPerCycle} NFT nhưng chỉ một khoản tổng cộng ${formatCount(protocolFacts.specialAllocationCst, 'vi')} CST. Chiến binh Thời gian, Quán quân Bền bỉ và nét bút CST cuối cùng mỗi luồng có một NFT cùng CST tương ứng; hai luồng NFT Tinh tuyển bổ sung phần còn lại. Nếu không có nét bút CST hoặc Random Walk NFT neo giữ thì luồng tương ứng bị bỏ qua. CST tham gia được tính riêng.`,
+          text: `Khi có đủ các luồng, người nhận được phân bổ tổng cộng ${protocolFacts.typicalNftsPerCycle} Cosmic Signature NFT và ${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'vi')} CST trong các phân bổ cố định. Phân bổ Signature gồm ${protocolFacts.mainPrizeNftsPerCycle} NFT nhưng chỉ một khoản tổng cộng ${formatCount(protocolFacts.specialAllocationCst, 'vi')} CST. Chiến binh Thời gian, Quán quân Bền bỉ và nét bút CST cuối cùng mỗi luồng có một NFT cùng CST tương ứng; hai luồng NFT Tinh tuyển bổ sung phần còn lại. Nếu không có nét bút CST hoặc Random Walk NFT neo giữ thì luồng tương ứng bị bỏ qua. CST tham gia được tính riêng.${v4CycleIssuanceNote}`,
         },
         {
           id: 'signature',

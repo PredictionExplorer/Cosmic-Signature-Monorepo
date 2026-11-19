@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { getAboutContent } from '../content/about';
+import { chaosZeroParagraphs, v4CycleIssuanceNote } from '../content/chaos-zero/text.en';
 import { getFaqContent } from '../content/faq';
 import { getLandingContent } from '../content/landing';
-import { protocolFacts } from '../content/protocol-facts';
+import { isV4Mechanics, protocolFacts } from '../content/protocol-facts';
 import { getWhitePaperContent } from '../content/white-paper';
 import { COSMIC_SIGNATURE_MARKETPLACE_URL } from '../config/marketplace';
 import { CHAOS_ZERO_PREDICTIONS_URL } from '../config/predictions';
@@ -56,9 +57,11 @@ export function buildLlmsDocs(full: boolean): string {
     getAboutContent('en').body.lede,
     'Cosmic Signature is not related to the COSMIC cancer mutation database or COSMIC mutational signatures in biology.',
     '## Current contract mechanics',
-    `The checked Arbitrum One deployment uses V3 at ${p.contractAddresses.implementation}, behind proxy ${p.contractAddresses.proxy}. Parameters can change; read the contracts before acting.`,
+    isV4Mechanics
+      ? `V4 keeps the Arbitrum One game proxy at ${p.contractAddresses.proxy}. Its chaosZeroMarket() getter identifies the market receiving each new cycle’s funding.`
+      : `The checked Arbitrum One deployment uses V3 at ${p.contractAddresses.implementation}, behind proxy ${p.contractAddresses.proxy}. Parameters can change; read the contracts before acting.`,
     `The Signature Allocation receives ${p.mainEthPercentage}% of the ETH reserve, ${cst(p.specialAllocationCst)} CST in total and ${p.mainPrizeNftsPerCycle} sequential NFTs. Chrono-Warrior receives ${p.chronoWarriorEthPercentage}%; participant ETH Stellar Selection shares ${p.stellarSelectionEthPercentage}%; Anchor Distribution receives ${p.anchorDistributionPercentage}%; Public Goods receives ${p.publicGoodsPercentage}%. Approximately half remains, with rounding and omitted-transfer exceptions.`,
-    `With every track present, finalization creates ${p.typicalNftsPerCycle} Cosmic Signature NFTs and ${cst(p.typicalCstImprintsPerCycle)} fixed CST, including ${cst(p.outreachReserveCst)} CST for the Outreach Reserve. The Final CST Gesture and anchored Random Walk tracks are conditional. Three main NFTs do not create three separate CST allocations.`,
+    `With every allocation track present, participants and the Outreach Reserve receive ${p.typicalNftsPerCycle} Cosmic Signature NFTs and ${cst(p.typicalCstImprintsPerCycle)} fixed CST, including ${cst(p.outreachReserveCst)} CST for the Outreach Reserve. The Final CST Gesture and anchored Random Walk tracks are conditional. The three main NFTs share a single CST allocation.${v4CycleIssuanceNote}`,
     'Participation CST is linear and credited to the previous participant when the next gesture executes. The first gesture creates no dynamic CST; finalization does not settle the last participant’s pending amount. Both participant ETH and NFT selections use the concurrent undiscounted, premium-free ETH base cost as weight, including CST gestures. Repeated recipients are possible.',
     'V3 changes the CST price-decline rate, not a stored window duration. ETH attempts to increase the rate subject to a minimum-window guard; CST decreases the rate and resets its ceiling. Late prices can reach approximately five times the base cost; the premium does not increase selection weight or the following base price.',
     `The Final Gesture participant has a ${p.finalGestureExclusivityHours}-hour exclusive finalization window after the deadline; afterwards anyone may finalize and the finalizer receives the Signature Allocation. Gestures remain possible until finalization. Each later gesture extends the stored deadline; the increment grows ${p.cycleTimeIncrementIncreasePercentPerCycle}% per finalized cycle.`,
@@ -67,7 +70,9 @@ export function buildLlmsDocs(full: boolean): string {
     'Artwork reproduction requires its seed, renderer revision, configuration and compatible toolchain. Image-reference checks are currently manual. Historical audit reports describe their reviewed revisions; the V3 implementation is not currently verified on Sourcify. Ownership powers remain and have no automatic sunset.',
     '## Ecosystem and media',
     `[Axiom Zero](${COSMIC_SIGNATURE_MARKETPLACE_URL}) is the zero-fee NFT marketplace for Cosmic Signature and Random Walk NFTs.`,
-    `[Chaos Zero](${CHAOS_ZERO_PREDICTIONS_URL}) is the prediction market about whether a cycle has more gestures than the previous one.`,
+    ...chaosZeroParagraphs.map((paragraph) =>
+      paragraph.replace('Chaos Zero', `[Chaos Zero](${CHAOS_ZERO_PREDICTIONS_URL})`),
+    ),
     `[CST on Uniswap](https://app.uniswap.org/swap?chain=arbitrum&inputCurrency=NATIVE&outputCurrency=${p.contractAddresses.cstToken})`,
     '[Artwork pages](https://app.cosmicsignature.com/detail/{tokenId}) · [Image sitemap](https://app.cosmicsignature.com/sitemap-nfts.xml)',
     '[Source code](https://github.com/PredictionExplorer/Cosmic-Signature) · [Renderer](https://github.com/PredictionExplorer/CS-Image-Generation) · [X](https://x.com/CosmicSignature) · [Discord](https://discord.gg/bGnPn96Qwt)',

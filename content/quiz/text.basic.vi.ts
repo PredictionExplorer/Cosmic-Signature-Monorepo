@@ -288,7 +288,7 @@ export const basicQuestionsTextVi = {
       d: 'Chỉ đặt nét bút bằng CST, không bằng ETH.',
     },
     explanation:
-      'Hệ sinh thái xung quanh hợp đồng \u2014 ứng dụng, Axiom Zero, thanh khoản Uniswap, Chaos Zero \u2014 là tiện ích, không phải phụ thuộc. Không thứ nào là bắt buộc: nét bút, hoàn tất, neo giữ và nhận về đều hoạt động bằng cách gọi trực tiếp các hợp đồng đã xác minh.',
+      'Khi các trang web ngoại tuyến, bạn vẫn có thể gọi trực tiếp hợp đồng để tạo nét bút, hoàn tất chu kỳ, neo giữ NFT và nhận về phần phân bổ.',
     referenceLabel: 'Sách trắng \u00a72 \u2014 Tổng quan giao thức',
   },
   'what-it-is-not': {

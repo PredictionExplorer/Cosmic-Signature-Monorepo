@@ -1,3 +1,4 @@
+import { chaosZeroParagraphs } from '@/content/chaos-zero/text.zh';
 import { AUDIT_FINDINGS_TOTAL, HACKEN_AUDIT } from '@/content/legal/audit';
 import { protocolFacts } from '@/content/protocol-facts';
 
@@ -412,10 +413,7 @@ export const learnTextZh = {
         },
         {
           heading: 'Chaos Zero 预测市场',
-          body: [
-            'Chaos Zero 是专为 Cosmic Signature 构建的预测市场。每个演绎周期只问一件事：这一周期收官时，落笔次数是否会超过上一周期？预测凭证以 CST 计价，并在机制上由 CST 全额覆盖——每单位 CST 始终可拆分为一枚 YES 代币和一枚 NO 代币，一对匹配的代币也始终可兑换回一单位 CST。',
-            '市场根据公开的链上落笔次数判定结果。一旦次数超过上一周期总数，结果便已确定；交易会在同一区块停止，此后只能取回相应资产。Chaos Zero 没有所有者、管理密钥或升级路径。',
-          ],
+          body: chaosZeroParagraphs,
         },
         {
           heading: '锚定状态如何影响收藏',
@@ -428,7 +426,7 @@ export const learnTextZh = {
           heading: '如何核验交易场所与地址',
           body: [
             '交易前，先在应用的合约页面确认官方地址，再与市场中的系列地址或兑换平台上的代币地址逐一比对。应用页眉、页脚与网站地图均提供 Axiom Zero、Chaos Zero 和 Uniswap 的官方链接，因此始终可以循着官方导航抵达正确地址。',
-            '兑换 CST 与持有预测凭证时也应同样谨慎：核对代币地址是否与已公布的 CST 合约一致。Chaos Zero 会根据协议记录的公开落笔次数判定预测结果，因此市场的每项输入都可在 Arbitrum 上独立查验。',
+            '请核对 CST 地址是否与公布的代币合约地址一致。判定结果的合约直接读取 Arbitrum 上 Cosmic Signature 的周期数据。',
           ],
         },
       ],

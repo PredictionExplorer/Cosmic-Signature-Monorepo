@@ -1,3 +1,4 @@
+import { v4CycleIssuanceNote } from '@/content/chaos-zero/text.en';
 import { ethDistributionFacts, nftAllocationFacts, protocolFacts } from '@/content/protocol-facts';
 
 import type { TermsCopy } from './TermsContent';
@@ -85,7 +86,7 @@ export const termsCopyEn = {
         {
           id: 'distribution',
           subtitle: 'Allocation distribution',
-          text: `A successful finalization distributes allocations according to the contracts. With every track present, it creates ${nftAllocationFacts.typicalNftsPerCycle} Cosmic Signature NFTs and ${protocolFacts.typicalCstImprintsPerCycle.toLocaleString('en-US')} fixed CST. A cycle without CST gestures or active Random Walk anchors omits the relevant track. Dynamic Participation CST is separate.`,
+          text: `A successful finalization distributes allocations according to the contracts. With every allocation track present, recipients receive ${nftAllocationFacts.typicalNftsPerCycle} Cosmic Signature NFTs and ${protocolFacts.typicalCstImprintsPerCycle.toLocaleString('en-US')} fixed CST. A cycle without CST gestures or active Random Walk anchors omits the relevant track. Dynamic Participation CST is separate.${v4CycleIssuanceNote}`,
         },
         {
           id: 'signature',

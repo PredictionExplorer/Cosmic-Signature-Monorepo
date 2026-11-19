@@ -97,6 +97,8 @@ The app serves two hosts from one codebase: the marketing site (`cosmicsignature
 | `NEXT_PUBLIC_SENTRY_DSN`               | No            | —                   | Sentry DSN for error reporting                        |
 | `COSMICGAME_API_UPSTREAM`              | No            | —                   | Enables same-origin `/api/cosmicgame/*` proxying      |
 
+The public build defaults to V3. For a local V4 rehearsal, set `NEXT_PUBLIC_CONTRACT_MECHANICS_VERSION=4` before building. This enables the eight-question Chaos Zero funding description in each locale. At cutover, regenerate the static AI-facing documents with the same variable set when running `npm run llms:build`. The checked-in documents describe the current public deployment.
+
 ## Project Structure
 
 ```

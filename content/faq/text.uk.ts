@@ -1,5 +1,7 @@
+import { chaosZeroParagraphs, v4CycleIssuanceNote } from '@/content/chaos-zero/text.uk';
 import { ethDistributionFacts, protocolFacts } from '@/content/protocol-facts';
 
+import { CHAOS_ZERO_PREDICTIONS_URL } from '@/config/predictions';
 import { formatCount } from '@/utils/format/numbers';
 
 import type { FAQText } from './structure';
@@ -98,7 +100,7 @@ export const faqTextUk = {
       },
       'how-many-nfts-minted': {
         question: 'Скільки Cosmic Signature NFT закарбовується за цикл?',
-        answer: `За наявності всіх напрямів цикл створює ${protocolFacts.typicalNftsPerCycle} Cosmic Signature NFT і ${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'uk')} CST у фіксованих розподілах. Розподіл Сигнатури містить ${protocolFacts.mainPrizeNftsPerCycle} NFT і лише один загальний розподіл ${formatCount(protocolFacts.specialAllocationCst, 'uk')} CST. Воїн часу, Чемпіон витривалості та завершальний CST-жест отримують по одному NFT і відповідний CST; два NFT-відбори додають свої записи. Без CST-жесту або закріплених Random Walk NFT відповідні напрями пропускаються. CST участі нараховуються окремо.`,
+        answer: `За наявності всіх напрямів отримувачам розподіляють ${protocolFacts.typicalNftsPerCycle} Cosmic Signature NFT і ${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'uk')} CST у фіксованих розподілах. Розподіл Сигнатури містить ${protocolFacts.mainPrizeNftsPerCycle} NFT і лише один загальний розподіл ${formatCount(protocolFacts.specialAllocationCst, 'uk')} CST. Воїн часу, Чемпіон витривалості та завершальний CST-жест отримують по одному NFT і відповідний CST; два NFT-відбори додають свої записи. Без CST-жесту або закріплених Random Walk NFT відповідні напрями пропускаються. CST участі нараховуються окремо.${v4CycleIssuanceNote}`,
       },
       'what-happens-to-remaining-eth': {
         question: 'Що відбувається з рештою ETH у резерві циклу?',
@@ -245,8 +247,7 @@ export const faqTextUk = {
       },
       'cosmic-signature-prediction-market': {
         question: 'Чи є для Cosmic Signature ринок прогнозів?',
-        answer:
-          'Так. Chaos Zero (https://chaoszero.com) — це ринок прогнозів, створений спеціально для Cosmic Signature. Кожного перформанс-циклу він відкриває одне питання: чи завершиться цей цикл із більшою кількістю жестів, ніж попередній? Позиції номіновані в CST і повністю забезпечені за самою конструкцією ринку, а результат визначається за публічною ончейн-кількістю жестів — без власника та адміністративних ключів.',
+        answer: `${chaosZeroParagraphs.join(' ')} ${CHAOS_ZERO_PREDICTIONS_URL}`,
       },
       'participate-dao-without-bidding': {
         question: 'Чи можу я брати участь у Космічній Раді, не роблячи жестів?',

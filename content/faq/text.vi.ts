@@ -1,5 +1,7 @@
+import { chaosZeroParagraphs, v4CycleIssuanceNote } from '@/content/chaos-zero/text.vi';
 import { protocolFacts } from '@/content/protocol-facts';
 
+import { CHAOS_ZERO_PREDICTIONS_URL } from '@/config/predictions';
 import { formatCount } from '@/utils/format/numbers';
 
 import type { FAQText } from './structure';
@@ -93,7 +95,7 @@ Phân bổ ETH thứ cấp và tài sản đính kèm được nhận về riên
       },
       'how-many-nfts-minted': {
         question: 'Mỗi chu kỳ có bao nhiêu Cosmic Signature NFT được khắc?',
-        answer: `Khi có đủ các luồng, một chu kỳ khắc ${protocolFacts.typicalNftsPerCycle} Cosmic Signature NFT và ${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'vi')} CST trong các phân bổ cố định. Phân bổ Signature gồm ${protocolFacts.mainPrizeNftsPerCycle} NFT nhưng chỉ một khoản tổng cộng ${formatCount(protocolFacts.specialAllocationCst, 'vi')} CST. Chiến binh Thời gian, Quán quân Bền bỉ và nét bút CST cuối cùng mỗi luồng có một NFT cùng CST tương ứng; hai luồng NFT Tinh tuyển bổ sung phần còn lại. Nếu không có nét bút CST hoặc Random Walk NFT neo giữ thì luồng tương ứng bị bỏ qua. CST tham gia được tính riêng.`,
+        answer: `Khi có đủ các luồng, người nhận được phân bổ tổng cộng ${protocolFacts.typicalNftsPerCycle} Cosmic Signature NFT và ${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'vi')} CST trong các phân bổ cố định. Phân bổ Signature gồm ${protocolFacts.mainPrizeNftsPerCycle} NFT nhưng chỉ một khoản tổng cộng ${formatCount(protocolFacts.specialAllocationCst, 'vi')} CST. Chiến binh Thời gian, Quán quân Bền bỉ và nét bút CST cuối cùng mỗi luồng có một NFT cùng CST tương ứng; hai luồng NFT Tinh tuyển bổ sung phần còn lại. Nếu không có nét bút CST hoặc Random Walk NFT neo giữ thì luồng tương ứng bị bỏ qua. CST tham gia được tính riêng.${v4CycleIssuanceNote}`,
       },
       'what-happens-to-remaining-eth': {
         question: 'ETH còn lại trong Dự trữ chu kỳ sẽ đi đâu?',
@@ -240,8 +242,7 @@ Nét bút tiếp theo khắc toàn bộ cho người tham gia trước. Nét bú
       },
       'cosmic-signature-prediction-market': {
         question: 'Có thị trường dự đoán cho Cosmic Signature không?',
-        answer:
-          'Có. Chaos Zero (https://chaoszero.com) là thị trường dự đoán được xây riêng cho Cosmic Signature. Mỗi chu kỳ trình diễn nó mở một câu hỏi: Chu kỳ này có hoàn tất với nhiều nét bút hơn chu kỳ trước không? Các vị thế được tính bằng CST và được bảo chứng đầy đủ theo thiết kế, và thị trường được giải quyết từ số nét bút công khai trên chuỗi, không có khóa chủ sở hữu hay quản trị.',
+        answer: `${chaosZeroParagraphs.join(' ')} ${CHAOS_ZERO_PREDICTIONS_URL}`,
       },
       'participate-dao-without-bidding': {
         question: 'Tôi có thể tham gia Hội đồng Vũ trụ mà không đặt nét bút không?',

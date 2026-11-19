@@ -1,3 +1,4 @@
+import { v4CycleIssuanceNote } from '@/content/chaos-zero/text.en';
 import { ethDistributionFacts, nftAllocationFacts, protocolFacts } from '@/content/protocol-facts';
 
 import type { LandingText } from './structure';
@@ -105,8 +106,7 @@ export const landingTextEn = {
   tracks: {
     eyebrow: 'Allocation Tracks',
     heading: 'Every Cycle Reserve, allocated by rule.',
-    description:
-      'At finalization, configured ETH shares are distributed and fixed CST allocations and NFTs are created. About half the ETH reserve carries forward, with rounding and omitted-track exceptions; reserve growth is not guaranteed.',
+    description: `At finalization, configured ETH shares are distributed and fixed CST allocations and NFTs are created. About half the ETH reserve carries forward, with rounding and omitted-track exceptions; reserve growth is not guaranteed.${v4CycleIssuanceNote}`,
     ethLabel: 'ETH from each Cycle Reserve',
     fixedLabel: 'CST and NFTs, every cycle',
     fixedEach: `Each recipient receives ${protocolFacts.specialAllocationCst.toLocaleString('en-US')} CST and one Cosmic Signature NFT.`,

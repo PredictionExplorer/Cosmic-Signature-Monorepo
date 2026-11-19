@@ -1,5 +1,7 @@
+import { chaosZeroParagraphs, v4CycleIssuanceNote } from '@/content/chaos-zero/text.ko';
 import { protocolFacts } from '@/content/protocol-facts';
 
+import { CHAOS_ZERO_PREDICTIONS_URL } from '@/config/predictions';
 import { formatCount } from '@/utils/format/numbers';
 
 import type { FAQText } from './structure';
@@ -98,7 +100,7 @@ export const faqTextKo = {
       },
       'how-many-nfts-minted': {
         question: '사이클마다 Cosmic Signature NFT가 몇 개 각인되나요?',
-        answer: `모든 경로가 있으면 한 사이클에서 Cosmic Signature NFT ${protocolFacts.typicalNftsPerCycle}개와 고정 배분 CST ${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'ko')}개가 각인됩니다. 시그니처 배분은 NFT ${protocolFacts.mainPrizeNftsPerCycle}개에 대해 CST ${formatCount(protocolFacts.specialAllocationCst, 'ko')}개를 합계로 한 번 받습니다. 시간의 전사, 수호 챔피언, 최종 CST 제스처는 각각 NFT 1개와 해당 CST를 받으며, 두 NFT 선정 경로가 나머지를 더합니다. CST 제스처나 앵커링된 Random Walk NFT가 없으면 해당 경로는 생략합니다. 참여 CST는 별도입니다.`,
+        answer: `모든 배분 경로가 활성화되면 수령자에게 Cosmic Signature NFT ${protocolFacts.typicalNftsPerCycle}개와 고정 배분 CST ${formatCount(protocolFacts.typicalCstImprintsPerCycle, 'ko')}개가 배분됩니다. 시그니처 배분은 NFT ${protocolFacts.mainPrizeNftsPerCycle}개에 대해 CST ${formatCount(protocolFacts.specialAllocationCst, 'ko')}개를 합계로 한 번 받습니다. 시간의 전사, 수호 챔피언, 최종 CST 제스처는 각각 NFT 1개와 해당 CST를 받으며, 두 NFT 선정 경로가 나머지를 더합니다. CST 제스처나 앵커링된 Random Walk NFT가 없으면 해당 경로는 생략합니다. 참여 CST는 별도입니다.${v4CycleIssuanceNote}`,
       },
       'what-happens-to-remaining-eth': {
         question: '사이클 준비금에 남은 ETH는 어떻게 되나요?',
@@ -245,8 +247,7 @@ export const faqTextKo = {
       },
       'cosmic-signature-prediction-market': {
         question: 'Cosmic Signature 예측 시장이 있나요?',
-        answer:
-          '네. Chaos Zero(https://chaoszero.com)는 Cosmic Signature를 위해 특별히 만들어진 예측 시장입니다. 퍼포먼스 사이클마다 하나의 질문을 엽니다: “이번 사이클은 이전 사이클보다 더 많은 제스처로 마감될 것인가?” 포지션은 CST로 표시되며 구조적으로 전액 담보되고, 시장은 소유자나 관리자 키 없이 공개된 온체인 제스처 수로 결과가 확정됩니다.',
+        answer: `${chaosZeroParagraphs.join(' ')} ${CHAOS_ZERO_PREDICTIONS_URL}`,
       },
       'participate-dao-without-bidding': {
         question: '제스처를 남기지 않고도 우주 평의회에 참여할 수 있나요?',

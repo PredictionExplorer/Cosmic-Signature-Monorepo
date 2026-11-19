@@ -137,11 +137,10 @@ export function CycleMonument({
 
   const reserveEth = data ? (data.PrizeAmountEth ?? data.CurPrizeAmountEth ?? null) : null;
   const attachedAssetVariant = getAttachedAssetVariant(attachedNFTCount, attachedERC20Count);
-  const attachedAssetValues = getAttachedAssetValues(
-    attachedAssetVariant,
-    attachedNFTCount,
-    attachedERC20Count,
-  );
+  const signatureValues = {
+    cscNftCount: signatureNftCount,
+    ...getAttachedAssetValues(attachedAssetVariant, attachedNFTCount, attachedERC20Count),
+  };
 
   const renderClock = ({ days, hours, minutes, seconds }: LocalizedCountdownRenderProps) => (
     <ClockFigures days={days} hours={hours} minutes={minutes} seconds={seconds} dayUnit={dayUnit} />
@@ -244,10 +243,10 @@ export function CycleMonument({
       <div data-testid="monument-reserve" className="mt-6 border-t border-rule-faint pt-5">
         <p className="type-label text-muted-foreground">
           <ExplainedTerm
-            definition={t(`status.metrics.signatureTooltip.${attachedAssetVariant}`, {
-              cscNftCount: signatureNftCount,
-              ...attachedAssetValues,
-            })}
+            definition={t(
+              `status.metrics.signatureTooltip.${attachedAssetVariant}`,
+              signatureValues,
+            )}
           >
             {t('deck.monument.reserveLabel')}
           </ExplainedTerm>
@@ -263,7 +262,7 @@ export function CycleMonument({
         </div>
         {/* What rides along with the ETH: named only when it is really there. */}
         <p className="mt-1.5 type-caption text-subtle" data-testid="monument-reserve-extras">
-          {t(`deck.monument.extras.${attachedAssetVariant}`, attachedAssetValues)}
+          {t(`deck.monument.extras.${attachedAssetVariant}`, signatureValues)}
         </p>
       </div>
 

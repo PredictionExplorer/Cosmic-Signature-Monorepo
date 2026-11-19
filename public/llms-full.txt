@@ -10,7 +10,7 @@ The checked Arbitrum One deployment uses V3 at 0xc1b97E1b0baC86248653B18706dbC5c
 
 The Signature Allocation receives 20% of the ETH reserve, 1,000 CST in total and 3 sequential NFTs. Chrono-Warrior receives 15%; participant ETH Stellar Selection shares 5%; Anchor Distribution receives 5%; Public Goods receives 5%. Approximately half remains, with rounding and omitted-transfer exceptions.
 
-With every track present, finalization creates 26 Cosmic Signature NFTs and 27,000 fixed CST, including 3,000 CST for the Outreach Reserve. The Final CST Gesture and anchored Random Walk tracks are conditional. Three main NFTs do not create three separate CST allocations.
+With every allocation track present, participants and the Outreach Reserve receive 26 Cosmic Signature NFTs and 27,000 fixed CST, including 3,000 CST for the Outreach Reserve. The Final CST Gesture and anchored Random Walk tracks are conditional. The three main NFTs share a single CST allocation.
 
 Participation CST is linear and credited to the previous participant when the next gesture executes. The first gesture creates no dynamic CST; finalization does not settle the last participant’s pending amount. Both participant ETH and NFT selections use the concurrent undiscounted, premium-free ETH base cost as weight, including CST gestures. Repeated recipients are possible.
 
@@ -28,7 +28,9 @@ Artwork reproduction requires its seed, renderer revision, configuration and com
 
 [Axiom Zero](https://www.axiomzero.market/cosmic-signature) is the zero-fee NFT marketplace for Cosmic Signature and Random Walk NFTs.
 
-[Chaos Zero](https://chaoszero.com) is the prediction market about whether a cycle has more gestures than the previous one.
+[Chaos Zero](https://chaoszero.com) opens eight prediction markets every Performance Cycle. One asks whether this cycle will finalize with more gestures than the previous one. Positions are denominated in CST.
+
+Trading stays open until Cosmic Signature finalizes the cycle. All eight answers then follow from the on-chain cycle statistics. A matching YES and NO pair for the same question can be exchanged for one CST.
 
 [CST on Uniswap](https://app.uniswap.org/swap?chain=arbitrum&inputCurrency=NATIVE&outputCurrency=0xAD91843e6A58Ba560F577E676986AFb1dba6FBA0)
 
@@ -145,7 +147,7 @@ You can receive CST tokens (ERC-20) for helping promote the protocol. The Outrea
 
 #### How many Cosmic Signature NFTs are imprinted each cycle?
 
-With every track present, a cycle imprints 26 Cosmic Signature NFTs: three for the Signature Allocation, one each for the Final CST Gesture, Endurance Champion and Chrono-Warrior, 10 for participant selection and 10 for anchored Random Walk NFT selection. The main allocation receives 1,000 CST once for all its NFTs; each other NFT allocation receives 1,000 CST. A cycle without CST gestures or active Random Walk anchors has the corresponding track skipped for that cycle.
+With every allocation track present, recipients receive 26 Cosmic Signature NFTs: three for the Signature Allocation, one each for the Final CST Gesture, Endurance Champion and Chrono-Warrior, 10 for participant selection and 10 for anchored Random Walk NFT selection. The main allocation receives 1,000 CST once for all its NFTs; each other NFT allocation receives 1,000 CST. A cycle without CST gestures or active Random Walk anchors has the corresponding track skipped for that cycle.
 
 #### What happens to the remaining ETH in the Cycle Reserve?
 
@@ -263,7 +265,7 @@ The primary venue is Axiom Zero (https://www.axiomzero.market/cosmic-signature),
 
 #### Is there a prediction market for Cosmic Signature?
 
-Yes. Chaos Zero (https://chaoszero.com) is a prediction market built specifically for Cosmic Signature. Each Performance Cycle it opens one question: will this cycle finalize with more gestures than the previous one? Positions are denominated in CST and fully collateralized by construction, and markets resolve from the public on-chain gesture count with no owner or admin keys.
+Chaos Zero opens eight prediction markets every Performance Cycle. One asks whether this cycle will finalize with more gestures than the previous one. Positions are denominated in CST. Trading stays open until Cosmic Signature finalizes the cycle. All eight answers then follow from the on-chain cycle statistics. A matching YES and NO pair for the same question can be exchanged for one CST. https://chaoszero.com
 
 #### Can I participate in the Cosmic Council without making a gesture?
 
@@ -426,7 +428,7 @@ Random Walk NFT 也可以锚定，但只用于取得锚定 NFT 星选资格—�
 
 #### 每个周期会铭刻多少枚 Cosmic Signature NFT？
 
-各轨道均满足条件时，收官会铭刻 26 枚 Cosmic Signature NFT：签名分配 3 枚，时之勇士、坚守冠军与 CST 收官之笔各 1 枚，参与者星选 10 枚，Random Walk NFT 锚定星选 10 枚。签名分配的 CST 合计仅为 1,000，不按其中的 NFT 枚数重复计算。没有 CST 落笔或没有已锚定 Random Walk NFT 时，相关轨道会跳过。
+各分配轨道均满足条件时，获配者共获得 26 枚 Cosmic Signature NFT：签名分配 3 枚，时之勇士、坚守冠军与 CST 收官之笔各 1 枚，参与者星选 10 枚，Random Walk NFT 锚定星选 10 枚。签名分配的 CST 合计仅为 1,000，不按其中的 NFT 枚数重复计算。没有 CST 落笔或没有已锚定 Random Walk NFT 时，相关轨道会跳过。
 
 #### 周期储备中剩余的 ETH 会怎样处理？
 
@@ -544,7 +546,7 @@ Cosmic Signature NFT 可在 Axiom Zero（axiomzero.market）交易；这是专�
 
 #### Cosmic Signature 有预测市场吗？
 
-有。Chaos Zero（https://chaoszero.com）是专为 Cosmic Signature 构建的预测市场。每个演绎周期都会提出一个问题：本周期收官时的落笔次数是否会超过上一周期？所有头寸以 CST 计价，并按机制完全抵押；市场依据公开的链上落笔次数结算，不设所有者或管理密钥。
+每个演绎周期，Chaos Zero 都会开放八个预测市场。其中一个问题是本周期收官时的落笔次数是否会超过上一周期。所有头寸以 CST 计价。交易持续至 Cosmic Signature 收官。随后，八个问题的答案由链上周期数据确定。同一周期、同一问题的一对 YES 和 NO 代币可以换回一单位 CST。 https://chaoszero.com
 
 #### 不落笔也能参与宇宙议会吗？
 
@@ -707,7 +709,7 @@ Random Walk NFT 也可以錨定，但只用於取得錨定 NFT 星選資格—�
 
 #### 每個週期會銘刻多少枚 Cosmic Signature NFT？
 
-各軌道條件都成立時，收官會銘刻 26 枚 Cosmic Signature NFT：簽名分配 3 枚，時之勇士、堅守冠軍與 CST 收官之筆各 1 枚，參與者星選 10 枚，Random Walk NFT 錨定星選 10 枚。簽名分配的 CST 合計只有 1,000，不會按其中的 NFT 枚數重複計算。沒有 CST 落筆或已錨定 Random Walk NFT 時，相關軌道會跳過。
+各分配軌道條件都成立時，獲配者共獲得 26 枚 Cosmic Signature NFT：簽名分配 3 枚，時之勇士、堅守冠軍與 CST 收官之筆各 1 枚，參與者星選 10 枚，Random Walk NFT 錨定星選 10 枚。簽名分配的 CST 合計只有 1,000，不會按其中的 NFT 枚數重複計算。沒有 CST 落筆或已錨定 Random Walk NFT 時，相關軌道會跳過。
 
 #### 週期儲備中剩餘的 ETH 會怎樣處理？
 
@@ -825,7 +827,7 @@ Cosmic Signature NFT 可在 Axiom Zero（axiomzero.market）交易；這是專�
 
 #### Cosmic Signature 有預測市場嗎？
 
-有。Chaos Zero（https://chaoszero.com）是專為 Cosmic Signature 構建的預測市場。每個演繹週期都會提出一個問題：本週期收官時的落筆次數是否會超過上一週期？所有頭寸以 CST 計價，並按機制完全抵押；市場依據公開的鏈上落筆次數結算，不設所有者或管理金鑰。
+每個演繹週期，Chaos Zero 都會開放八個預測市場。其中一題是本週期收官時的落筆次數是否會超過上一週期。所有預測憑證皆以 CST 計價。交易持續至 Cosmic Signature 收官。之後，八個問題的答案由鏈上週期資料決定。同一週期、同一題的一對 YES 和 NO 代幣可以換回一單位 CST。 https://chaoszero.com
 
 #### 不落筆也能參與宇宙議會嗎？
 
@@ -988,7 +990,7 @@ Random Walk NFT 也可以錨定，但只用於取得錨定 NFT 星選資格—�
 
 #### 每個週期會銘刻多少枚 Cosmic Signature NFT？
 
-各軌道條件均成立時，收官會銘刻 26 枚 Cosmic Signature NFT：簽名分配 3 枚，時之勇士、堅守冠軍與 CST 收官之筆各 1 枚，參與者星選 10 枚，Random Walk NFT 錨定星選 10 枚。簽名分配的 CST 合共只有 1,000，不會按其中的 NFT 枚數重複計算。沒有 CST 落筆或已錨定 Random Walk NFT 時，相關軌道會略過。
+各分配軌道條件均成立時，獲配者合共獲得 26 枚 Cosmic Signature NFT：簽名分配 3 枚，時之勇士、堅守冠軍與 CST 收官之筆各 1 枚，參與者星選 10 枚，Random Walk NFT 錨定星選 10 枚。簽名分配的 CST 合共只有 1,000，不會按其中的 NFT 枚數重複計算。沒有 CST 落筆或已錨定 Random Walk NFT 時，相關軌道會略過。
 
 #### 週期儲備中剩餘的 ETH 會怎樣處理？
 
@@ -1106,7 +1108,7 @@ Cosmic Signature NFT 可在 Axiom Zero（axiomzero.market）交易；這是專�
 
 #### Cosmic Signature 有預測市場嗎？
 
-有。Chaos Zero（https://chaoszero.com）是專為 Cosmic Signature 構建的預測市場。每個演繹週期都會提出一個問題：本週期收官時的落筆次數是否會超過上一週期？所有頭寸以 CST 計價，並按機制完全抵押；市場依據公開的鏈上落筆次數結算，不設所有者或管理密鑰。
+每個演繹週期，Chaos Zero 都會開放八個預測市場。其中一題是本週期收官時的落筆次數會否超過上一週期。所有預測憑證均以 CST 計價。交易持續至 Cosmic Signature 收官。其後，八個問題的答案由鏈上週期數據決定。同一週期、同一題的一對 YES 和 NO 代幣可以換回一單位 CST。 https://chaoszero.com
 
 #### 不落筆也能參與宇宙議會嗎？
 
@@ -1269,7 +1271,7 @@ Random Walk NFT також можна закріпити, але лише для
 
 #### Скільки Cosmic Signature NFT закарбовується за цикл?
 
-За наявності всіх напрямів цикл створює 26 Cosmic Signature NFT і 27 000 CST у фіксованих розподілах. Розподіл Сигнатури містить 3 NFT і лише один загальний розподіл 1 000 CST. Воїн часу, Чемпіон витривалості та завершальний CST-жест отримують по одному NFT і відповідний CST; два NFT-відбори додають свої записи. Без CST-жесту або закріплених Random Walk NFT відповідні напрями пропускаються. CST участі нараховуються окремо.
+За наявності всіх напрямів отримувачам розподіляють 26 Cosmic Signature NFT і 27 000 CST у фіксованих розподілах. Розподіл Сигнатури містить 3 NFT і лише один загальний розподіл 1 000 CST. Воїн часу, Чемпіон витривалості та завершальний CST-жест отримують по одному NFT і відповідний CST; два NFT-відбори додають свої записи. Без CST-жесту або закріплених Random Walk NFT відповідні напрями пропускаються. CST участі нараховуються окремо.
 
 #### Що відбувається з рештою ETH у резерві циклу?
 
@@ -1387,7 +1389,7 @@ Cosmic Signature NFT продають і купують на Axiom Zero (axiomze
 
 #### Чи є для Cosmic Signature ринок прогнозів?
 
-Так. Chaos Zero (https://chaoszero.com) — це ринок прогнозів, створений спеціально для Cosmic Signature. Кожного перформанс-циклу він відкриває одне питання: чи завершиться цей цикл із більшою кількістю жестів, ніж попередній? Позиції номіновані в CST і повністю забезпечені за самою конструкцією ринку, а результат визначається за публічною ончейн-кількістю жестів — без власника та адміністративних ключів.
+У кожному перформанс-циклі Chaos Zero відкриває вісім ринків прогнозів. Одне із запитань — чи завершиться цей цикл із більшою кількістю жестів, ніж попередній? Усі позиції обліковуються в CST. Торгівля триває до моменту, коли Cosmic Signature завершить цикл. Тоді відповіді на всі вісім запитань визначаються за ончейн-статистикою циклу. Пару токенів YES і NO для одного запитання в тому самому циклі можна обміняти на один CST. https://chaoszero.com
 
 #### Чи можу я брати участь у Космічній Раді, не роблячи жестів?
 
@@ -1550,7 +1552,7 @@ Random Walk NFT도 앵커링할 수 있지만, 이는 앵커링 NFT 별빛 선�
 
 #### 사이클마다 Cosmic Signature NFT가 몇 개 각인되나요?
 
-모든 경로가 있으면 한 사이클에서 Cosmic Signature NFT 26개와 고정 배분 CST 27,000개가 각인됩니다. 시그니처 배분은 NFT 3개에 대해 CST 1,000개를 합계로 한 번 받습니다. 시간의 전사, 수호 챔피언, 최종 CST 제스처는 각각 NFT 1개와 해당 CST를 받으며, 두 NFT 선정 경로가 나머지를 더합니다. CST 제스처나 앵커링된 Random Walk NFT가 없으면 해당 경로는 생략합니다. 참여 CST는 별도입니다.
+모든 배분 경로가 활성화되면 수령자에게 Cosmic Signature NFT 26개와 고정 배분 CST 27,000개가 배분됩니다. 시그니처 배분은 NFT 3개에 대해 CST 1,000개를 합계로 한 번 받습니다. 시간의 전사, 수호 챔피언, 최종 CST 제스처는 각각 NFT 1개와 해당 CST를 받으며, 두 NFT 선정 경로가 나머지를 더합니다. CST 제스처나 앵커링된 Random Walk NFT가 없으면 해당 경로는 생략합니다. 참여 CST는 별도입니다.
 
 #### 사이클 준비금에 남은 ETH는 어떻게 되나요?
 
@@ -1668,7 +1670,7 @@ Cosmic Signature NFT는 Cosmic Signature와 Random Walk NFT를 위해 만들어�
 
 #### Cosmic Signature 예측 시장이 있나요?
 
-네. Chaos Zero(https://chaoszero.com)는 Cosmic Signature를 위해 특별히 만들어진 예측 시장입니다. 퍼포먼스 사이클마다 하나의 질문을 엽니다: “이번 사이클은 이전 사이클보다 더 많은 제스처로 마감될 것인가?” 포지션은 CST로 표시되며 구조적으로 전액 담보되고, 시장은 소유자나 관리자 키 없이 공개된 온체인 제스처 수로 결과가 확정됩니다.
+Chaos Zero는 퍼포먼스 사이클마다 예측 시장 8개를 엽니다. 그중 한 질문은 “이번 사이클은 이전 사이클보다 더 많은 제스처로 마감될 것인가?”입니다. 모든 포지션은 CST로 표시됩니다. 거래는 Cosmic Signature가 사이클을 마감할 때까지 이어집니다. 마감 시점의 온체인 사이클 통계로 질문 8개의 답이 결정됩니다. 같은 사이클의 같은 질문에서 YES와 NO 토큰을 1개씩 짝지으면 1 CST로 교환할 수 있습니다. https://chaoszero.com
 
 #### 제스처를 남기지 않고도 우주 평의회에 참여할 수 있나요?
 
@@ -1831,7 +1833,7 @@ Random Walk NFTも係留できますが、係留NFT星選の対象になるた�
 
 #### 各サイクルで刻印されるCosmic Signature NFTはいくつですか？
 
-すべてのトラックがある場合、サイクルは26枚のCosmic Signature NFTと固定配分の27,000 CSTを刻印します。シグネチャー配分はNFT3点に対して、合計1,000 CSTを一度だけ受け取ります。時の戦士、持久チャンピオン、最後のCST一筆には各1点と対応するCSTがあり、二つのNFT星選が残りを加えます。CST一筆や係留中のRandom Walk NFTがなければ該当トラックは省略されます。参加CSTは別です。
+すべての配分トラックが適用される場合、受領者は合わせて26枚のCosmic Signature NFTと固定配分の27,000 CSTを受け取ります。シグネチャー配分はNFT3点に対して、合計1,000 CSTを一度だけ受け取ります。時の戦士、持久チャンピオン、最後のCST一筆には各1点と対応するCSTがあり、二つのNFT星選が残りを加えます。CST一筆や係留中のRandom Walk NFTがなければ該当トラックは省略されます。参加CSTは別です。
 
 #### サイクル準備金に残ったETHはどうなりますか？
 
@@ -1949,7 +1951,7 @@ Cosmic Signature NFTは、Cosmic SignatureとRandom Walk NFTのために作ら�
 
 #### Cosmic Signatureの予測市場はありますか？
 
-はい。Chaos Zero（https://chaoszero.com）はCosmic Signatureのために作られた予測市場です。パフォーマンス・サイクルごとに一つの問いを開きます：このサイクルは前のサイクルより多い筆数で確定するか？ ポジションはCST建てで、構造上完全に担保されており、市場は所有者や管理者の鍵なしに、公開のオンチェーンの筆数から決着します。
+Chaos Zeroはパフォーマンス・サイクルごとに八つの予測市場を開きます。その一つは「このサイクルは前のサイクルより多い筆数で確定するか？」という問いです。すべてのポジションはCST建てです。取引はCosmic Signatureがサイクルを確定するまで続きます。その時点でオンチェーンのサイクル統計から八つの答えが決まります。同じサイクルの同じ問いのYESとNOを一つずつ組み合わせると、1CSTに交換できます。 https://chaoszero.com
 
 #### 一筆を入れずに宇宙評議会に参加できますか？
 
@@ -2112,7 +2114,7 @@ Bạn có thể nhận token CST (ERC-20) khi giúp giới thiệu giao thức. 
 
 #### Mỗi chu kỳ có bao nhiêu Cosmic Signature NFT được khắc?
 
-Khi có đủ các luồng, một chu kỳ khắc 26 Cosmic Signature NFT và 27.000 CST trong các phân bổ cố định. Phân bổ Signature gồm 3 NFT nhưng chỉ một khoản tổng cộng 1.000 CST. Chiến binh Thời gian, Quán quân Bền bỉ và nét bút CST cuối cùng mỗi luồng có một NFT cùng CST tương ứng; hai luồng NFT Tinh tuyển bổ sung phần còn lại. Nếu không có nét bút CST hoặc Random Walk NFT neo giữ thì luồng tương ứng bị bỏ qua. CST tham gia được tính riêng.
+Khi có đủ các luồng, người nhận được phân bổ tổng cộng 26 Cosmic Signature NFT và 27.000 CST trong các phân bổ cố định. Phân bổ Signature gồm 3 NFT nhưng chỉ một khoản tổng cộng 1.000 CST. Chiến binh Thời gian, Quán quân Bền bỉ và nét bút CST cuối cùng mỗi luồng có một NFT cùng CST tương ứng; hai luồng NFT Tinh tuyển bổ sung phần còn lại. Nếu không có nét bút CST hoặc Random Walk NFT neo giữ thì luồng tương ứng bị bỏ qua. CST tham gia được tính riêng.
 
 #### ETH còn lại trong Dự trữ chu kỳ sẽ đi đâu?
 
@@ -2230,7 +2232,7 @@ Nơi chính là Axiom Zero (https://www.axiomzero.market/cosmic-signature), sàn
 
 #### Có thị trường dự đoán cho Cosmic Signature không?
 
-Có. Chaos Zero (https://chaoszero.com) là thị trường dự đoán được xây riêng cho Cosmic Signature. Mỗi chu kỳ trình diễn nó mở một câu hỏi: Chu kỳ này có hoàn tất với nhiều nét bút hơn chu kỳ trước không? Các vị thế được tính bằng CST và được bảo chứng đầy đủ theo thiết kế, và thị trường được giải quyết từ số nét bút công khai trên chuỗi, không có khóa chủ sở hữu hay quản trị.
+Chaos Zero mở tám thị trường dự đoán trong mỗi chu kỳ trình diễn. Một trong tám câu hỏi là “Chu kỳ này có hoàn tất với nhiều nét bút hơn chu kỳ trước không?” Các vị thế được tính bằng CST. Giao dịch tiếp tục cho đến khi Cosmic Signature hoàn tất chu kỳ. Khi đó, kết quả của cả tám câu hỏi được xác định từ số liệu của chu kỳ trên chuỗi. Một cặp token YES và NO của cùng câu hỏi trong cùng chu kỳ có thể đổi lại một CST. https://chaoszero.com
 
 #### Tôi có thể tham gia Hội đồng Vũ trụ mà không đặt nét bút không?
 

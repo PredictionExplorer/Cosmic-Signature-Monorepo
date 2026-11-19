@@ -1,3 +1,4 @@
+import { chaosZeroParagraphs } from '@/content/chaos-zero/text.vi';
 import { AUDIT_FINDINGS_TOTAL, HACKEN_AUDIT } from '@/content/legal/audit';
 import { protocolFacts } from '@/content/protocol-facts';
 
@@ -421,10 +422,7 @@ export const learnTextVi = {
         },
         {
           heading: 'Thị trường dự đoán Chaos Zero',
-          body: [
-            'Chaos Zero là thị trường dự đoán được xây riêng cho Cosmic Signature. Mỗi chu kỳ trình diễn nó mở một câu hỏi duy nhất: Chu kỳ này có hoàn tất với nhiều nét bút hơn chu kỳ trước không? Các vị thế được tính bằng CST và được bảo chứng đầy đủ theo thiết kế \u2014 một CST luôn chuyển thành một token YES cộng một token NO, và một cặp khớp nhau luôn đổi lại được một CST.',
-            'Thị trường được giải quyết từ số nét bút công khai trên chuỗi. Khoảnh khắc số nét bút vượt tổng của chu kỳ trước, kết quả là chắc chắn, giao dịch dừng ngay trong cùng khối, và thị trường chỉ còn cho phép rút vị thế. Chaos Zero không có chủ sở hữu, không có khóa quản trị và không có đường nâng cấp.',
-          ],
+          body: chaosZeroParagraphs,
         },
         {
           heading: 'Trạng thái neo giữ và bối cảnh sưu tầm',
@@ -437,7 +435,7 @@ export const learnTextVi = {
           heading: 'Cách xác minh địa điểm và địa chỉ',
           body: [
             'Trước khi giao dịch, hãy xác nhận địa chỉ hợp đồng chính thức trên trang hợp đồng trong ứng dụng và so sánh với bộ sưu tập hoặc cặp token bạn đang xem trên sàn hay nơi trao đổi. Cosmic Signature liên kết các địa điểm trong hệ sinh thái \u2014 Axiom Zero, Chaos Zero và Uniswap \u2014 từ đầu trang, chân trang và sơ đồ trang của ứng dụng để luôn có một lộ trình điều hướng chính thức đến đúng đích.',
-            'Sự thận trọng tương tự áp dụng cho hoán đổi CST và vị thế dự đoán: kiểm tra địa chỉ token khớp với hợp đồng CST đã công bố, và nhớ rằng vị thế trên Chaos Zero được giải quyết từ số nét bút công khai do giao thức ghi lại, nên mọi đầu vào của thị trường đều có thể kiểm tra độc lập trên Arbitrum.',
+            'Hãy đối chiếu địa chỉ CST với địa chỉ hợp đồng token đã công bố. Hợp đồng xác định kết quả đọc trực tiếp số liệu chu kỳ từ Cosmic Signature trên Arbitrum.',
           ],
         },
       ],

@@ -1,3 +1,4 @@
+import { v4CycleIssuanceNote } from '@/content/chaos-zero/text.zh-HK';
 import { ethDistributionFacts, nftAllocationFacts, protocolFacts } from '@/content/protocol-facts';
 
 import type { TermsCopy } from './TermsContent';
@@ -84,7 +85,7 @@ export const termsCopyZhHk = {
         {
           id: 'distribution',
           subtitle: '分配發放',
-          text: `分配按照智能合約規則自動發放。通常，每個週期會沿下列分配軌道銘刻 ${nftAllocationFacts.typicalNftsPerCycle} 枚 Cosmic Signature NFT 與 ${protocolFacts.typicalCstImprintsPerCycle.toLocaleString('zh-HK')} CST。`,
+          text: `分配按照智能合約規則自動發放。通常，每個週期會沿下列分配軌道銘刻 ${nftAllocationFacts.typicalNftsPerCycle} 枚 Cosmic Signature NFT 與 ${protocolFacts.typicalCstImprintsPerCycle.toLocaleString('zh-HK')} CST。${v4CycleIssuanceNote}`,
         },
         {
           id: 'signature',
