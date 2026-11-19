@@ -168,7 +168,7 @@ pnpm test:v4:browser   # gesture, market trade and artwork bid across three site
 pnpm test:heavy        # 50,000 fuzz inputs per property; 512 x 256 invariant campaigns
 ```
 
-The [V4 browser test guide](verification/playground/README.md) lists the four companion checkouts, pinned revisions and local setup.
+The [V4 browser test guide](verification/playground/README.md) describes the local setup for all three sites in this monorepo.
 
 The repository includes adversarial accounting, transfer, source, pricing and
 recovery tests. [VALIDATION.md](VALIDATION.md) records completed runs and their

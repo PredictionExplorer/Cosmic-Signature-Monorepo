@@ -70,7 +70,9 @@ function changedFiles() {
   if (!baseline) {
     for (const candidate of [
       "refs/remotes/origin/HEAD",
+      "refs/remotes/origin/V4",
       "refs/remotes/origin/main",
+      "refs/heads/V4",
       "refs/heads/main",
     ]) {
       try {
@@ -166,22 +168,21 @@ function audit() {
 
 try {
   if (mode === "hooks") {
-    execute("git", ["config", "--local", "core.hooksPath", ".githooks"]);
-    process.stdout.write("Installed repository pre-commit and pre-push hooks.\n");
+    execute("sh", ["../scripts/install-hooks"]);
   } else if (mode === "setup") {
     const pinned = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).packageManager;
     process.stdout.write(`Installing locked dependencies with ${pinned}.\n`);
     execute("git", ["submodule", "update", "--init", "--recursive"]);
     pnpm(["install", "--frozen-lockfile"]);
     pnpm(["--dir", "frontend", "install", "--frozen-lockfile"]);
-    execute("git", ["config", "--local", "core.hooksPath", ".githooks"]);
+    process.stdout.write("Use ../scripts/install-hooks to enable the shared hooks.\n");
   } else if (mode === "pre-commit") {
     const files = gitFiles(root, ["diff", "--cached", "--name-only", "--no-renames"]);
     const scopes = classifyChanges(files);
     prerequisites({ contracts: scopes.contracts || scopes.frontend, frontend: scopes.frontend });
     step("Staged contents and whitespace", () => {
       assertStagedMatchesWorktree(root, files);
-      execute("git", ["diff", "--cached", "--check"]);
+      execute("git", ["diff", "--cached", "--check", "--", "."]);
     });
     clearHookGitEnvironment();
     step("Formatting staged files", () =>
@@ -200,7 +201,7 @@ try {
       );
     }
     prerequisites();
-    step("Working tree whitespace", () => execute("git", ["diff", "--check"]));
+    step("Working tree whitespace", () => execute("git", ["diff", "--check", "--", "."]));
     step("Formatting changed files", () => format(changedFiles()));
     clearHookGitEnvironment();
     step("Developer gate regression tests", tooling);

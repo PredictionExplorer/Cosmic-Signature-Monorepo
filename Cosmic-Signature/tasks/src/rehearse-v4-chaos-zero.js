@@ -10,7 +10,7 @@ const unit = 10n ** 18n;
 const grant = 8_000n * unit;
 
 function readChaosZeroArtifact(name_) {
-	const chaosRoot_ = process.env.CHAOS_ZERO_ROOT || path.resolve(__dirname, "../../../ChaosZero");
+	const chaosRoot_ = path.resolve(__dirname, "../../../ChaosZero");
 	return JSON.parse(fs.readFileSync(path.join(chaosRoot_, "out", name_ + ".sol", name_ + ".json"), "utf8"));
 }
 

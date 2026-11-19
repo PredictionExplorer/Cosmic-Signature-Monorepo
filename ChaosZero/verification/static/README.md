@@ -13,3 +13,5 @@ python3.13 -m unittest discover -s verification/static
 ```
 
 Inspect `.local/static/results.json` for the full detector description and locations. Before updating a fingerprint, review the affected control flow and update the security rationale if it has changed. The compiler writes temporary ASTs to an isolated directory, leaving normal build artifacts intact.
+
+Slither 0.11.6 can list the same nested ERC-1155 callbacks in two orders for the reviewed `sell` finding. Its two exact IDs in `reviewed.json` were compared for identical call groups, expressions, paths and source offsets. Both count toward the same single finding. Another ID or a duplicate still fails verification.

@@ -25,9 +25,16 @@ def verify_findings(report, reviewed):
         return row["impact"], row["check"], row["id"]
 
     expected = Counter(fingerprint(row) for row in reviewed)
-    if any(n != 1 for n in expected.values()):
-        raise ValueError("Duplicate reviewed findings")
-    actual = Counter(fingerprint(row) for row in detectors)
+    aliases = {}
+    for finding in reviewed:
+        primary = fingerprint(finding)
+        for identifier in [finding["id"], *finding.get("equivalent_ids", [])]:
+            key = (finding["impact"], finding["check"], identifier)
+            if key in aliases:
+                raise ValueError("Duplicate reviewed fingerprint")
+            aliases[key] = primary
+    reported = (fingerprint(row) for row in detectors)
+    actual = Counter(aliases.get(key, key) for key in reported)
     if expected != actual:
         raise ValueError(
             f"Unreviewed findings: {list((actual - expected).elements())}\n"

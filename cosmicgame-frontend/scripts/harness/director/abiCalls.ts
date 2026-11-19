@@ -143,10 +143,12 @@ export async function readSecondsUntilActivation(world: World): Promise<bigint> 
 
 /** Seconds until the cycle can finalize; 0 when finalizable (or no gesture yet). */
 export async function readSecondsUntilFinalization(world: World): Promise<bigint> {
-  return (await world.publicClient.readContract({
+  const remaining = (await world.publicClient.readContract({
     ...game(world),
     functionName: 'getDurationUntilMainPrize', // lexicon-allow-abi
   })) as bigint;
+  // The contract returns signed seconds; the harness countdown stays at zero after expiry.
+  return remaining > 0n ? remaining : 0n;
 }
 
 export async function readFinalizationTime(world: World): Promise<bigint> {

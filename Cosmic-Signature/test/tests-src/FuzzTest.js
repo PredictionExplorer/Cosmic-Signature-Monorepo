@@ -94,17 +94,8 @@ describe("FuzzTest", function () {
 		const originalContractReferences_ = { ...fixtureContracts_ };
 		const seed_ = parseFuzzSeedFromEnvironment(process.env.FUZZ_SEED) ?? generateRandomUInt256();
 		const profile_ = buildProfile(LONG_TEST_MODE_CODE, readEnvOverrides());
-		const previousChaosZeroRoot_ = process.env.CHAOS_ZERO_ROOT;
-		process.env.CHAOS_ZERO_ROOT = prepareChaosZero();
-		try {
-			await runFuzzCampaigns(profile_, seed_);
-		} finally {
-			if (previousChaosZeroRoot_ === undefined) {
-				delete process.env.CHAOS_ZERO_ROOT;
-			} else {
-				process.env.CHAOS_ZERO_ROOT = previousChaosZeroRoot_;
-			}
-		}
+		prepareChaosZero();
+		await runFuzzCampaigns(profile_, seed_);
 
 		// Snapshot restoration does not undo mutations of the fixture's cached JavaScript object.
 		// Check added fields too, so this regression does not depend on a random wallet swap.

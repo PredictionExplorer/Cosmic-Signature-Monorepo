@@ -19,6 +19,7 @@ import {
   assertStagedMatchesWorktree,
   classifyChanges,
   formatCandidates,
+  gitFiles,
   run,
   VECTOR_GENERATORS,
   verifyGeneratedFixture,
@@ -43,6 +44,32 @@ test("contract prerequisites require both the test library and standard token im
   mkdirSync(dirname(erc1155), { recursive: true });
   writeFileSync(erc1155, "// Token dependency fixture\n");
   assert.doesNotThrow(() => assertContractDependencies(root));
+});
+
+test("component checks use relative paths and ignore staged or dirty siblings", (t) => {
+  const repo = temporaryDirectory(t);
+  run("git", ["init", "--quiet", repo]);
+  const component = join(repo, "ChaosZero");
+  mkdirSync(join(component, "src"), { recursive: true });
+  writeFileSync(join(component, "src/Market.sol"), "tracked\n");
+  writeFileSync(join(repo, "unrelated.js"), "sibling\n");
+  run("git", ["-C", repo, "add", "."]);
+  assert.deepEqual(gitFiles(component, ["diff", "--cached", "--name-only"]), ["src/Market.sol"]);
+  run("git", [
+    "-C",
+    repo,
+    "-c",
+    "user.name=Test",
+    "-c",
+    "user.email=test@example.invalid",
+    "commit",
+    "-qm",
+    "fixture",
+  ]);
+  writeFileSync(join(repo, "unrelated.js"), "dirty sibling\n");
+  assert.doesNotThrow(() => assertCleanPushTree(component));
+  writeFileSync(join(component, "src/Market.sol"), "dirty component\n");
+  assert.throws(() => assertCleanPushTree(component));
 });
 
 test("partially staged source cannot validate different code from the commit", (t) => {

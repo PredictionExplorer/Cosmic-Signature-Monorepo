@@ -19,7 +19,6 @@ async function main() {
         "public",
         "package.json",
         "tsconfig.json",
-        "next-env.d.ts",
         "postcss.config.mjs",
         "next.config.ts",
       ].map((file) => cp(join(source, file), join(site, file), { recursive: true })),

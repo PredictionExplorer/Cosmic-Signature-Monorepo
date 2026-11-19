@@ -1,5 +1,5 @@
 /**
- * Harness configuration: sibling repo locations, ports, and run options.
+ * Harness configuration: game and backend locations, ports, and run options.
  *
  * Everything is resolvable from environment variables so CI and unusual local
  * setups can relocate pieces, but the defaults match the conventional layout:
@@ -61,7 +61,7 @@ export function resolveHarnessConfig(
     env.COSMIC_CONTRACTS_DIR?.trim() || join(frontendDir, '..', 'Cosmic-Signature'),
   );
   const backendDir = resolve(
-    env.RWCG_BACKEND_DIR?.trim() || join(frontendDir, '..', 'augur-explorer'),
+    env.RWCG_BACKEND_DIR?.trim() || join(frontendDir, '..', '..', 'augur-explorer'),
   );
 
   return {
@@ -101,22 +101,22 @@ export interface PreflightIssue {
 }
 
 /**
- * Static preflight: verifies the sibling repos look right before any process
+ * Static preflight: verifies the game and backend packages exist before any process
  * is started. Docker/Go checks are separate because they shell out.
  */
 export function preflightRepoIssues(config: HarnessConfig): PreflightIssue[] {
   const issues: PreflightIssue[] = [];
   if (!existsSync(join(config.contractsDir, 'hardhat.config.js'))) {
     issues.push({
-      problem: `Contracts repo not found at ${config.contractsDir} (missing hardhat.config.js).`,
-      resolution:
-        'Clone PredictionExplorer/Cosmic-Signature next to this repo or set COSMIC_CONTRACTS_DIR.',
+      problem: `Game package not found at ${config.contractsDir} (missing hardhat.config.js).`,
+      resolution: 'Point COSMIC_CONTRACTS_DIR to the Cosmic-Signature package in this checkout.',
     });
   }
   if (!existsSync(join(config.backendDir, 'compose.yaml'))) {
     issues.push({
-      problem: `Backend repo not found at ${config.backendDir} (missing compose.yaml).`,
-      resolution: 'Clone the RWCG backend repo next to this repo or set RWCG_BACKEND_DIR.',
+      problem: `Backend package not found at ${config.backendDir} (missing compose.yaml).`,
+      resolution:
+        'Clone augur-explorer next to this monorepo or set RWCG_BACKEND_DIR to its checkout.',
     });
   }
   return issues;

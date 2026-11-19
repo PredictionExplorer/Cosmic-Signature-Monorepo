@@ -22,18 +22,15 @@ against every game state on demand, with zero mocks in the data path.
 
 ## Prerequisites
 
-- The two sibling repos, cloned next to this one (paths overridable):
-  - `../Cosmic-Signature` (contracts, Hardhat) — or `COSMIC_CONTRACTS_DIR`
-  - `../augur-explorer` (RWCG backend: indexer + API) — or `RWCG_BACKEND_DIR`
+- The game contracts in `Cosmic-Signature/` in this monorepo.
+- The external `PredictionExplorer/augur-explorer` indexer and API. Clone it alongside the monorepo or set `RWCG_BACKEND_DIR` to its absolute path.
 - Docker (for Postgres; the orchestrator starts Docker Desktop on macOS if
   it's not running)
 - Go ≥ 1.26 (builds the backend binaries once; prebuilt `bin/` is reused)
-- solc 0.8.34 via `solc-select` if the contracts repo has no compiled
+- solc 0.8.38 via `solc-select` if the contracts repo has no compiled
   `artifacts/` yet (one-time compile)
 
-CI pins both sibling repos in [`harness.lock.json`](../harness.lock.json);
-local runs use your working copies as-is. Bumping the lock file is the
-deliberate, reviewed way to adopt contract/backend changes.
+CI uses the in-tree game and the backend revision in [harness.lock.json](../harness.lock.json). Use that backend revision locally to reproduce CI.
 
 ## Quick start
 
@@ -147,18 +144,17 @@ and the full endgame. Design rules:
 - Setup reuses a healthy running stack (pinning it to `quiet` and restoring
   your scenario afterwards) or boots a dedicated one on port 3100 and tears
   it down.
-- CI runs it as the `harness-e2e` job with sibling repos pinned by
-  `harness.lock.json`; the mocked-API e2e job sets `HARNESS_E2E=0`.
+- The frontend CI harness runs against the in-tree game and the pinned external backend. The mocked-API e2e job sets `HARNESS_E2E=0`.
 
 ## Environment knobs
 
-| Variable                                                                                                    | Default                                    | Purpose                                            |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------------------- |
-| `COSMIC_CONTRACTS_DIR` / `RWCG_BACKEND_DIR`                                                                 | `../Cosmic-Signature`, `../augur-explorer` | Sibling repo locations                             |
-| `HARNESS_CHAIN_PORT` / `HARNESS_DB_PORT` / `HARNESS_API_PORT` / `HARNESS_WEB_PORT` / `HARNESS_CONTROL_PORT` | 8545 / 55432 / 8099 / 3000 / 8686          | Ports                                              |
-| `HARNESS_RNG_SEED`                                                                                          | fixed                                      | Deterministic persona activity                     |
-| `HARNESS_COMPOSE_PROJECT`                                                                                   | `cosmic-harness`                           | Docker Compose namespace                           |
-| `HARNESS_E2E`                                                                                               | `1`                                        | Set `0` to exclude the harness Playwright projects |
+| Variable                                                                                                    | Default                                       | Purpose                                            |
+| ----------------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------- |
+| `COSMIC_CONTRACTS_DIR` / `RWCG_BACKEND_DIR`                                                                 | `../Cosmic-Signature`, `../../augur-explorer` | Game package and external backend paths            |
+| `HARNESS_CHAIN_PORT` / `HARNESS_DB_PORT` / `HARNESS_API_PORT` / `HARNESS_WEB_PORT` / `HARNESS_CONTROL_PORT` | 8545 / 55432 / 8099 / 3000 / 8686             | Ports                                              |
+| `HARNESS_RNG_SEED`                                                                                          | fixed                                         | Deterministic persona activity                     |
+| `HARNESS_COMPOSE_PROJECT`                                                                                   | `cosmic-harness`                              | Docker Compose namespace                           |
+| `HARNESS_E2E`                                                                                               | `1`                                           | Set `0` to exclude the harness Playwright projects |
 
 The orchestrator injects the frontend env (`NEXT_PUBLIC_NETWORK=local`, local
 RPC/API URLs, `NEXT_PUBLIC_HARNESS=1`) into its `next dev` child — your
@@ -172,9 +168,7 @@ dist dir (`.harness/next`), so a regular `npm run dev` can coexist.
   own files under `~/ae_logs/`.
 - **"A harness stack appears to be running already"** — `npm run harness -- down`
   (or `status` to inspect).
-- **Gesture/finalize selector errors after a contracts-repo update** — the
-  deployed game's ABI drifted from `contracts/*.json`. Pin the contracts repo
-  to the ref in `harness.lock.json`, or refresh the frontend ABIs.
+- **Gesture/finalize selector errors after a contract update** — check that the frontend ABIs in `contracts/` match the game package at the tested commit.
 - **Docker not running** — the orchestrator starts Docker Desktop on macOS
   and waits; elsewhere start the daemon manually.
 - **Fresh universe wanted** — `npm run harness -- reset` (wipes the DB volume;

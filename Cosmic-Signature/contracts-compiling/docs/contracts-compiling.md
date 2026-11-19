@@ -8,20 +8,19 @@ But instead of executing loose commands in the terminal, prefer executing script
 
 1. Install the Solidity Compiler.
 
-   This Hardhat project uses the binary solc compiler (not solc-js) 0.8.34.\
+   This Hardhat project uses the binary solc compiler (not solc-js) 0.8.38.\
    We recommend using solc-select:
 
    ```bash
    pip3 install solc-select
-   solc-select use 0.8.34 --always-install
+   solc-select use 0.8.38 --always-install
    ```
 
    For more info on solc setup and other relevant info and code, see Comment-202409011 and locations where it's referenced.
 
-2. Clone the GitHub repo if you haven't already.
+2. Enter the game package from the monorepo root.
 
    ```bash
-   git clone https://github.com/PredictionExplorer/Cosmic-Signature.git
    cd Cosmic-Signature
    ```
 

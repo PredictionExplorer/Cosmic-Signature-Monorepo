@@ -1,0 +1,85 @@
+name: Axiom Zero verification
+
+on:
+  push:
+    branches:
+      - main
+      - V4
+    paths:
+      - axiomzero/**
+      - Cosmic-Signature/**
+      - .github/workflows/axiom.yml
+  pull_request:
+    branches:
+      - main
+      - V4
+    paths:
+      - axiomzero/**
+      - Cosmic-Signature/**
+      - .github/workflows/axiom.yml
+
+concurrency:
+  group: ${{ github.workflow }}-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Corepack downloads the pnpm version pinned in package.json; never prompt.
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+
+permissions:
+  contents: read
+defaults:
+  run:
+    working-directory: axiomzero
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          package_json_file: axiomzero/package.json
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: axiomzero/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Build
+        run: pnpm build
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium webkit
+
+      # Playwright starts its own production server (see playwright.config.ts)
+      # and covers the public flows plus the axe accessibility audit. Pages
+      # read the live collection backends and the public Arbitrum RPC, so the
+      # config's CI retries absorb transient rate limiting.
+      - name: End-to-end and accessibility tests
+        run: pnpm test:e2e
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-test-results
+          path: axiomzero/test-results/
+          retention-days: 7

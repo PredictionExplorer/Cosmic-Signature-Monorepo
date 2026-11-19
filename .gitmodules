@@ -1,0 +1,6 @@
+[submodule "ChaosZero/lib/forge-std"]
+	path = ChaosZero/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "ChaosZero/lib/openzeppelin-contracts"]
+	path = ChaosZero/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

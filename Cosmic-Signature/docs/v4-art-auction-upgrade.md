@@ -83,7 +83,7 @@ ENABLE_HARDHAT_PREPROCESSOR=false npx hardhat compile
 RUN_V4_FORK_REHEARSAL=1 ENABLE_HARDHAT_PREPROCESSOR=false npx hardhat --config hardhat.art-auction-fork.config.js run --no-compile --network hardhat tasks/src/rehearse-v4-art-auction-upgrade.js
 ```
 
-The rehearsal loads the production Foundry artifact from the sibling `ChaosZero` checkout (or `CHAOS_ZERO_ROOT`). It tests the real CST transfer, all eight market positions, previous-market settlement, and the second grant, in addition to the artwork lifecycle.
+The rehearsal loads the production Foundry artifact from `ChaosZero/out/` in this working tree. It tests the real CST transfer, all eight market positions, previous-market settlement, and the second grant, in addition to the artwork lifecycle.
 
 The dedicated configuration creates the fork before provider initialization, avoiding EDR versions' unsupported storage overrides during `hardhat_reset`. It mines one empty local block before executing contract calls, pins local Osaka semantics, and uses its 16,777,216 transaction gas cap instead of the ordinary stress tests' deliberately huge gas limit. The public RPC may rate-limit or lack historical data; an archive-capable endpoint is required.
 
@@ -107,9 +107,9 @@ Before release, review the intended deployment addresses and pinned source, obta
 
 `npm run hardhat-test-quick` exercises one game proxy through V1, V2, V3 and V4 with the same participant wallets. The campaign checks the recorded balances and historical entitlements at each cutover, synchronizes the real Chaos Zero grant twice, preserves a winning position across a cycle boundary, and completes the real auction contract's bid, outbid, refund, settlement, delivery and proceeds transfer. Its independently funded local wallets and chain are discarded after the run.
 
-Install Foundry 1.7.1 and the game's normal Hardhat prerequisites. The quick and fuzz runners compile Chaos Zero's production contracts using that project's default Foundry profile. They use an explicit `CHAOS_ZERO_ROOT` or an existing sibling `../ChaosZero` checkout, including local source changes. Initialize the sibling's submodules before the first build. A standalone checkout fetches the reviewed companion revision and its recorded submodules into the game's ignored `cache/v4-companions` directory. The pin lives in `test/runners/prepare-chaos-zero.js`.
+Install Foundry 1.7.1 and the game's normal Hardhat prerequisites. Run `git submodule update --init --recursive` from the monorepo root. The campaign builds the market and adapter from `ChaosZero/` with its production Foundry profile, including local source edits. CI tests the game and market at the same commit.
 
-Run a single production-profile campaign from the game repository root.
+Run a single production-profile campaign from the `Cosmic-Signature/` directory.
 
 ```bash
 HARDHAT_MODE_CODE=1 LONG_TEST_MODE_CODE=1 ENABLE_HARDHAT_PREPROCESSOR=false \

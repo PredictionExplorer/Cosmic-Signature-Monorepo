@@ -45,7 +45,8 @@
     "impact": "Medium",
     "check": "reentrancy-no-eth",
     "site": "sell",
-    "id": "aba780d8ad83f61f7873c6df3ad0b9992b72b9edcb3b0442fc7924080504eea0"
+    "id": "aba780d8ad83f61f7873c6df3ad0b9992b72b9edcb3b0442fc7924080504eea0",
+    "equivalent_ids": ["3dfab32981936ad4e898407453e642b5f08617c37bb466d0b4a10ee1857d120a"]
   },
   {
     "impact": "Medium",

@@ -71,7 +71,6 @@ async function main() {
       "postcss.config.mjs",
       "next.config.ts",
       "tsconfig.json",
-      "next-env.d.ts",
     ].map((entry) =>
       cp(resolve(root, entry), resolve(site, entry), { recursive: true }),
     ),
@@ -81,9 +80,7 @@ async function main() {
     resolve(site, "node_modules"),
     "dir",
   );
-  const contractRoot = resolve(
-    process.env.COSMIC_CONTRACT_ROOT ?? resolve(root, "../Cosmic-Signature"),
-  );
+  const contractRoot = resolve(root, "../Cosmic-Signature");
   const fixtureFile = resolve(temp, "fixture.json");
   const config = resolve(temp, "hardhat.config.cjs");
   await writeFile(

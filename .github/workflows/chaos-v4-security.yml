@@ -1,10 +1,14 @@
-name: V4 security checks
+name: Repository security
 
 on:
   pull_request:
-    branches: [V4]
+    branches:
+      - main
+      - V4
   push:
-    branches: [V4]
+    branches:
+      - main
+      - V4
   workflow_dispatch:
 
 permissions: {}
@@ -13,6 +17,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    working-directory: .
 jobs:
   codeql:
     name: CodeQL (${{ matrix.language }})
@@ -78,9 +85,9 @@ jobs:
         run: '"$RUNNER_TEMP/zizmor" --strict-collection --no-ignores --format=github .github'
       - name: Check credential-detection rules
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: python3 verification/ci/test_gitleaks.py "$RUNNER_TEMP/gitleaks"
+        run: python3 ChaosZero/verification/ci/test_gitleaks.py "$RUNNER_TEMP/gitleaks"
       - name: Scan the checked-out history for credentials
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
-          "$RUNNER_TEMP/gitleaks" git --config .gitleaks.toml --log-opts='--diff-merges=first-parent HEAD' \
-            --redact=100 --ignore-gitleaks-allow --gitleaks-ignore-path /dev/null --no-banner .
+          "$RUNNER_TEMP/gitleaks" git --config ChaosZero/.gitleaks.toml --log-opts='--diff-merges=first-parent --all HEAD' \
+            --redact=100 --ignore-gitleaks-allow --gitleaks-ignore-path .github/security/reviewed-history.gitleaksignore --no-banner .

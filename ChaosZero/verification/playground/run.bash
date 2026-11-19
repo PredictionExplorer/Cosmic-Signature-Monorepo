@@ -4,16 +4,16 @@ set -euo pipefail
 main() {
 	local root frontend scratch
 	root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-	frontend="$(cd "${COSMIC_FRONTEND_ROOT:-$root/../cosmicgame-frontend}" && pwd)"
-	export COSMIC_CONTRACTS_DIR="$(cd "${COSMIC_CONTRACTS_DIR:-$root/../Cosmic-Signature}" && pwd)"
+	frontend="$(cd "$root/../cosmicgame-frontend" && pwd)"
+	export COSMIC_CONTRACTS_DIR="$(cd "$root/../Cosmic-Signature" && pwd)"
 	export CHAOS_ZERO_ROOT="$root"
-	export AXIOM_ZERO_ROOT="$(cd "${AXIOM_ZERO_ROOT:-$root/../axiomzero}" && pwd)"
-	export RWCG_BACKEND_DIR="$(cd "${RWCG_BACKEND_DIR:-$root/../augur-explorer}" && pwd)"
+	export AXIOM_ZERO_ROOT="$(cd "$root/../axiomzero" && pwd)"
+	export RWCG_BACKEND_DIR="$(cd "${RWCG_BACKEND_DIR:-$root/../../augur-explorer}" && pwd)"
 	# This copy has its own build, addresses, testing wallet and database configuration.
 	# No .env files, browser profiles or running developer stacks are reused.
 	scratch="$(mktemp -d "${TMPDIR:-/tmp}/cosmic-v4-browser.XXXXXXXX")"
 	echo "V4 browser workspace: $scratch"
-	git -C "$frontend" archive HEAD | tar -x -C "$scratch"
+	node "$root/verification/playground/stage-frontend.mjs" "$frontend" "$scratch"
 	if [[ "$(uname -s)" == Darwin ]]; then
 		cp -cR "$frontend/node_modules" "$scratch/node_modules"
 	else

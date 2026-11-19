@@ -1,0 +1,6 @@
+#!/bin/sh
+# Opt in for this clone; the relative path also works in linked worktrees.
+set -eu
+root=$(cd "$(dirname "$0")/.." && pwd)
+git -C "$root" config --local core.hooksPath .githooks
+echo "Installed the monorepo's component-aware Git hooks."

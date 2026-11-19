@@ -13,11 +13,11 @@ const baseEnv = { NODE_ENV: 'test' } as unknown as NodeJS.ProcessEnv;
 
 describe('resolveHarnessConfig', () => {
   it('applies conventional defaults relative to the workspace', () => {
-    const config = resolveHarnessConfig(baseEnv, '/tmp/frontend');
-    expect(config.frontendDir).toBe('/tmp/frontend');
-    expect(config.contractsDir).toBe('/tmp/Cosmic-Signature');
+    const config = resolveHarnessConfig(baseEnv, '/tmp/monorepo/frontend');
+    expect(config.frontendDir).toBe('/tmp/monorepo/frontend');
+    expect(config.contractsDir).toBe('/tmp/monorepo/Cosmic-Signature');
     expect(config.backendDir).toBe('/tmp/augur-explorer');
-    expect(config.runDir).toBe('/tmp/frontend/.harness');
+    expect(config.runDir).toBe('/tmp/monorepo/frontend/.harness');
     expect(config.chainPort).toBe(8545);
     expect(config.apiPort).toBe(8099);
     expect(config.webPort).toBe(3000);
@@ -50,7 +50,7 @@ describe('resolveHarnessConfig', () => {
 });
 
 describe('preflightRepoIssues', () => {
-  it('reports actionable issues for missing sibling repos and none when present', () => {
+  it('reports actionable issues for missing game and backend sources and none when present', () => {
     const scratch = mkdtempSync(join(tmpdir(), 'harness-config-'));
     try {
       const missing = preflightRepoIssues(

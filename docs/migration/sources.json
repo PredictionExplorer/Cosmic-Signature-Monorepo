@@ -1,0 +1,40 @@
+{
+  "Cosmic-Signature": {
+    "repository": "https://github.com/PredictionExplorer/Cosmic-Signature",
+    "branch": "V4",
+    "upstream": "7e4f483d67f2ba5d8a99cd03a9da2491c0e5c545",
+    "importedTree": "1aa48a5e8b972cbb3a121b61eff814ed60440e8d",
+    "localBase": "7e4f483d67f2ba5d8a99cd03a9da2491c0e5c545",
+    "worktreeSnapshot": "6f143e79267c40012f0e794fda529629fd105976",
+    "history": "history imported through credential filter",
+    "importCommit": "42da5cf4725cd06e06815ab2b9b4dd1d68f53384"
+  },
+  "ChaosZero": {
+    "repository": "https://github.com/PredictionExplorer/ChaosZero",
+    "branch": "V4",
+    "upstream": "809b53c689fa10fadf3c6b980c5611ee49aa58f1",
+    "importedTree": "ac1011b55409b11223cfdf13f806f13a95ba6d69",
+    "localBase": "018d0b12e1bb933e94d0d82aebf906df35335221",
+    "worktreeSnapshot": "8aad23add26d29c2a304e781d071de515c3316b7",
+    "history": "history imported through credential filter",
+    "importCommit": "d292e54648f9a7b682e94b4b984b7685ae94f45c"
+  },
+  "axiomzero": {
+    "repository": "https://github.com/PredictionExplorer/axiomzero",
+    "branch": "V4",
+    "upstream": "054c47d804267a3bd73436037e619a92a6fddaa3",
+    "importedTree": "1d2c8bb697de367250f5ef46a94461989bbecc35",
+    "history": "original commits",
+    "importCommit": "93e7449848d2bfede78bc768b98122e9e5ff0ec2"
+  },
+  "cosmicgame-frontend": {
+    "repository": "https://github.com/PredictionExplorer/cosmicgame-frontend",
+    "branch": "main",
+    "upstream": "939823399093399d324a0ab283967f38c4289832",
+    "importedTree": "4e92de5ded0fd3ab8f1cd3621bc26ac0cc36dcf1",
+    "localBase": "dc78746b88a9b16f2ae998a21a2b906b2a429f5a",
+    "worktreeSnapshot": "78cb0389414d113b2588e31024a0c09b2a49ff99",
+    "history": "history imported through credential filter",
+    "importCommit": "e82c7d1570049cb3e05b40c22d6cd416bd27fa0b"
+  }
+}

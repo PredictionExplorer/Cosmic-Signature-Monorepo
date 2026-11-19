@@ -1,0 +1,29 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directories:
+      - /Cosmic-Signature
+      - /cosmicgame-frontend
+      - /ChaosZero
+      - /ChaosZero/frontend
+      - /axiomzero
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    groups:
+      production:
+        patterns: ["*"]
+        exclude-patterns: ["@types/*", "eslint*", "@typescript-eslint/*"]
+      dev:
+        patterns: ["@types/*", "eslint*", "@typescript-eslint/*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5

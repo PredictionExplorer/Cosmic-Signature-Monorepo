@@ -1,10 +1,24 @@
-name: CI
+name: Chaos Zero verification
 
 permissions: {}
 
 on:
   push:
+    branches:
+      - main
+      - V4
+    paths:
+      - ChaosZero/**
+      - .github/workflows/chaos.yml
+      - .gitmodules
   pull_request:
+    branches:
+      - main
+      - V4
+    paths:
+      - ChaosZero/**
+      - .github/workflows/chaos.yml
+      - .gitmodules
   workflow_dispatch:
 
 concurrency:
@@ -15,6 +29,9 @@ env:
   CHECK_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
   NEXT_TELEMETRY_DISABLED: "1"
 
+defaults:
+  run:
+    working-directory: ChaosZero
 jobs:
   contracts:
     name: Contract and differential checks
@@ -29,11 +46,13 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          package_json_file: ChaosZero/package.json
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version-file: .node-version
+          node-version-file: ChaosZero/.node-version
           cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          cache-dependency-path: ChaosZero/pnpm-lock.yaml
       - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: v1.7.1
@@ -55,13 +74,15 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          package_json_file: ChaosZero/package.json
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version-file: .node-version
+          node-version-file: ChaosZero/.node-version
           cache: pnpm
           cache-dependency-path: |
-            pnpm-lock.yaml
-            frontend/pnpm-lock.yaml
+            ChaosZero/pnpm-lock.yaml
+            ChaosZero/frontend/pnpm-lock.yaml
       - name: Install locked developer tools
         run: pnpm install --frozen-lockfile
       - name: Install locked frontend dependencies
@@ -73,7 +94,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: frontend-coverage
-          path: frontend/coverage/
+          path: ChaosZero/frontend/coverage/
           if-no-files-found: ignore
           retention-days: 14
 
@@ -89,13 +110,15 @@ jobs:
           persist-credentials: false
           submodules: recursive
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          package_json_file: ChaosZero/package.json
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version-file: .node-version
+          node-version-file: ChaosZero/.node-version
           cache: pnpm
           cache-dependency-path: |
-            pnpm-lock.yaml
-            frontend/pnpm-lock.yaml
+            ChaosZero/pnpm-lock.yaml
+            ChaosZero/frontend/pnpm-lock.yaml
       - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: v1.7.1
@@ -113,7 +136,7 @@ jobs:
         with:
           name: browser-results
           path: |
-            playwright-report/
-            test-results/
+            ChaosZero/playwright-report/
+            ChaosZero/test-results/
           if-no-files-found: ignore
           retention-days: 14

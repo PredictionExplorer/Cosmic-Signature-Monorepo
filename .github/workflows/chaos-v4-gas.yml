@@ -1,15 +1,30 @@
-name: V4 market gas snapshots
+name: Chaos Zero — V4 market gas snapshots
 
 on:
   pull_request:
-    branches: [V4, main]
+    branches:
+      - main
+      - V4
+    paths:
+      - ChaosZero/**
+      - .github/workflows/chaos-v4-gas.yml
+      - .gitmodules
   push:
-    branches: [V4, main]
+    branches:
+      - main
+      - V4
+    paths:
+      - ChaosZero/**
+      - .github/workflows/chaos-v4-gas.yml
+      - .gitmodules
   workflow_dispatch:
 
 permissions:
   contents: read
 
+defaults:
+  run:
+    working-directory: ChaosZero
 jobs:
   gas:
     name: Check isolated V4 market calls
@@ -22,7 +37,7 @@ jobs:
           submodules: recursive
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version-file: .node-version
+          node-version-file: ChaosZero/.node-version
       - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
         with:
           version: v1.7.1

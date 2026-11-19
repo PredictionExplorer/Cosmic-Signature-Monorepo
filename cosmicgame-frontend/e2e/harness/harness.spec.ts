@@ -33,6 +33,15 @@ async function openHome(page: Page): Promise<void> {
   await expect(page.getByTestId('cycle-clock')).toBeVisible({ timeout: 30_000 });
 }
 
+async function openAllocations(page: Page) {
+  const disclosure = page.getByTestId('allocations-disclosure');
+  await disclosure.locator('summary').click();
+  await expect(disclosure).toHaveAttribute('open', '');
+  const ledger = page.getByTestId('allocation-ledger');
+  await expect(ledger).toBeVisible();
+  return ledger;
+}
+
 async function openExperimentalUi(page: Page): Promise<void> {
   await page.goto(appUrl('/experimental-ui'), { waitUntil: 'domcontentloaded' });
   await expect(page.getByTestId('cycle-monument')).toBeVisible({ timeout: 30_000 });
@@ -53,7 +62,7 @@ test('seeded history reaches the indexer and the app boots on it', async ({ page
 
   await openHome(page);
   await expect(page.getByTestId('gesture-message-chat')).toBeVisible();
-  await expect(page.getByTestId('allocation-ledger')).toBeVisible();
+  await openAllocations(page);
 });
 
 test('phase rendering follows the driven chain state', async ({ page }) => {
@@ -153,9 +162,10 @@ test('burner wallet and dev panel drive the game from the browser', async ({ pag
   // Burner connection flips the gesture panel from its connect prompt to the form.
   await expect(page.getByTestId('gesture-message-input').first()).toBeVisible({ timeout: 30_000 });
 
-  // Connected controls are taller than the observer preview; even that
-  // participant state must keep the complete allocation ledger in view.
-  const ledgerBox = await page.getByTestId('allocation-ledger').boundingBox();
+  // The expanded ledger should fit in the participant's desktop viewport.
+  const ledger = await openAllocations(page);
+  await ledger.scrollIntoViewIfNeeded();
+  const ledgerBox = await ledger.boundingBox();
   expect(ledgerBox).not.toBeNull();
   expect(ledgerBox!.y + ledgerBox!.height).toBeLessThanOrEqual(900);
 

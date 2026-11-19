@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 const ROOT = resolve(__dirname, '..');
 const PKG_PATH = resolve(ROOT, 'package.json');
-const CI_WORKFLOW_PATH = resolve(ROOT, '.github/workflows/ci.yml');
+const CI_WORKFLOW_PATH = resolve(ROOT, '../.github/workflows/game-site.yml');
 
 function readPkg(): {
   packageManager?: string;

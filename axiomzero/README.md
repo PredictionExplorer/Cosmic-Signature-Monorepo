@@ -71,8 +71,8 @@ corepack pnpm test:e2e
 ```
 
 GitHub Actions runs the same gates, including the Playwright end-to-end and
-axe accessibility suites, on every push to `main` and on pull requests (see
-`.github/workflows/ci.yml`). The e2e pages read the live collection backends
+axe accessibility suites, on relevant pushes and pull requests to `main` or
+`V4`. See the [Axiom Zero workflow](../.github/workflows/axiom.yml). The e2e pages read the live collection backends
 and the public Arbitrum RPC; configure an `ARBITRUM_RPC_URL` dedicated
 endpoint if public-RPC rate limiting makes runs flaky.
 
@@ -106,4 +106,4 @@ Use `/auctions/account` for funded bids, won lots, delivery and refunds. The set
 
 Public browsing and signing for the separate ETH auction use the reviewed auction address, runtime hash and creation block in `env.example`. Leave these empty before launch. Arbitrum deployments must match the production game and Cosmic Signature collection. Every lot reads its frozen opening price and next minimum from the contract. The auction wallet page shows previously registered batches and refund credit; settlement histories count confirmed sales. Listings and standing offers use the existing marketplace contract.
 
-For a local end-to-end run, compile the production game contracts in the adjacent `Cosmic-Signature` checkout (`ENABLE_HARDHAT_PREPROCESSOR=false npx hardhat compile`), then run `pnpm test:auction:local` here. Set `COSMIC_CONTRACT_ROOT` for another checkout. It builds a temporary production copy of Axiom Zero, starts its own Hardhat node and website on loopback ports 8559 and 4599, and tests bidding and settlement in Chromium using disposable node accounts. A second real v4 batch verifies that later opening-price changes preserve already registered lots. No signing keys are required.
+For a local end-to-end run, compile the production game contracts in the monorepo’s `Cosmic-Signature/` directory (`ENABLE_HARDHAT_PREPROCESSOR=false npx hardhat compile`), then run `pnpm test:auction:local` here. It builds a temporary production copy of Axiom Zero, starts its own Hardhat node and website on loopback ports 8559 and 4599, and tests bidding and settlement in Chromium using disposable node accounts. A second real v4 batch verifies that later opening-price changes preserve already registered lots. No signing keys are required.

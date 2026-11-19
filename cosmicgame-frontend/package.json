@@ -39,8 +39,7 @@
     "llms:build": "tsx scripts/generate-llms-docs.ts",
     "og:fonts": "tsx scripts/build-og-fonts.ts",
     "seo:share-check": "tsx scripts/share-metadata-check.ts",
-    "brand:icons": "tsx scripts/build-brand-icons.ts",
-    "prepare": "husky"
+    "brand:icons": "tsx scripts/build-brand-icons.ts"
   },
   "dependencies": {
     "@babel/runtime": "^7.11.0",

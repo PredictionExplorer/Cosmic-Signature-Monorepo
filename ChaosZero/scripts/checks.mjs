@@ -19,7 +19,8 @@ export function git(repoRoot, args) {
 }
 
 export function gitFiles(repoRoot, args) {
-  return git(repoRoot, [...args, "-z"])
+  const options = args[0] === "diff" ? [...args, "--relative"] : args;
+  return git(repoRoot, [...options, "-z", "--", "."])
     .split("\0")
     .filter(Boolean);
 }
@@ -85,7 +86,7 @@ export function assertPushReferencesMatchHead(input, head, resolveCommit) {
 }
 
 export function assertCleanPushTree(repoRoot) {
-  if (git(repoRoot, ["status", "--porcelain"]).trim()) {
+  if (git(repoRoot, ["status", "--porcelain", "--", "."]).trim()) {
     throw new Error(
       "The push hook requires a clean working tree so its checks test the exact commit being pushed. Use pnpm check to validate work in progress, then commit the complete change before pushing.",
     );

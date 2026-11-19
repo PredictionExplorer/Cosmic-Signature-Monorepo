@@ -14,7 +14,7 @@ const port = Number(process.env.PLAYWRIGHT_PORT ?? 3000);
  * harness (scripts/harness) — real contracts on a local chain, the real
  * indexer/API, and a testing-mode frontend. Included by default; disable
  * with HARNESS_E2E=0 (the CI job matrix runs it separately from the
- * mocked-API projects, which need no Docker/Go/sibling repos).
+ * mocked-API projects, which run without the local chain, Docker or Go).
  */
 const harnessEnabled = process.env.HARNESS_E2E !== '0';
 

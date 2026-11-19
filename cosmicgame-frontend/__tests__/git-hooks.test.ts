@@ -88,8 +88,8 @@ describe('git hooks', () => {
       expect(content).toContain('lint-staged');
     });
 
-    it('uses npx to invoke lint-staged', () => {
-      expect(content).toMatch(/npx\s+lint-staged/);
+    it('runs the installed formatter against this component and its own config', () => {
+      expect(content).toBe('npx --no-install lint-staged --cwd . --config package.json');
     });
 
     it('is a single-line script', () => {
@@ -108,8 +108,8 @@ describe('git hooks', () => {
       expect(content).toContain('commitlint');
     });
 
-    it('passes the commit message file via --edit $1', () => {
-      expect(content).toContain('--edit $1');
+    it('quotes the monorepo commit message path', () => {
+      expect(content).toContain('--edit "$1"');
     });
 
     it('is a single-line script', () => {

@@ -22,6 +22,15 @@ class TriageTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 verify_findings(self.report, self.reviewed)
 
+    def test_reviewed_order_variants_still_count_as_one_finding(self):
+        self.reviewed[0]["equivalent_ids"] = ["reordered"]
+        reordered = dict(self.reviewed[0], id="reordered")
+        self.report["results"]["detectors"] = [reordered]
+        verify_findings(self.report, self.reviewed)
+        self.report["results"]["detectors"].append(self.reviewed[0])
+        with self.assertRaises(ValueError):
+            verify_findings(self.report, self.reviewed)
+
     def test_unsuccessful_run_with_matching_output(self):
         self.report["success"] = False
         with self.assertRaises(ValueError):

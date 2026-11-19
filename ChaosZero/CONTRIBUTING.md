@@ -20,11 +20,7 @@ Retire these patches when upstream supports Zod 4. Changes must pass `pnpm test:
 both compilers' runtime parity check, the deployment tests, and the audit. Keep the root
 workspace separate from `frontend/`, which owns its own lockfile.
 
-Setup initializes the pinned `forge-std` and OpenZeppelin Contracts submodules, installs both lockfiles, and
-sets this clone's `core.hooksPath` to `.githooks`. It does not change global Git
-configuration. After cloning elsewhere, run setup there too. The hook scripts
-and `node /absolute/path/to/ChaosZero/scripts/check.mjs <mode>` work from any
-working directory.
+Setup initializes the pinned `forge-std` and OpenZeppelin Contracts submodules and installs both lockfiles. Run `pnpm hooks:install` to enable the shared hooks for this clone. The Chaos Zero checks scope Git paths to this directory.
 
 Run `pnpm dev:local` to launch the local prototype with mock CST. The launcher
 starts a disposable chain, deploys the local contracts and starts the frontend.
@@ -165,19 +161,22 @@ permissions and references with zizmor, and scans the checked-out Git history
 The other tools return failures directly in the workflow.
 
 To reproduce the local checks, install the actionlint, zizmor, and Gitleaks
-versions pinned in `.github/workflows/v4-security.yml` and put ShellCheck on
+versions pinned in `.github/workflows/chaos-v4-security.yml` and put ShellCheck on
 your path. The workflow records the SHA-256 pins for its Linux x64 archives.
 Run from the repository root in a full clone with history.
 
 ```sh
 actionlint
 zizmor --offline --strict-collection --no-ignores .github
-python3 verification/ci/test_gitleaks.py gitleaks
-gitleaks git --config .gitleaks.toml --log-opts='--diff-merges=first-parent HEAD' \
-  --redact=100 --ignore-gitleaks-allow --gitleaks-ignore-path /dev/null --no-banner .
+python3 ChaosZero/verification/ci/test_gitleaks.py gitleaks
+gitleaks git --config ChaosZero/.gitleaks.toml --log-opts='--diff-merges=first-parent --all HEAD' \
+  --redact=100 --ignore-gitleaks-allow --gitleaks-ignore-path .github/security/reviewed-history.gitleaksignore --no-banner .
 ```
 
 CI also checks zizmor's online rules with its read-only job token. Gitleaks uses
 the upstream detectors and adds rules for EVM signing-key assignments and
 credential-bearing RPC URLs. The two documented exceptions in `.gitleaks.toml`
 apply to the public CST address and the published Anvil key in local examples.
+
+The monorepo records reviewed public fixtures and classifier false positives in
+[the historical fingerprint list](../.github/security/reviewed-history.gitleaksignore). Each entry matches one commit, path, detector and line. A new commit introducing the same pattern is scanned independently.
