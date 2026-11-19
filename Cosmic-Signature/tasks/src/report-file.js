@@ -28,7 +28,8 @@ async function withNewReport(reportPath_, operation_) {
 			let json_;
 			try {
 				json_ = JSON.stringify(report_, null, 3);
-				await fs.writeFile(partial_, json_, { flag: "wx", mode: 0o600 });
+				// The pending directory is private. The published address report follows the operator's umask.
+				await fs.writeFile(partial_, json_, { flag: "wx" });
 				await fs.rename(partial_, draft_);
 				await fs.link(draft_, reportPath_);
 			} catch (error_) {

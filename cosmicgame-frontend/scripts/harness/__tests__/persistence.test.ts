@@ -33,7 +33,7 @@ describe('harness persistence boundaries', () => {
   });
 
   it('keeps an open reader on a complete snapshot while publishing the next one', () => {
-    const config = { ...resolveHarnessConfig({}, dir), runDir: dir };
+    const config = { ...resolveHarnessConfig({ NODE_ENV: 'test' }, dir), runDir: dir };
     const file = join(dir, 'state.json');
     const initial = emptyState(config);
     writeState(config, initial);
