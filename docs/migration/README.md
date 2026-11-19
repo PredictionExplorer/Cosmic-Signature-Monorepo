@@ -2,6 +2,8 @@
 
 [sources.json](sources.json) records the upstream repository, branch, full commit and exact Git tree imported for each component. The import tree includes the reconciled local V4 changes. The subsequent integration commit wires the directories, Git hooks, workflows and tests together. `make verify-import` verifies the recorded snapshots using only the Git data in a full clone.
 
+The main site was imported as `cosmicgame-frontend` and now lives in [Cosmic-Signature-frontend](../../Cosmic-Signature-frontend/). The manifest uses its name at the import commit.
+
 | Component | Selected work |
 | --- | --- |
 | Game | The published V4 implementation plus the local four-version fuzz campaign, real companion contract checks and replay/bootstrap work |

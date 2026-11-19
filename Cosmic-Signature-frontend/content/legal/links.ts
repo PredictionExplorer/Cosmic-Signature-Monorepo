@@ -1,4 +1,4 @@
-import { CODE_REPOSITORIES } from '@/content/code/structure';
+import { CODE_REPOSITORIES, frontendSourceUrl } from '@/content/code/structure';
 
 import { OUTBOUND_LINKS, type OutboundLinkId } from '@/config/siteNav';
 
@@ -32,7 +32,6 @@ export const OUTBOUND_HREFS = Object.fromEntries(
 const repository = (id: (typeof CODE_REPOSITORIES)[number]['id']): string =>
   CODE_REPOSITORIES.find((repo) => repo.id === id)?.href ?? OUTBOUND_HREFS.github;
 
-const FRONTEND_REPOSITORY = repository('frontend');
 const CONTRACTS_REPOSITORY = repository('contracts');
 
 /** The published Hacken report on the Cosmic Signature contracts. */
@@ -44,7 +43,7 @@ export const SUPPORT_EMAIL = 'support@cosmicsignature.com';
 
 /** A file's change history on the public frontend repository's default branch. */
 export function frontendFileHistory(path: string): string {
-  return `${FRONTEND_REPOSITORY}/commits/main/${path}`;
+  return frontendSourceUrl('commits', path);
 }
 
 /** A directory of the contracts repository's default branch. */
@@ -82,10 +81,10 @@ export const LEGAL_LINKS = {
   sourcify: { kind: 'external', href: 'https://sourcify.dev' },
   hacken: { kind: 'external', href: HACKEN_REPORT_URL },
   contractsRepository: { kind: 'external', href: CONTRACTS_REPOSITORY },
-  frontendRepository: { kind: 'external', href: FRONTEND_REPOSITORY },
+  frontendRepository: { kind: 'external', href: frontendSourceUrl('tree') },
   github: { kind: 'external', href: OUTBOUND_HREFS.github },
-  license: { kind: 'external', href: `${FRONTEND_REPOSITORY}/blob/main/LICENSE` },
-  notices: { kind: 'external', href: `${FRONTEND_REPOSITORY}/blob/main/THIRD_PARTY_NOTICES.md` },
+  license: { kind: 'external', href: frontendSourceUrl('blob', 'LICENSE') },
+  notices: { kind: 'external', href: frontendSourceUrl('blob', 'THIRD_PARTY_NOTICES.md') },
   certora: { kind: 'external', href: contractsRepositoryPath('certora') },
   smtchecker: { kind: 'external', href: contractsRepositoryPath('smtchecker') },
   slither: { kind: 'external', href: contractsRepositoryPath('slither') },

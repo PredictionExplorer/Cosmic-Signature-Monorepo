@@ -5,7 +5,7 @@ Develop the game, its main website, the Chaos Zero markets and the Axiom Zero ma
 | Component | Contents |
 | --- | --- |
 | [Cosmic-Signature](Cosmic-Signature/) | Game proxy implementations V1 through V4, CST, the NFT collection, the English auction, upgrade checks and stateful fuzz tests |
-| [cosmicgame-frontend](cosmicgame-frontend/) | Main multilingual site and game dApp, wallet flows, protocol content and local harness |
+| [Cosmic-Signature-frontend](Cosmic-Signature-frontend/) | Main multilingual site and game dApp, wallet flows, protocol content and local harness |
 | [ChaosZero](ChaosZero/) | Eight-question game-funded market, settlement vault, web app, gas/bytecode/symbolic checks and cross-site browser test |
 | [axiomzero](axiomzero/) | Marketplace site and V4 auction catalogue, bidding, refunds, results and NFT delivery |
 

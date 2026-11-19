@@ -4,7 +4,7 @@ updates:
   - package-ecosystem: npm
     directories:
       - /Cosmic-Signature
-      - /cosmicgame-frontend
+      - /Cosmic-Signature-frontend
       - /ChaosZero
       - /ChaosZero/frontend
       - /axiomzero

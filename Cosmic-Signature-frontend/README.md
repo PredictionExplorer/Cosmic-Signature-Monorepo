@@ -26,8 +26,8 @@ The app serves two hosts from one codebase: the marketing site (`cosmicsignature
 1. **Clone and install:**
 
    ```bash
-   git clone <repo-url>
-   cd cosmicgame-frontend
+   git clone https://github.com/PredictionExplorer/Cosmic-Signature-Monorepo.git
+   cd Cosmic-Signature-Monorepo/Cosmic-Signature-frontend
    npm ci
    ```
 

@@ -7,7 +7,7 @@ on:
       - main
       - V4
     paths:
-      - cosmicgame-frontend/**
+      - Cosmic-Signature-frontend/**
       - Cosmic-Signature/**
       - .github/workflows/game-site.yml
   pull_request:
@@ -15,14 +15,14 @@ on:
       - main
       - V4
     paths:
-      - cosmicgame-frontend/**
+      - Cosmic-Signature-frontend/**
       - Cosmic-Signature/**
       - .github/workflows/game-site.yml
 permissions:
   contents: read
 defaults:
   run:
-    working-directory: cosmicgame-frontend
+    working-directory: Cosmic-Signature-frontend
 
 jobs:
   lint-test-build:
@@ -37,7 +37,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: cosmicgame-frontend/package-lock.json
+          cache-dependency-path: Cosmic-Signature-frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
 
@@ -71,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: game-site-coverage
-          path: cosmicgame-frontend/coverage/
+          path: Cosmic-Signature-frontend/coverage/
           retention-days: 14
       - name: Build
         run: npm run build
@@ -115,7 +115,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: cosmicgame-frontend/package-lock.json
+          cache-dependency-path: Cosmic-Signature-frontend/package-lock.json
       - name: Install dependencies
         run: npm ci
 
@@ -128,8 +128,8 @@ jobs:
         with:
           name: browser-diagnostics-${{ matrix.shard }}
           path: |
-            cosmicgame-frontend/playwright-report
-            cosmicgame-frontend/test-results
+            Cosmic-Signature-frontend/playwright-report
+            Cosmic-Signature-frontend/test-results
           retention-days: 7
 
   # The game and site share a revision. The external indexer uses the harness lock.
@@ -157,13 +157,13 @@ jobs:
           revision=$(git -C .external/augur-explorer rev-parse HEAD)
           jq -e --arg revision "$revision" '
             .backend.repository == "PredictionExplorer/augur-explorer" and .backend.ref == $revision
-          ' cosmicgame-frontend/harness.lock.json > /dev/null
+          ' Cosmic-Signature-frontend/harness.lock.json > /dev/null
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: cosmicgame-frontend/package-lock.json
+          cache-dependency-path: Cosmic-Signature-frontend/package-lock.json
       - name: Setup Go (backend toolchain)
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
@@ -202,7 +202,7 @@ jobs:
         id: harness-playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('cosmicgame-frontend/package-lock.json') }}
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('Cosmic-Signature-frontend/package-lock.json') }}
 
       - name: Install Playwright (chromium)
         if: steps.harness-playwright-cache.outputs.cache-hit != 'true'
@@ -221,6 +221,6 @@ jobs:
         with:
           name: harness-logs
           path: |
-            cosmicgame-frontend/.harness/logs
-            cosmicgame-frontend/playwright-report
+            Cosmic-Signature-frontend/.harness/logs
+            Cosmic-Signature-frontend/playwright-report
           retention-days: 7

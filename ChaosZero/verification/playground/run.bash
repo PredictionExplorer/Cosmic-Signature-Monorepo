@@ -4,7 +4,7 @@ set -euo pipefail
 main() {
 	local root frontend scratch
 	root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-	frontend="$(cd "$root/../cosmicgame-frontend" && pwd)"
+	frontend="$(cd "$root/../Cosmic-Signature-frontend" && pwd)"
 	export COSMIC_CONTRACTS_DIR="$(cd "$root/../Cosmic-Signature" && pwd)"
 	export CHAOS_ZERO_ROOT="$root"
 	export AXIOM_ZERO_ROOT="$(cd "$root/../axiomzero" && pwd)"
