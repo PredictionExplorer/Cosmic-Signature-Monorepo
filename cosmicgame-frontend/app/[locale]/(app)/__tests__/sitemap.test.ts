@@ -88,20 +88,13 @@ describe('sitemap (host-aware)', () => {
         expect(entry).toHaveProperty('lastModified');
         expect(entry).toHaveProperty('changeFrequency');
         expect(entry).toHaveProperty('priority');
-        expect(entry.alternates?.languages).toEqual(
-          expect.objectContaining({
-            en: expect.stringMatching(/^https:\/\/app\.cosmicsignature\.com/),
-            'x-default': expect.stringMatching(/^https:\/\/app\.cosmicsignature\.com/),
-            ...Object.fromEntries(
-              TRANSLATED_LOCALES.map((locale) => [
-                locale,
-                expect.stringMatching(
-                  new RegExp(`^https://app\\.cosmicsignature\\.com/${locale}(?:/|$)`),
-                ),
-              ]),
-            ),
-          }),
-        );
+        const languages = entry.alternates?.languages;
+        for (const locale of routing.locales) {
+          const url = new URL(String(languages?.[locale]));
+          expect(url.origin).toBe('https://app.cosmicsignature.com');
+          if (locale !== routing.defaultLocale) expect(url.pathname.split('/')[1]).toBe(locale);
+        }
+        expect(languages?.['x-default']).toBe(languages?.[routing.defaultLocale]);
       }
     });
 
@@ -132,11 +125,11 @@ describe('sitemap (host-aware)', () => {
       }
     });
 
-    it('all URLs start with the app base URL', async () => {
+    it('all URLs belong to the app origin', async () => {
       const entries = await sitemap();
       const baseUrl = 'https://app.cosmicsignature.com';
       for (const entry of entries) {
-        expect(entry.url).toMatch(new RegExp(`^${baseUrl}`));
+        expect(new URL(entry.url).origin).toBe(baseUrl);
       }
     });
 

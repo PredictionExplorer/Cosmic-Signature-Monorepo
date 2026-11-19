@@ -1,6 +1,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
+import ts from 'typescript';
+
 import { CACHE_WINDOW } from '@/lib/cacheWindow';
 
 const ROOT = process.cwd();
@@ -84,7 +86,15 @@ function valueImports(source: string): { names: string; specifier: string }[] {
   }));
 }
 
-const CLIENT_MODULE = /^(?:\s*(?:\/\/[^\n]*|\/\*[\s\S]*?\*\/))*\s*['"]use client['"]/;
+/** Inspect the JavaScript directive prologue, letting TypeScript consume comments and trivia. */
+function isClientModule(file: string, source: string): boolean {
+  const { statements } = ts.createSourceFile(file, source, ts.ScriptTarget.Latest);
+  for (const statement of statements) {
+    if (!ts.isExpressionStatement(statement) || !ts.isStringLiteral(statement.expression)) break;
+    if (statement.expression.text === 'use client') return true;
+  }
+  return false;
+}
 
 /**
  * Whether a module reads next-intl's request locale when it renders on the
@@ -97,7 +107,7 @@ function readsRequestLocale(file: string, seen = new Set<string>()): string[] | 
   if (seen.has(file)) return null;
   seen.add(file);
   const source = readFileSync(file, 'utf8');
-  if (CLIENT_MODULE.test(source)) return null;
+  if (isClientModule(file, source)) return null;
   for (const { names, specifier } of valueImports(source)) {
     if (specifier === 'next-intl/server') return [file];
     if (specifier === 'next-intl' && /\buse[A-Z]\w*/.test(names)) return [file];

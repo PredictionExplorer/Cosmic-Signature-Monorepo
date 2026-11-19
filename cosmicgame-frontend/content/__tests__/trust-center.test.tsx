@@ -327,9 +327,16 @@ describe('Audits', () => {
 
   it('links the formal verification artifacts in the contracts repository', () => {
     render(PAGES.audits('en'));
-    for (const name of ['Certora specifications', 'SMTChecker configuration', 'Slither analysis']) {
-      expect(screen.getByRole('link', { name: new RegExp(name) }).getAttribute('href')).toMatch(
-        /github\.com\/PredictionExplorer\/Cosmic-Signature\/tree\/main\//,
+    for (const [name, folder] of [
+      ['Certora specifications', 'certora'],
+      ['SMTChecker configuration', 'smtchecker'],
+      ['Slither analysis', 'slither'],
+    ] as const) {
+      expect(
+        screen.getByRole('link', { name: (label) => label.startsWith(name + ' ') }),
+      ).toHaveAttribute(
+        'href',
+        'https://github.com/PredictionExplorer/Cosmic-Signature/tree/main/' + folder,
       );
     }
   });

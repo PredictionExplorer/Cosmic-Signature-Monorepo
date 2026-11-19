@@ -1,4 +1,9 @@
-import { getEnvValidation, REQUIRED_ENV_VARS } from '../networks';
+import {
+  getEnvValidation,
+  getPublicClientRpcUrl,
+  networkConfig,
+  REQUIRED_ENV_VARS,
+} from '../networks';
 
 const ORIGINAL_ENV = process.env;
 
@@ -73,5 +78,31 @@ describe('network environment validation', () => {
       valid: false,
       missing: ['NEXT_PUBLIC_NETWORK (must be: local, sepolia, or mainnet)'],
     });
+  });
+});
+
+describe('browser RPC routing', () => {
+  const configured = networkConfig.rpcUrl;
+  afterEach(() => {
+    networkConfig.rpcUrl = configured;
+  });
+
+  it.each([
+    'https://ARBITRUM-MAINNET.infura.io/v3/demo',
+    'https://arb-mainnet.g.alchemy.com/v2/demo',
+  ])('uses the configured HTTPS provider endpoint %s', (rpc) => {
+    networkConfig.rpcUrl = rpc;
+    expect(getPublicClientRpcUrl()).toBe(rpc);
+  });
+
+  it.each([
+    'https://rpc.example.test/infura.io',
+    'https://rpc.example.test/?name=alchemy.com',
+    'https://infura.io.example.test/',
+    'http://arb-mainnet.g.alchemy.com',
+    'unconfigured host',
+  ])('proxies the custom endpoint %s', (rpc) => {
+    networkConfig.rpcUrl = rpc;
+    expect(getPublicClientRpcUrl()).toBe(`${window.location.origin}/api/rpc`);
   });
 });

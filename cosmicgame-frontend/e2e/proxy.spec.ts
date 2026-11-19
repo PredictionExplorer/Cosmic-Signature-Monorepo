@@ -1,6 +1,7 @@
 // lexicon-allow-start: exercises legacy URL rewrites by design
 import { expect, request, test } from '@playwright/test';
 
+import { firstHeadingText } from './raw-response-html';
 import { LOCALE_CHROME, TRANSLATED_LOCALES } from './locale-fixtures';
 
 /**
@@ -25,22 +26,19 @@ const BASE = `http://localhost:${process.env.PLAYWRIGHT_PORT ?? 3000}`;
  * Location header is `http://app.cosmicsignature.local:3000` under `next dev`
  * and `https://app.cosmicsignature.com` under `next start` (and CI). Both are
  * acceptable; we just need to verify the redirect hits an app origin and
- * preserves the path + query string. This mirrors the pattern in
- * `e2e/landing.spec.ts`.
+ * preserves the path + query string. Each host and path must match in full.
  */
-const APP_ORIGIN_PREFIX_PATTERN =
-  /^https:\/\/app\.cosmicsignature\.com|^http:\/\/app\.cosmicsignature\.local:3000/;
-const LANDING_ORIGIN_PREFIX_PATTERN =
-  /^https:\/\/cosmicsignature\.com|^http:\/\/cosmicsignature\.local:3000/;
+const REDIRECT_ORIGINS = {
+  app: ['https://app.cosmicsignature.com', 'http://app.cosmicsignature.local:3000'],
+  landing: ['https://cosmicsignature.com', 'http://cosmicsignature.local:3000'],
+};
 
-function expectedAppLocation(pathAndQuery: string): RegExp {
-  const escaped = pathAndQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`${APP_ORIGIN_PREFIX_PATTERN.source}${escaped}$`);
-}
-
-function expectedLandingLocation(pathAndQuery: string): RegExp {
-  const escaped = pathAndQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`${LANDING_ORIGIN_PREFIX_PATTERN.source}${escaped}$`);
+function expectRedirect(
+  location: string | undefined,
+  host: keyof typeof REDIRECT_ORIGINS,
+  path: string,
+): void {
+  expect(REDIRECT_ORIGINS[host].map((origin) => origin + path)).toContain(location);
 }
 
 test.describe('proxy middleware', () => {
@@ -62,7 +60,7 @@ test.describe('proxy middleware', () => {
       });
       const res = await ctx.get(`${BASE}/gallery`, { maxRedirects: 0 });
       expect(res.status()).toBe(308);
-      expect(res.headers()['location']).toMatch(expectedAppLocation('/gallery'));
+      expectRedirect(res.headers()['location'], 'app', '/gallery');
       await ctx.dispose();
     });
 
@@ -73,7 +71,7 @@ test.describe('proxy middleware', () => {
 
       const res = await ctx.get(`${BASE}/current-cycle`, { maxRedirects: 0 });
       expect(res.status()).toBe(308);
-      expect(res.headers()['location']).toMatch(expectedAppLocation('/current-cycle'));
+      expectRedirect(res.headers()['location'], 'app', '/current-cycle');
 
       await ctx.dispose();
     });
@@ -87,9 +85,7 @@ test.describe('proxy middleware', () => {
       });
 
       expect(res.status()).toBe(308);
-      expect(res.headers()['location']).toMatch(
-        expectedAppLocation('/experimental-ui?source=landing'),
-      );
+      expectRedirect(res.headers()['location'], 'app', '/experimental-ui?source=landing');
       await ctx.dispose();
     });
 
@@ -99,7 +95,7 @@ test.describe('proxy middleware', () => {
       });
       const res = await ctx.get(`${BASE}/gallery?round=5&sort=desc`, { maxRedirects: 0 });
       expect(res.status()).toBe(308);
-      expect(res.headers()['location']).toMatch(expectedAppLocation('/gallery?round=5&sort=desc'));
+      expectRedirect(res.headers()['location'], 'app', '/gallery?round=5&sort=desc');
       await ctx.dispose();
     });
 
@@ -136,7 +132,7 @@ test.describe('proxy middleware', () => {
       ]) {
         const res = await ctx.get(`${BASE}${path}`, { maxRedirects: 0 });
         expect(res.status(), path).toBe(308);
-        expect(res.headers()['location']).toMatch(expectedAppLocation(path));
+        expectRedirect(res.headers()['location'], 'app', path);
       }
       await ctx.dispose();
     });
@@ -164,7 +160,7 @@ test.describe('proxy middleware', () => {
       });
       const res = await ctx.get(`${BASE}/gallery?round=5`, { maxRedirects: 0 });
       expect(res.status()).toBe(308);
-      expect(res.headers()['location']).toMatch(expectedLandingLocation('/gallery?round=5'));
+      expectRedirect(res.headers()['location'], 'landing', '/gallery?round=5');
       await ctx.dispose();
     });
   });
@@ -250,7 +246,7 @@ test.describe('proxy middleware', () => {
       });
       const res = await ctx.get(`${BASE}/about`, { maxRedirects: 0 });
       expect(res.status()).toBe(308);
-      expect(res.headers()['location']).toMatch(expectedLandingLocation('/about'));
+      expectRedirect(res.headers()['location'], 'landing', '/about');
       await ctx.dispose();
     });
   });
@@ -269,7 +265,7 @@ test.describe('proxy middleware', () => {
         expect(body).toContain(`lang="${locale}"`);
         // The text, not its markup: a CJK headline glues each closing mark to
         // its character in a nowrap span (PhrasedText).
-        expect(body.replace(/<[^>]+>/g, '')).toContain(chrome.landingText);
+        expect(firstHeadingText(body)).toContain(chrome.landingText);
         await ctx.dispose();
       });
 
@@ -279,9 +275,7 @@ test.describe('proxy middleware', () => {
         });
         const res = await ctx.get(`${BASE}/${locale}/gallery?round=5`, { maxRedirects: 0 });
         expect(res.status()).toBe(308);
-        expect(res.headers()['location']).toMatch(
-          expectedAppLocation(`/${locale}/gallery?round=5`),
-        );
+        expectRedirect(res.headers()['location'], 'app', `/${locale}/gallery?round=5`);
         await ctx.dispose();
       });
 
@@ -294,8 +288,10 @@ test.describe('proxy middleware', () => {
         });
 
         expect(res.status()).toBe(308);
-        expect(res.headers()['location']).toMatch(
-          expectedAppLocation(`/${locale}/experimental-ui?source=landing`),
+        expectRedirect(
+          res.headers()['location'],
+          'app',
+          `/${locale}/experimental-ui?source=landing`,
         );
         await ctx.dispose();
       });
@@ -327,7 +323,7 @@ test.describe('proxy middleware', () => {
         });
         const res = await ctx.get(`${BASE}/${locale}/about`, { maxRedirects: 0 });
         expect(res.status()).toBe(308);
-        expect(res.headers()['location']).toMatch(expectedLandingLocation(`/${locale}/about`));
+        expectRedirect(res.headers()['location'], 'landing', `/${locale}/about`);
         await ctx.dispose();
       });
 
@@ -337,7 +333,7 @@ test.describe('proxy middleware', () => {
         });
         const res = await ctx.get(`${BASE}/${locale}/gallery`, { maxRedirects: 0 });
         expect(res.status()).toBe(308);
-        expect(res.headers()['location']).toMatch(expectedLandingLocation(`/${locale}/gallery`));
+        expectRedirect(res.headers()['location'], 'landing', `/${locale}/gallery`);
         await ctx.dispose();
       });
     });

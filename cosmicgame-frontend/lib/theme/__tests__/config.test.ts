@@ -9,6 +9,7 @@ import {
   THEME_CHROME,
   THEME_COOKIE_NAME,
   THEME_INIT_SCRIPT,
+  THEME_SCRIPT_ATTRIBUTES,
   THEME_STORAGE_KEY,
   themeCookieString,
   themeFromCookie,
@@ -98,12 +99,17 @@ describe('browser chrome colour', () => {
 });
 
 describe('theme bootstrap before hydration', () => {
+  const currentScript = document.createElement('script');
+  for (const [name, value] of Object.entries(THEME_SCRIPT_ATTRIBUTES))
+    currentScript.setAttribute(name, value);
+
   function runBootstrap(cookie: string, stored: string | null) {
     const meta = { content: '#15BFFD', setAttribute: jest.fn() };
     meta.setAttribute.mockImplementation((_name: string, value: string) => {
       meta.content = value;
     });
     const document = {
+      currentScript,
       cookie,
       documentElement: { dataset: { theme: DEFAULT_SITE_THEME } },
       querySelectorAll: jest.fn().mockReturnValue([meta]),
@@ -143,7 +149,7 @@ describe('theme bootstrap before hydration', () => {
   );
 
   it('still applies a saved palette when cookies are blocked', () => {
-    const document = { documentElement: { dataset: { theme: DEFAULT_SITE_THEME } } };
+    const document = { currentScript, documentElement: { dataset: { theme: DEFAULT_SITE_THEME } } };
     Object.defineProperty(document, 'cookie', {
       get() {
         throw new Error('Cookie access denied');
@@ -157,7 +163,7 @@ describe('theme bootstrap before hydration', () => {
   });
 
   it('leaves the page usable when all preference storage is blocked', () => {
-    const document = { documentElement: { dataset: { theme: 'unexpected' } } };
+    const document = { currentScript, documentElement: { dataset: { theme: 'unexpected' } } };
     Object.defineProperty(document, 'cookie', {
       get() {
         throw new Error('Cookie access denied');

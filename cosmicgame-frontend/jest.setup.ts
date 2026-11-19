@@ -235,7 +235,11 @@ jest.mock('next-intl', () => {
               interpolate(after, values),
             );
           }
-          return interpolate(message, values).replace(/<\/?\w+>/g, '');
+          // Tags belong to the catalog; interpolation values remain literal text.
+          return message
+            .split(/<\/?\w+>/)
+            .map((part) => interpolate(part, values))
+            .join('');
         }
       }
       return `${prefix}${key}`;

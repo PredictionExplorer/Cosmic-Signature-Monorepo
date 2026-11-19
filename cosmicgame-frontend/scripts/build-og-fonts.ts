@@ -23,42 +23,27 @@
 
 /* eslint-disable no-console -- CLI output; runs via npm scripts, never ships to the browser. */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
 import subsetFont from 'subset-font';
 
 import {
-  GOOGLE_FONTS_COMMIT,
   OG_SUBSET_SOURCES,
   sourceRegistryProblems,
   subsetGlyphText,
   WEB_FONT_CUTS,
-  type FontSource,
 } from './build-og-fonts-core';
 import { fontCodePoints, uncoveredCharacters } from './font-cmap';
 import { ogCoverageProblems } from './og-font-coverage';
+import { readFontSource } from './read-font-source';
 
 const ROOT = resolve(process.cwd());
-const CACHE_DIR = join(ROOT, 'node_modules', '.cache', 'og-fonts', GOOGLE_FONTS_COMMIT);
 const OUTPUT_DIR = join(ROOT, 'assets', 'fonts');
-
-async function fetchSource(source: FontSource): Promise<Buffer> {
-  const cached = join(CACHE_DIR, basename(source.path));
-  if (existsSync(cached)) return readFileSync(cached);
-  const url = `https://raw.githubusercontent.com/google/fonts/${GOOGLE_FONTS_COMMIT}/${encodeURI(source.path)}`;
-  console.log(`fetch ${url}`);
-  const response = await fetch(url, { signal: AbortSignal.timeout(60_000) });
-  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
-  const buffer = Buffer.from(await response.arrayBuffer());
-  mkdirSync(CACHE_DIR, { recursive: true });
-  writeFileSync(cached, buffer);
-  return buffer;
-}
 
 async function build(file: string): Promise<void> {
   const source = OG_SUBSET_SOURCES[file]!;
-  const font = await fetchSource(source);
+  const font = await readFontSource(ROOT, source);
   const covered = fontCodePoints(new Uint8Array(font));
   // A face that is one of several in a stack (Inter in a CJK body stack) only
   // draws what it has; the coverage check below proves every stack is whole.

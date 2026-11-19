@@ -6,6 +6,8 @@
  * another's.
  */
 
+import { escapeRegex } from './locale-text-matchers';
+
 /** `zh-TW` → `{ camel: 'ZhTw', upper: 'ZH_TW' }`; `en` → `{ camel: 'En', upper: 'EN' }`. */
 export function identifierSuffix(locale: string): { camel: string; upper: string } {
   const parts = locale.split('-');
@@ -21,11 +23,14 @@ export function renameIdentifiers(source: string, from: string, to: string): str
   const toSuffix = identifierSuffix(to);
   return source
     .replace(
-      new RegExp(`\\b([A-Za-z][A-Za-z0-9]*)${fromSuffix.camel}\\b`, 'g'),
+      new RegExp(`\\b([A-Za-z][A-Za-z0-9]*)${escapeRegex(fromSuffix.camel)}\\b`, 'g'),
       `$1${toSuffix.camel}`,
     )
-    .replace(new RegExp(`\\b([A-Z][A-Z0-9_]*)_${fromSuffix.upper}\\b`, 'g'), `$1_${toSuffix.upper}`)
-    .replace(new RegExp(`(from '\\./[^']*\\.)${from}'`, 'g'), `$1${to}'`);
+    .replace(
+      new RegExp(`\\b([A-Z][A-Z0-9_]*)_${escapeRegex(fromSuffix.upper)}\\b`, 'g'),
+      `$1_${toSuffix.upper}`,
+    )
+    .replace(new RegExp(`(from '\\./[^']*\\.)${escapeRegex(from)}'`, 'g'), `$1${to}'`);
 }
 
 /**
