@@ -20,6 +20,7 @@
     "test:tooling": "node --test scripts/checks.test.mjs scripts/local-runtime.test.mjs scripts/browser-abi.test.mjs scripts/compiler-parity.test.mjs scripts/hardhat-validation.test.mjs",
     "test:math-oracle": "python3 scripts/check-log-bounds.py --self-test",
     "test:heavy": "node scripts/check.mjs heavy",
+    "test:v4:browser": "bash verification/playground/run.bash",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
     "audit:dependencies": "node scripts/check.mjs audit",

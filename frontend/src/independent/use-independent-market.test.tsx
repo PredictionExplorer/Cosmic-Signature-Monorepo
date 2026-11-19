@@ -484,22 +484,34 @@ describe("production V3 reads", () => {
       supported: true,
     };
   }
-  it("uses pinned V3 adapter metrics and never calls simulator methods", async () => {
-    production();
-    const { result } = renderHook(() => useIndependentMarket(MARKET, null), { wrapper: wrapper() });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data!.local).toBeNull();
-    expect(result.current.data!.metrics?.current?.gestureCount).toBe(42n);
-    expect(result.current.data!.metrics?.previous?.gestureCount).toBe(42n);
-    expect(
-      mocks.read.mock.calls.some(([r]) =>
-        ["roundStats", "getNextEthPrice", "getNextCstPrice", "seedPreview", "cycleTimes"].includes(
-          r.functionName,
+  it.each([42161, 31337])(
+    "reads V3 adapter metrics without simulator calls on chain %i",
+    async (chainId) => {
+      production();
+      mocks.config.chain.id = chainId;
+      mocks.getChainId.mockResolvedValue(chainId);
+      vi.stubEnv("NEXT_PUBLIC_LOCAL_SIMULATOR", "0");
+      const { result } = renderHook(() => useIndependentMarket(MARKET, null), {
+        wrapper: wrapper(),
+      });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data!.local).toBeNull();
+      expect(result.current.data!.metrics?.current?.gestureCount).toBe(42n);
+      expect(result.current.data!.metrics?.previous?.gestureCount).toBe(42n);
+      expect(
+        mocks.read.mock.calls.some(([r]) =>
+          [
+            "roundStats",
+            "getNextEthPrice",
+            "getNextCstPrice",
+            "seedPreview",
+            "cycleTimes",
+          ].includes(r.functionName),
         ),
-      ),
-    ).toBe(false);
-    for (const [request] of mocks.read.mock.calls) expect(request.blockNumber).toBe(123n);
-  });
+      ).toBe(false);
+      for (const [request] of mocks.read.mock.calls) expect(request.blockNumber).toBe(123n);
+    },
+  );
   it("represents unsupported metric records as unavailable, never a zero baseline", async () => {
     production();
     data.metrics = { ...(data.metrics as object), supported: false, gestureCount: 0n };

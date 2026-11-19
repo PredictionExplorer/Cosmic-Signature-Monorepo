@@ -133,6 +133,9 @@ Override local ports with `PORT=3100 ANVIL_PORT=8555 pnpm dev:local`. The launch
 refuses occupied ports. `pnpm local:smoke` checks the actual browser quote solver
 against the running contracts and restores its starting chain snapshot.
 
+When connecting this frontend to the real Cosmic Signature game on a local chain, set
+`NEXT_PUBLIC_LOCAL_SIMULATOR=0`. The market will read the outcome adapter’s metrics and hide the simulator controls.
+
 For the production prelaunch homepage without a local chain:
 
 ```sh
@@ -161,8 +164,11 @@ pnpm check:vectors     # Solidity/browser differential fixtures and math oracle
 pnpm test:deployment   # hidden prompts, secret handling, local deploy/resume/verify
 pnpm test:baseline     # historical replay, strict ties and evidence validation
 pnpm test:e2e          # disposable local chain and real browser lifecycle
+pnpm test:v4:browser   # gesture, market trade and artwork bid across three sites
 pnpm test:heavy        # 50,000 fuzz inputs per property; 512 x 256 invariant campaigns
 ```
+
+The [V4 browser test guide](verification/playground/README.md) lists the four companion checkouts, pinned revisions and local setup.
 
 The repository includes adversarial accounting, transfer, source, pricing and
 recovery tests. [VALIDATION.md](VALIDATION.md) records completed runs and their
