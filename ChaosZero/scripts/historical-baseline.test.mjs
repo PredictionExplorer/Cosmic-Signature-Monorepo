@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { publicHeader, publicReceipt } from "./verify-round-two.mjs";
 import test from "node:test";
 import {
   HISTORY_GAME,
@@ -265,4 +266,24 @@ test("historical reader rejects writes and credentials and validates unordered b
   );
   assert.equal(attempts, 2);
   assert.equal(waits, 1);
+});
+
+test("the historical RPC cache contains only typed evidence fields", () => {
+  const data = history();
+  const header = Object.values(data.headers)[0];
+  const cachedHeader = publicHeader({ ...header, unrelated: "sample note" });
+  assert.equal(Object.hasOwn(cachedHeader, "unrelated"), false);
+  assert.throws(() => publicHeader({ ...header, hash: "bad hash" }), /hash/);
+  const receipt = receipts(data)[0];
+  const normalized = publicReceipt({
+    ...receipt,
+    unrelated: "sample note",
+    logs: receipt.logs.map((log) => ({ ...log, unrelated: "sample note" })),
+  });
+  assert.equal(Object.hasOwn(normalized, "unrelated"), false);
+  assert.ok(normalized.logs.length > 0);
+  assert.equal(Object.hasOwn(normalized.logs[0], "unrelated"), false);
+  assert.deepEqual(canonicalLogs(normalized.logs), canonicalLogs(receipt.logs));
+  assert.throws(() => publicReceipt({ ...receipt, blockHash: "bad hash" }), /hash/);
+  assert.throws(() => publicReceipt({ ...receipt, status: "0x0" }), /unsuccessful/);
 });

@@ -1,7 +1,9 @@
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { defineConfig, devices } from '@playwright/test';
+
+import { readStateFile } from './scripts/harness/processes';
+import { harnessPort } from './scripts/harness/ports';
 
 if (process.env.FORCE_COLOR && process.env.NO_COLOR) {
   delete process.env.NO_COLOR;
@@ -25,15 +27,8 @@ const harnessEnabled = process.env.HARNESS_E2E !== '0';
 
 /** Web port of a running harness stack (state file), or the e2e default. */
 function harnessWebPort(): number {
-  try {
-    const state = JSON.parse(readFileSync(join(__dirname, '.harness', 'state.json'), 'utf8')) as {
-      webPort?: number;
-    };
-    if (state.webPort) return state.webPort;
-  } catch {
-    // No stack running yet — global setup will boot one on the default port.
-  }
-  return Number(process.env.HARNESS_WEB_PORT ?? 3100);
+  const state = readStateFile(join(__dirname, '.harness', 'state.json'));
+  return state?.webPort ?? harnessPort(process.env.HARNESS_WEB_PORT ?? 3100);
 }
 
 /**

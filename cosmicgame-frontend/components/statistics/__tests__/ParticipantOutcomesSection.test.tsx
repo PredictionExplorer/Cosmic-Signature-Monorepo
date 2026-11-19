@@ -79,7 +79,9 @@ describe('ParticipantOutcomesSection', () => {
   it('shows no difference between spent and received, in figures or columns', () => {
     render(<ParticipantOutcomesSection />);
     const table = screen.getByRole('table');
-    expect(screen.queryByText(/Received more|of 3$/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText((text) => text.includes('Received more') || text.endsWith('of 3')),
+    ).not.toBeInTheDocument();
     expect(
       within(table)
         .getAllByRole('columnheader')

@@ -4,9 +4,18 @@
  * a harness-specific dist dir so a regular `npm run dev` can coexist.
  */
 
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  ftruncateSync,
+  readFileSync,
+  rmSync,
+  writeSync,
+} from 'node:fs';
 import { join, relative } from 'node:path';
 
+import { openOptionalHarnessFile } from '../files';
 import type { HarnessConfig } from '../config';
 import { harnessPaths } from '../config';
 import { waitFor } from '../rpc';
@@ -17,8 +26,14 @@ import { apiBaseUrl } from './backend';
 
 /** Minimal .env parser — enough to recover existing values like the WalletConnect id. */
 export function readEnvFileValue(filePath: string, key: string): string | undefined {
-  if (!existsSync(filePath)) return undefined;
-  for (const rawLine of readFileSync(filePath, 'utf8').split('\n')) {
+  let content: string;
+  try {
+    content = readFileSync(filePath, 'utf8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+    throw err;
+  }
+  for (const rawLine of content.split('\n')) {
     const line = rawLine.trim();
     if (!line || line.startsWith('#')) continue;
     const eq = line.indexOf('=');
@@ -64,33 +79,56 @@ export function testingModeEnv(config: HarnessConfig): Record<string, string> {
   };
 }
 
+/**
+ * Next regenerates the tracked declaration when a harness-specific dist directory is used.
+ * Retain the original inode during startup so a replacement file cannot receive the restore.
+ */
+export async function withPreservedNextEnv<T>(
+  filePath: string,
+  start: () => Promise<T>,
+): Promise<T> {
+  const fd = openOptionalHarnessFile(filePath, constants.O_RDWR);
+  if (fd === null) return start();
+  try {
+    const original = readFileSync(fd);
+    const before = fstatSync(fd, { bigint: true });
+    try {
+      return await start();
+    } finally {
+      const after = fstatSync(fd, { bigint: true });
+      if (after.nlink > 0n && (after.mtimeNs !== before.mtimeNs || after.size !== before.size)) {
+        let offset = 0;
+        while (offset < original.length) {
+          offset += writeSync(fd, original, offset, original.length - offset, offset);
+        }
+        ftruncateSync(fd, original.length);
+      }
+    }
+  } finally {
+    closeSync(fd);
+  }
+}
+
 /** Start `next dev` in testing mode and wait until it serves. */
 export async function startFrontend(config: HarnessConfig): Promise<ManagedProcess> {
   rmSync(logFileFor(config, 'web'), { force: true });
-  // Next rewrites next-env.d.ts to reference the active dist dir at boot;
-  // the harness dist dir is machine-local, so the canonical (committed)
-  // content is restored once the server is up to keep the tree clean.
-  const nextEnvFile = join(config.frontendDir, 'next-env.d.ts');
-  const canonicalNextEnv = existsSync(nextEnvFile) ? readFileSync(nextEnvFile, 'utf8') : null;
-
-  const managed = spawnSupervised({
-    name: 'web',
-    command: 'npx',
-    args: ['next', 'dev', '-p', String(config.webPort)],
-    cwd: config.frontendDir,
-    env: testingModeEnv(config),
-    logFile: logFileFor(config, 'web'),
+  return withPreservedNextEnv(join(config.frontendDir, 'next-env.d.ts'), async () => {
+    const managed = spawnSupervised({
+      name: 'web',
+      command: 'npx',
+      args: ['next', 'dev', '-p', String(config.webPort)],
+      cwd: config.frontendDir,
+      env: testingModeEnv(config),
+      logFile: logFileFor(config, 'web'),
+    });
+    await waitFor(
+      `Next.js dev server on :${config.webPort}`,
+      async () => {
+        const response = await fetch(`http://127.0.0.1:${config.webPort}/`, { redirect: 'manual' });
+        return response.status < 500;
+      },
+      { timeoutMs: 120_000 },
+    );
+    return managed;
   });
-  await waitFor(
-    `Next.js dev server on :${config.webPort}`,
-    async () => {
-      const response = await fetch(`http://127.0.0.1:${config.webPort}/`, { redirect: 'manual' });
-      return response.status < 500;
-    },
-    { timeoutMs: 120_000 },
-  );
-  if (canonicalNextEnv !== null && readFileSync(nextEnvFile, 'utf8') !== canonicalNextEnv) {
-    writeFileSync(nextEnvFile, canonicalNextEnv);
-  }
-  return managed;
 }

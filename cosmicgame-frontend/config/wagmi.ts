@@ -18,7 +18,7 @@ import { createConfig, createStorage, http } from 'wagmi';
 import type { Chain } from 'viem';
 import { injected } from 'wagmi/connectors';
 
-import { networkConfig } from './networks';
+import { getPublicClientRpcUrl } from './networks';
 import { activeChain, localChain } from './chains';
 
 // Reown/WalletConnect project ID, consumed by the lazily installed wallet
@@ -28,22 +28,7 @@ export const walletConnectProjectId =
 
 export const walletAppName = 'Cosmic Signature';
 
-/**
- * Use RPC proxy when the node doesn't support CORS (e.g. self-hosted).
- * Infura/Alchemy have CORS; custom IPs need the proxy.
- */
-const rpcUrl = networkConfig.rpcUrl || '';
-const useRpcProxy =
-  rpcUrl &&
-  !rpcUrl.includes('infura.io') &&
-  !rpcUrl.includes('alchemy.com') &&
-  !rpcUrl.includes('arbitrum-mainnet.infura.io');
-// Server: use RPC directly (no CORS). Client: use proxy when RPC lacks CORS.
-const transportUrl = useRpcProxy
-  ? typeof window !== 'undefined'
-    ? `${window.location.origin}/api/rpc`
-    : rpcUrl
-  : rpcUrl;
+const transportUrl = getPublicClientRpcUrl();
 
 export const wagmiChains = [
   activeChain,
@@ -52,14 +37,7 @@ export const wagmiChains = [
 
 export const wagmiTransports = {
   [activeChain.id]: http(transportUrl || undefined),
-  [localChain.id]: http(
-    typeof window !== 'undefined' &&
-      rpcUrl &&
-      !rpcUrl.includes('infura.io') &&
-      !rpcUrl.includes('alchemy.com')
-      ? `${window.location.origin}/api/rpc`
-      : rpcUrl || 'http://127.0.0.1:8545',
-  ),
+  [localChain.id]: http(transportUrl || 'http://127.0.0.1:8545'),
 };
 
 /**

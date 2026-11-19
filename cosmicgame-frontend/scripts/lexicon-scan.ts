@@ -27,8 +27,18 @@
  * lexicon, and sealed backend wire-format field names.
  */
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { extname, join, relative, resolve } from 'node:path';
+import {
+  constants,
+  closeSync,
+  fstatSync,
+  openSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  lstatSync,
+  type Dirent,
+} from 'node:fs';
+import { extname, isAbsolute, join, relative, sep } from 'node:path';
 
 import type { TranslatedLocale } from '../i18n/routing';
 
@@ -46,7 +56,7 @@ import {
 } from './lexicon-scan-core';
 import { checkAppliesTo, fileLocale } from './locale-files';
 
-const ROOT = resolve(process.cwd());
+const ROOT = realpathSync(process.cwd());
 
 const SCAN_DIRS: readonly string[] = [
   'app',
@@ -223,25 +233,44 @@ function scanFile(absPath: string, relPath: string, content: string): void {
   }
 }
 
-function walk(dir: string): void {
-  const abs = join(ROOT, dir);
-  let entries: string[];
+/** Resolve links within the checkout, retaining the link name for locale-specific rules. */
+function checkedPath(path: string): string {
+  const target = realpathSync(path);
+  const rel = relative(ROOT, target);
+  if (isAbsolute(rel) || rel === '..' || rel.startsWith('..' + sep))
+    throw new Error(`Lexicon scan target is outside the repository: ${path}`);
+  return target;
+}
+
+function walk(dir: string, ancestors: readonly string[] = []): void {
+  let abs: string;
+  let entries: Dirent[];
   try {
-    entries = readdirSync(abs);
-  } catch {
-    return;
+    abs = checkedPath(join(ROOT, dir));
+    entries = readdirSync(abs, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT' && !ancestors.length) return;
+    throw error;
   }
+  if (ancestors.includes(abs)) throw new Error(`Directory cycle in lexicon scan: ${dir}`);
   for (const entry of entries) {
-    if (EXCLUDE_DIRS.has(entry)) continue;
-    const path = join(abs, entry);
-    const stat = statSync(path);
-    if (stat.isDirectory()) {
-      walk(join(dir, entry));
-    } else if (INCLUDE_EXTS.has(extname(entry))) {
-      if (flags.skipTests && /\.test\.(ts|tsx|js|jsx)$/.test(entry)) continue;
-      const content = readFileSync(path, 'utf8');
-      const rel = relative(ROOT, path);
-      scanFile(path, rel, content);
+    if (EXCLUDE_DIRS.has(entry.name)) continue;
+    const name = join(dir, entry.name);
+    const path = entry.isSymbolicLink()
+      ? checkedPath(join(abs, entry.name))
+      : join(abs, entry.name);
+    const type = entry.isSymbolicLink() ? lstatSync(path) : entry;
+    if (type.isDirectory()) {
+      walk(name, [...ancestors, abs]);
+    } else if (type.isFile() && INCLUDE_EXTS.has(extname(entry.name))) {
+      if (flags.skipTests && /\.test\.(ts|tsx|js|jsx)$/.test(entry.name)) continue;
+      const fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+      try {
+        if (!fstatSync(fd).isFile()) throw new Error(`Expected a regular source file: ${name}`);
+        scanFile(join(ROOT, name), name, readFileSync(fd, 'utf8'));
+      } finally {
+        closeSync(fd);
+      }
     }
   }
 }

@@ -23,11 +23,12 @@
  * fixture tree under test.
  */
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 
 import { routing } from '../i18n/routing';
 
+import { publishGeneratedFile } from './publish-generated-file';
 import { flattenMessages, isPlainObject } from './i18n-parity-core';
 import { identifierSuffix, localeModuleName, renameIdentifiers } from './locale-identifiers';
 
@@ -93,12 +94,10 @@ class Writer {
 
   write(relativePath: string, contents: string): void {
     const target = join(this.root, relativePath);
-    if (existsSync(target) && !this.overwrite) {
+    if (!publishGeneratedFile(target, contents, this.overwrite)) {
       this.skipped.push(relativePath);
       return;
     }
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, contents);
     this.written.push(relativePath);
   }
 }

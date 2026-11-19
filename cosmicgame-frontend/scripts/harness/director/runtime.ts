@@ -16,6 +16,7 @@ import {
 } from './actions';
 import { readFinalizeExclusivitySeconds } from './abiCalls';
 import { readCycleSnapshot, type CycleSnapshot } from './gameState';
+import { HarnessCommandError, publicCommandFailure } from './commandError';
 import { PACES, isPaceName, type Pace, type PaceName } from './pace';
 import { pickOne } from './personas';
 import {
@@ -112,8 +113,9 @@ export class DirectorRuntime {
   }
 
   async setPace(name: string): Promise<void> {
-    if (!isPaceName(name)) throw new Error(`Unknown pace "${name}"`);
-    if (name === 'seed-history') throw new Error('The seed-history pace is bootstrap-only');
+    if (!isPaceName(name)) throw new HarnessCommandError(`Unknown pace "${name}"`);
+    if (name === 'seed-history')
+      throw new HarnessCommandError('The seed-history pace is bootstrap-only');
     const generation = this.beginSupersedingMutation();
     await this.enqueueMutation(async () => {
       this.assertCurrentMutation(generation);
@@ -192,7 +194,7 @@ export class DirectorRuntime {
         kind: 'scenario',
         state: 'error',
         target: next.name,
-        error: message,
+        error: publicCommandFailure(err),
       };
     });
   }
@@ -269,9 +271,13 @@ export class DirectorRuntime {
             ? err
             : new HarnessTransitionAbortedError();
         }
-        const message = err instanceof Error ? err.message : String(err);
         this.startScenarioUnlocked(scenarioByName('quiet'));
-        this.transition = { kind: 'command', state: 'error', target, error: message };
+        this.transition = {
+          kind: 'command',
+          state: 'error',
+          target,
+          error: publicCommandFailure(err),
+        };
         throw err;
       } finally {
         if (this.commandAbortController === controller) this.commandAbortController = null;
@@ -306,7 +312,10 @@ export class DirectorRuntime {
       const messageOptions = options.message !== undefined ? { message: options.message } : {};
       if (kind === 'cst') {
         const made = await performCstGesture(this.world, persona, messageOptions);
-        if (!made) throw new Error(`${persona.name} cannot afford the current CST gesture cost`);
+        if (!made)
+          throw new HarnessCommandError(
+            `${persona.name} cannot afford the current CST gesture cost`,
+          );
         return made.txHash;
       }
       if (kind === 'rwlk') {
@@ -330,7 +339,7 @@ export class DirectorRuntime {
    * scenarios, the game is left alone afterwards). Used by tests.
    */
   async driveTo(phase: string): Promise<void> {
-    if (!isTargetPhase(phase)) throw new Error(`Unknown phase "${phase}"`);
+    if (!isTargetPhase(phase)) throw new HarnessCommandError(`Unknown phase "${phase}"`);
     await this.runManualCommand(phase, async (signal) => {
       this.transition = { kind: 'phase', state: 'driving', target: phase, error: null };
       await driveToPhase(this.world, phase, this.pace, { signal });

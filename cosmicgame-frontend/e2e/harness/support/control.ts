@@ -43,6 +43,7 @@ export async function control<T = Record<string, unknown>>(
 ): Promise<T> {
   const state = requireStack();
   const response = await fetch(`${controlUrl(state)}${path}`, {
+    redirect: 'error',
     method: body === undefined ? 'GET' : 'POST',
     headers: { 'content-type': 'application/json' },
     body: body === undefined ? null : JSON.stringify(body),
@@ -127,8 +128,8 @@ export function dashboardShowsOpenedCycle(d: DashboardShape): boolean {
 export async function readDashboard(): Promise<DashboardShape> {
   const state = requireStack();
   const [dashboardResponse, timeResponse] = await Promise.all([
-    fetch(`${apiUrl(state)}/statistics/dashboard`),
-    fetch(`${apiUrl(state)}/time/current`),
+    fetch(`${apiUrl(state)}/statistics/dashboard`, { redirect: 'error' }),
+    fetch(`${apiUrl(state)}/time/current`, { redirect: 'error' }),
   ]);
   if (!dashboardResponse.ok) throw new Error(`dashboard: HTTP ${dashboardResponse.status}`);
   if (!timeResponse.ok) throw new Error(`current time: HTTP ${timeResponse.status}`);

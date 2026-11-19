@@ -414,7 +414,7 @@ describe('AttachedNFTAllocationShowcase', () => {
 
     render(<AttachedNFTAllocationShowcase nfts={[createNft()]} cycleNumber={42} />);
 
-    const project = screen.getByRole('link', { name: new RegExp(host.replace(/\./g, '\\.')) });
+    const project = screen.getByRole('link', { name: (label) => label.split(' ')[0] === host });
     // A caption link, not a no-wrap button whose label could run off a phone.
     expect(project.className).not.toMatch(/whitespace-nowrap|\btruncate\b/);
     const label = within(project).getByText(host);

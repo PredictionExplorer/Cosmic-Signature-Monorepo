@@ -21,11 +21,12 @@
 
 /* eslint-disable no-console -- CLI output; runs via npm scripts, never ships to the browser. */
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 
 import { routing, type AppLocale } from '../i18n/routing';
 
+import { publishGeneratedFile } from './publish-generated-file';
 import {
   DERIVATIONS,
   convertJsonSource,
@@ -69,12 +70,10 @@ if (!converter) {
 }
 
 function writeGuarded(target: string, contents: string): boolean {
-  if (existsSync(target) && !cli.overwrite) {
+  if (!publishGeneratedFile(target, contents, cli.overwrite)) {
     console.warn(`skip  ${relative(ROOT, target)} (exists; pass --overwrite to replace)`);
     return false;
   }
-  mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, contents);
   console.log(`write ${relative(ROOT, target)}`);
   return true;
 }

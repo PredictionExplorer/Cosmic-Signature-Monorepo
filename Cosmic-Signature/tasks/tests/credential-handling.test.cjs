@@ -2,6 +2,8 @@
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const os = require("node:os");
+const { withNewReport } = require("../src/report-file.js");
 const path = require("node:path");
 const { test } = require("node:test");
 const { format } = require("node:util");
@@ -83,6 +85,11 @@ function createHarness(configurationKey_ = "", failDeployment_ = false, invalidW
 		"node:os": require("node:os"),
 		"node:path": path,
 		"node:fs": fileSystem_,
+		"./report-file.js": {
+			withNewReport: (file_, operation_) => operation_(report_ =>
+				fileSystem_.promises.writeFile(file_, JSON.stringify(report_, null, 3))
+			),
+		},
 		"hardhat/config": {
 			vars: { get: () => privateKey },
 			task(name_, description_, action_) {
@@ -117,6 +124,55 @@ function assertNoCredentials(logs_, secrets_) {
 }
 
 async function main() {
+	await test("only one operation can start for a report and readers see a completed JSON document", async (t_) => {
+		const directory_ = await fs.promises.mkdtemp(path.join(os.tmpdir(), "cs-report-"));
+		t_.after(() => fs.promises.rm(directory_, { recursive: true, force: true }));
+		const file_ = path.join(directory_, "report.json");
+		let started_, release_;
+		const entered_ = new Promise(resolve_ => { started_ = resolve_; });
+		const finish_ = new Promise(resolve_ => { release_ = resolve_; });
+		const first_ = withNewReport(file_, async save_ => {
+			started_();
+			await finish_;
+			await save_({ complete: true });
+		});
+		await entered_;
+		try {
+			await assert.rejects(fs.promises.readFile(file_), { code: "ENOENT" });
+			await assert.rejects(withNewReport(file_, () => assert.fail("second operation started")), /already pending/);
+		} finally {
+			release_();
+			await first_;
+		}
+		await assert.rejects(withNewReport(file_, () => assert.fail("existing report ignored")), /already exists/);
+		assert.deepEqual(JSON.parse(await fs.promises.readFile(file_, "utf8")), { complete: true });
+	});
+	await test("pre-publication failure releases the reservation and a competing final file preserves the recovery report", async (t_) => {
+		const directory_ = await fs.promises.mkdtemp(path.join(os.tmpdir(), "cs-report-"));
+		t_.after(() => fs.promises.rm(directory_, { recursive: true, force: true }));
+		const file_ = path.join(directory_, "report.json");
+		await assert.rejects(withNewReport(file_, () => { throw new Error("simulated failure"); }), /simulated failure/);
+		await assert.rejects(withNewReport(file_, async save_ => {
+			await fs.promises.writeFile(file_, "another writer", { flag: "wx" });
+			await save_({ complete: true });
+		}), { code: "EEXIST" });
+		assert.equal(await fs.promises.readFile(file_, "utf8"), "another writer");
+		assert.deepEqual(JSON.parse(await fs.promises.readFile(path.join(file_ + ".pending", "report.json"), "utf8")), { complete: true });
+		await assert.rejects(withNewReport(file_, () => assert.fail("retry started before reconciliation")), /already pending/);
+	});
+	await test("a draft write failure keeps its reservation before another chain operation can start", async (t_) => {
+		const directory_ = await fs.promises.mkdtemp(path.join(os.tmpdir(), "cs-report-"));
+		t_.after(() => fs.promises.rm(directory_, { recursive: true, force: true }));
+		const file_ = path.join(directory_, "report.json");
+		const failedWrite_ = t_.mock.method(fs.promises, "writeFile", async () => {
+			throw Object.assign(new Error("simulated storage failure"), { code: "ENOSPC" });
+		});
+		await assert.rejects(withNewReport(file_, save_ => save_({ complete: true })), { code: "ENOSPC" });
+		failedWrite_.mock.restore();
+		assert.deepEqual(await fs.promises.readdir(file_ + ".pending"), []);
+		await assert.rejects(fs.promises.lstat(file_), { code: "ENOENT" });
+		await assert.rejects(withNewReport(file_, () => assert.fail("retry started before reconciliation")), /already pending/);
+	});
 	const rpcSecret_ = "test-only-rpc-key-sentinel";
 	const rpcUrl_ = `https://user:${rpcSecret_}@rpc.invalid/${rpcSecret_}?apiKey=${rpcSecret_}`;
 	for (const failure_ of ["transport", "http", "json", "rpc", "decode"]) {

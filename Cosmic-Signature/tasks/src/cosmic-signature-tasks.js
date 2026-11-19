@@ -1,7 +1,7 @@
 "use strict";
 
 const nodeOsModule = require("node:os");
-const nodePathModule = require("node:path");
+const { withNewReport } = require("./report-file.js");
 const nodeFsModule = require("node:fs");
 const { vars, task } = require("hardhat/config");
 
@@ -32,9 +32,12 @@ async function deployCosmicSignatureContracts(args, hre, deployerPrivateKeyOverr
 	const deployConfigFilePath = args.deployconfigfilepath;
 	const deployConfigJsonString = await nodeFsModule.promises.readFile(deployConfigFilePath, "utf8");
 	const deployConfigObject = parseTaskJson(deployConfigJsonString, "deployment configuration");
-	if (nodeFsModule.existsSync(deployConfigObject.reportFilePath)) {
-		throw new Error(`"${deployConfigObject.reportFilePath}" already exists.`);
-	}
+	return withNewReport(deployConfigObject.reportFilePath, saveReport_ =>
+		deployConfiguredContracts(hre, deployConfigObject, deployerPrivateKeyOverride, saveReport_)
+	);
+}
+
+async function deployConfiguredContracts(hre, deployConfigObject, deployerPrivateKeyOverride, saveReport_) {
 	const deployerPrivateKey = deployerPrivateKeyOverride ?? (deployConfigObject.deployerPrivateKey || vars.get(`deployerPrivateKey_${hre.network.name}`));
 	const deployerSigner = createDeployerSigner(hre, deployerPrivateKey);
 
@@ -106,16 +109,7 @@ async function deployCosmicSignatureContracts(args, hre, deployerPrivateKeyOverr
 		cosmicSignatureGameImplementationAddress: contracts.cosmicSignatureGameImplementationAddress,
 		cosmicSignatureGameProxyAddress: contracts.cosmicSignatureGameProxyAddress,
 	};
-	const reportJsonString = JSON.stringify(reportObject, null, 3);
-	try {
-		await nodeFsModule.promises.mkdir(nodePathModule.dirname(deployConfigObject.reportFilePath), {recursive: true,});
-		await nodeFsModule.promises.writeFile(deployConfigObject.reportFilePath, reportJsonString);
-	} catch (errorObject) {
-		console.info("%s", "Report:");
-		console.info("%s", reportJsonString);
-		console.error();
-		throw errorObject;
-	}
+	await saveReport_(reportObject);
 	console.info("%s", `Report saved to "${deployConfigObject.reportFilePath}".${nodeOsModule.EOL}`);
 
 	if (deployConfigObject.donateEthToCosmicSignatureGame) {
@@ -240,9 +234,13 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	if (typeof newGameContractName === "string" && newGameContractName.split(":").at(-1) === "CosmicSignatureGameV4") {
 		throw new Error("Use the V4 upgrade procedure to supply the auction and ChaosZero market addresses in an atomic initializeV4(address,address) call.");
 	}
-	if (nodeFsModule.existsSync(upgradeConfigObject.reportFilePath)) {
-		throw new Error(`"${upgradeConfigObject.reportFilePath}" already exists.`);
-	}
+	return withNewReport(upgradeConfigObject.reportFilePath, saveReport_ =>
+		upgradeConfiguredGame(hre, upgradeConfigObject, saveReport_)
+	);
+})
+	.addParam("upgradeconfigfilepath", "Upgrade configuration file (JSON) path");
+
+async function upgradeConfiguredGame(hre, upgradeConfigObject, saveReport_) {
 	const deployConfigJsonString = await nodeFsModule.promises.readFile(upgradeConfigObject.deploymentConfigurationFilePath, "utf8");
 	const deployConfigObject = parseTaskJson(deployConfigJsonString, "deployment configuration");
 	const deployerPrivateKey = deployConfigObject.deployerPrivateKey || vars.get(`deployerPrivateKey_${hre.network.name}`);
@@ -292,16 +290,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 		newCosmicSignatureGameImplementationAddress: await safeErc1967GetChangedImplementationAddress(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress, existingCosmicSignatureGameImplementationAddress),
 	};
 	console.info();
-	const reportJsonString = JSON.stringify(reportObject, null, 3);
-	try {
-		await nodeFsModule.promises.mkdir(nodePathModule.dirname(upgradeConfigObject.reportFilePath), {recursive: true,});
-		await nodeFsModule.promises.writeFile(upgradeConfigObject.reportFilePath, reportJsonString);
-	} catch (errorObject) {
-		console.info("%s", "Report:");
-		console.info("%s", reportJsonString);
-		console.error();
-		throw errorObject;
-	}
+	await saveReport_(reportObject);
 	console.info("%s", `Done. Report saved to "${upgradeConfigObject.reportFilePath}".${nodeOsModule.EOL}`);
 
 	// // [Comment-202607153]
@@ -330,8 +319,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	// 		`${nodeOsModule.EOL}Reminder. Update the PrizesWallet address in "${deployConfigObject.reportFilePath}" and any its copies, as well as on the web site.`
 	// 	);
 	// }
-})
-	.addParam("upgradeconfigfilepath", "Upgrade configuration file (JSON) path");
+}
 
 task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly upgraded CosmicSignatureGame contract", async (args, hre) => {
 	const upgradeConfigFilePath = args.upgradeconfigfilepath;

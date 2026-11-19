@@ -26,7 +26,7 @@ import { TERMS_ALLOCATION_ROWS } from '@/content/legal/termsAllocations';
 import { TRUST_CENTER_PAGES, TRUST_DOCUMENT_DATES } from '@/content/legal/trustCenter';
 import { protocolFacts } from '@/content/protocol-facts';
 
-import { richTextLinks } from '@/components/legal/RichText';
+import { parseRichText, richTextLinks } from '@/components/legal/RichText';
 import { ART_MOTION_STORAGE_KEY as HOOK_ART_MOTION_KEY } from '@/components/home/experimental/useArtMotionPreference';
 import { attemptStorageKey, bestScoreStorageKey } from '@/components/quiz/quizProgress';
 import { ATTENTION_STORAGE_KEY as HOOK_ATTENTION_KEY } from '@/hooks/useAttentionPreferences';
@@ -83,7 +83,10 @@ const GETTERS = {
 const TRANSLATED = routing.locales.filter((locale) => locale !== routing.defaultLocale);
 
 /** Strips link tags, for assertions about the words. */
-const plain = (text: string | undefined) => (text ?? '').replace(/<\/?\w+>/g, '');
+const plain = (text: string | undefined) =>
+  parseRichText(text ?? '')
+    .map((token) => token.value)
+    .join('');
 
 describe('localized legal content', () => {
   it.each(Object.entries(GETTERS))(
@@ -227,11 +230,13 @@ describe('localized legal content', () => {
     expect(ART_MOTION_STORAGE_KEY).toBe(HOOK_ART_MOTION_KEY);
     // The quiz keys are built per tier (and per locale for an attempt): the
     // policy names them by pattern.
-    const pattern = (name: string) =>
-      new RegExp(`^${name.replace(/[.:]/g, '\\$&').replace('*', '.+')}$`);
-    expect(attemptStorageKey('en', 'basic')).toMatch(pattern(QUIZ_ATTEMPT_STORAGE_NAME));
-    expect(attemptStorageKey('zh-TW', 'hard')).toMatch(pattern(QUIZ_ATTEMPT_STORAGE_NAME));
-    expect(bestScoreStorageKey('basic')).toMatch(pattern(QUIZ_BEST_STORAGE_NAME));
+    expect(attemptStorageKey('en', 'basic')).toBe(
+      QUIZ_ATTEMPT_STORAGE_NAME.replaceAll('*', 'en:basic'),
+    );
+    expect(attemptStorageKey('zh-TW', 'hard')).toBe(
+      QUIZ_ATTEMPT_STORAGE_NAME.replaceAll('*', 'zh-TW:hard'),
+    );
+    expect(bestScoreStorageKey('basic')).toBe(QUIZ_BEST_STORAGE_NAME.replaceAll('*', 'basic'));
     expect(activePrivacyStorage().flatMap((entry) => entry.names)).toEqual(
       expect.arrayContaining([
         ATTENTION_STORAGE_KEY,

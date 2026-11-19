@@ -4,6 +4,7 @@ import { getAboutContent } from '../content/about';
 import { getLandingContent } from '../content/landing';
 import { BRAND_ICON_URLS } from '../lib/og/brandIcons';
 
+import { firstHeadingText } from './raw-response-html';
 import { LOCALE_CHROME, LOCALE_SEO, TRANSLATED_LOCALES } from './locale-fixtures';
 
 const APP_HOST = 'app.cosmicsignature.com';
@@ -195,16 +196,6 @@ function hostHeaders(host: string) {
   return { Host: host, 'X-Forwarded-Host': host };
 }
 
-/** The first H1's text with its tags stripped and whitespace collapsed. */
-function extractH1Text(html: string): string {
-  const inner = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/)?.[1] ?? '';
-  return inner
-    .replace(/<[^>]+>/g, '')
-    .replaceAll('&amp;', '&')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 function countMatches(text: string, pattern: RegExp): number {
   return text.match(pattern)?.length ?? 0;
 }
@@ -293,11 +284,11 @@ test.describe('raw HTML SEO', () => {
       expect(html).toMatch(/<meta[^>]+name="description"[^>]+content="[^"]{30,}"/);
       expect(html).toMatch(/<link[^>]+rel="canonical"[^>]+href="https?:\/\//);
       if (page.richH1) {
-        expect(extractH1Text(html)).toBe(page.h1);
+        expect(firstHeadingText(html)).toBe(page.h1);
       } else {
         // Tag-agnostic: a Chinese or Japanese heading glues each closing mark
         // to its character in a nowrap span (PhrasedText).
-        expect(extractH1Text(html)).toContain(page.h1);
+        expect(firstHeadingText(html)).toContain(page.h1);
       }
       expect(countMatches(html, /<h1[\s>]/g)).toBe(1);
       expect(html).not.toMatch(/name="robots"[^>]+content="[^"]*noindex/i);
@@ -336,7 +327,7 @@ test.describe('raw HTML SEO', () => {
         expect(html).toMatch(/hreflang="en"/i);
         expect(html).toMatch(new RegExp(`hreflang="${locale}"`, 'i'));
         expect(html).toContain(`"inLanguage":"${seo.inLanguage}"`);
-        expect(extractH1Text(html)).toContain(page.h1);
+        expect(firstHeadingText(html)).toContain(page.h1);
       }
     });
 

@@ -5,7 +5,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 
 import { CompanionFontFaces } from '@/components/theme/CompanionFontFaces';
 import { ThemeSync } from '@/components/theme/ThemeSync';
-import { DEFAULT_SITE_THEME, THEME_INIT_SCRIPT } from '@/lib/theme/config';
+import { DEFAULT_SITE_THEME, THEME_INIT_SCRIPT, THEME_SCRIPT_ATTRIBUTES } from '@/lib/theme/config';
 import { networkConfig } from '@/config/networks';
 import { pickByLocale } from '@/i18n/locale';
 import { getLocaleConfig } from '@/i18n/localeConfig';
@@ -71,7 +71,11 @@ export function RootDocument({
       className={FONT_VARIABLE_CLASS_NAMES}
     >
       <head>
-        <script id="site-theme" dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script
+          id="site-theme"
+          {...THEME_SCRIPT_ATTRIBUTES}
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+        />
         {/* No `crossOrigin`: artwork loads as plain <img> requests (no CORS),
             and a crossorigin preconnect would warm the wrong connection. */}
         {MEDIA_PRECONNECT_ORIGINS.map((origin) => (

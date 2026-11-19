@@ -94,7 +94,9 @@ describe('EthDonationDetailPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('For the builders')).toBeInTheDocument();
     expect(screen.getByText('Keep shipping.').closest('blockquote')).not.toBeNull();
-    const link = screen.getByRole('link', { name: /example\.org/ });
+    const link = screen.getByRole('link', {
+      name: (label) => label.split(' ')[0] === 'example.org',
+    });
     expect(link).toHaveAttribute('href', 'https://example.org/post');
     expect(link).toHaveAttribute('rel', expect.stringContaining('nofollow'));
     // Regression: the page used to fetch the note's URL (and, with none, its own origin).

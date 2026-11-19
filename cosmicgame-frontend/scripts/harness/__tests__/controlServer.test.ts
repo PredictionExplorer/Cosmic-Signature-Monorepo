@@ -1,6 +1,7 @@
 import { once } from 'node:events';
 import { request } from 'node:http';
 
+import { HarnessCommandError } from '../director/commandError';
 import { startControlServer } from '../director/controlServer';
 import { HarnessTransitionAbortedError } from '../director/planner';
 
@@ -70,7 +71,9 @@ describe('harness control server', () => {
 
   it('returns a useful 400 response for rejected commands', async () => {
     const runtime = runtimeStub();
-    runtime.switchScenario.mockRejectedValueOnce(new Error('Unknown scenario "missing"'));
+    runtime.switchScenario.mockRejectedValueOnce(
+      new HarnessCommandError('Unknown scenario "missing"'),
+    );
     const server = startControlServer(runtime as never, 0);
     await once(server, 'listening');
     const address = server.address();
@@ -84,6 +87,27 @@ describe('harness control server', () => {
       expect(response.status).toBe(400);
       expect(response.body).toEqual({
         error: 'Unknown scenario "missing"',
+      });
+    } finally {
+      server.close();
+      await once(server, 'close');
+    }
+  });
+
+  it('keeps internal failures in the director log', async () => {
+    const runtime = runtimeStub();
+    runtime.switchScenario.mockRejectedValueOnce(new Error('internal diagnostic'));
+    const server = startControlServer(runtime as never, 0);
+    await once(server, 'listening');
+    const address = server.address();
+    if (!address || typeof address === 'string') throw new Error('Missing test server port');
+
+    try {
+      await expect(
+        postJson(`http://127.0.0.1:${address.port}/scenario`, { name: 'live' }),
+      ).resolves.toEqual({
+        status: 500,
+        body: { error: 'The harness request failed. See the director log for details.' },
       });
     } finally {
       server.close();

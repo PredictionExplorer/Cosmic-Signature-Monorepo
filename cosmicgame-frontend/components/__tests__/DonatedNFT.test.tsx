@@ -57,10 +57,9 @@ describe('AttachedNFT', () => {
       'href',
       buildOpenSeaAssetUrl(mockData.TokenAddr, mockData.NFTTokenId, networkConfig.chainId),
     );
-    expect(screen.getByRole('link', { name: /example\.com/ })).toHaveAttribute(
-      'href',
-      'https://example.com/',
-    );
+    expect(
+      screen.getByRole('link', { name: (label) => label.split(' ')[0] === 'example.com' }),
+    ).toHaveAttribute('href', 'https://example.com/');
     expect(screen.getByText('Project site')).toBeInTheDocument();
   });
 
@@ -122,7 +121,7 @@ describe('AttachedNFT', () => {
       />,
     );
 
-    const project = screen.getByRole('link', { name: new RegExp(host.replace(/\./g, '\\.')) });
+    const project = screen.getByRole('link', { name: (label) => label.split(' ')[0] === host });
     expect(project).toHaveAttribute('href', `https://${host}/claim`);
     expect(project).toHaveAttribute('rel', 'noopener noreferrer nofollow ugc');
     const label = screen.getByText(host);

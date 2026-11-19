@@ -1,7 +1,7 @@
 // lexicon-allow-start: fixture strings exercise every banned term by design
 
 import { execSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, symlinkSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -73,6 +73,15 @@ describe('lexicon-scan.ts', () => {
     const result = runScanner(fixture.root);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('lexicon scan passed');
+  });
+
+  it('scans a linked source using its checkout-relative name', () => {
+    fixture.write('shared/copy.ts', 'export const text = "lottery pool";');
+    fixture.write('content/index.ts', '');
+    symlinkSync('../shared/copy.ts', join(fixture.root, 'content/linked.ts'));
+    const result = runScanner(fixture.root);
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('content/linked.ts');
   });
 
   it.each([

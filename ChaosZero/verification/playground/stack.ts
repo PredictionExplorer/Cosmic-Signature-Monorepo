@@ -26,6 +26,7 @@ import { httpJson, jsonRpc, waitFor, WaitAbortedError } from "../../scripts/harn
 async function main(): Promise<void> {
   const config = resolveHarnessConfig();
   const rpc = "http://127.0.0.1:" + config.chainPort;
+  const cosmicUrl = "http://localhost:" + config.webPort;
   const logs = join(config.runDir, "logs");
   const services: ManagedProcess[] = [];
   const serve = (name: string, command: string, args: string[], cwd: string, env = {}) => {
@@ -96,7 +97,11 @@ async function main(): Promise<void> {
     );
     const manifest = JSON.parse(readFileSync(process.env.V4_PLAYGROUND_MANIFEST!, "utf8"));
     const addresses = readDeployReport(config);
-    if (manifest.game !== addresses.cosmicGame)
+    if (
+      manifest.cosmicUrl !== cosmicUrl ||
+      manifest.rpcUrl !== rpc ||
+      manifest.game !== addresses.cosmicGame
+    )
       throw new Error("The game and indexer refer to different deployments");
     await jsonRpc(rpc, "evm_setIntervalMining", [1500]);
     databaseStarted = true;
@@ -159,7 +164,10 @@ async function main(): Promise<void> {
       config.frontendDir,
       { ...testingModeEnv(config), NEXT_PUBLIC_CONTRACT_MECHANICS_VERSION: "4" },
     );
-    await ready(web, async () => (await fetch(manifest.cosmicUrl + "/experimental-ui")).ok);
+    await ready(
+      web,
+      async () => (await fetch(cosmicUrl + "/experimental-ui", { redirect: "error" })).ok,
+    );
     await run(
       "playwright",
       process.execPath,

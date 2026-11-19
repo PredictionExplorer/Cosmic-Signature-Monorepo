@@ -25,17 +25,9 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 
 import subsetFont from 'subset-font';
 
@@ -49,20 +41,15 @@ import {
   whitePaperContentZhHk,
   whitePaperContentZhTw,
 } from '../content/white-paper';
-import { whitePaperPdfPath, type WhitePaperContent } from '../content/white-paper/types';
+import type { WhitePaperContent } from '../content/white-paper/types';
 import { isAppLocale, type AppLocale, type LocaleRecord } from '../i18n/locale';
 import { routing } from '../i18n/routing';
 
-import { GOOGLE_FONTS_COMMIT, type FontSource } from './build-og-fonts-core';
+import type { FontSource } from './build-og-fonts-core';
+import { readFontSource } from './read-font-source';
 import { uncoveredCharacters } from './font-cmap';
-import {
-  WHITE_PAPER_PDF_MANIFEST_PATH,
-  paperSourceSha256,
-  paperTitleMetadata,
-  renderPaperBody,
-  type WhitePaperPdfManifest,
-  type WhitePaperPdfManifestEntry,
-} from './white-paper-pdf-core';
+import { paperSourceSha256, paperTitleMetadata, renderPaperBody } from './white-paper-pdf-core';
+import { publishWhitePaperPdf } from './white-paper-pdf-output';
 
 const ROOT = resolve(process.cwd());
 
@@ -218,19 +205,7 @@ async function prepareCjkFonts(build: LocaleBuild, tempDir: string): Promise<Loc
   const source = build.embeddedCjkFont;
   if (!source) return build;
 
-  const cacheDir = join(ROOT, 'node_modules', '.cache', 'og-fonts', GOOGLE_FONTS_COMMIT);
-  const cachePath = join(cacheDir, basename(source.path));
-  let font: Buffer;
-  if (existsSync(cachePath)) {
-    font = readFileSync(cachePath);
-  } else {
-    const url = `https://raw.githubusercontent.com/google/fonts/${GOOGLE_FONTS_COMMIT}/${encodeURI(source.path)}`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-    if (!response.ok) throw new Error(`Font download failed: ${response.status} (${url})`);
-    font = Buffer.from(await response.arrayBuffer());
-    mkdirSync(cacheDir, { recursive: true });
-    writeFileSync(cachePath, font);
-  }
+  const font = await readFontSource(ROOT, source);
 
   const printableAscii = Array.from({ length: 95 }, (_, index) =>
     String.fromCharCode(index + 32),
@@ -289,25 +264,7 @@ function buildMarkdown(build: LocaleBuild): string {
   return `${frontMatter}\n\n${renderPaperBody(build.content)}\n`;
 }
 
-/** Records what a locale's committed PDF was built from (WHITE_PAPER_PDF_MANIFEST_PATH). */
-function recordInManifest(locale: AppLocale, content: WhitePaperContent): void {
-  const manifestPath = join(ROOT, WHITE_PAPER_PDF_MANIFEST_PATH);
-  const previous: Partial<WhitePaperPdfManifest> = existsSync(manifestPath)
-    ? (JSON.parse(readFileSync(manifestPath, 'utf8')) as Partial<WhitePaperPdfManifest>)
-    : {};
-  const next: Partial<Record<AppLocale, WhitePaperPdfManifestEntry>> = {};
-  for (const entryLocale of routing.locales) {
-    const entry =
-      entryLocale === locale
-        ? { pdf: whitePaperPdfPath(locale), sourceSha256: paperSourceSha256(content) }
-        : previous[entryLocale];
-    if (entry) next[entryLocale] = entry;
-  }
-  writeFileSync(manifestPath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
-}
-
 async function generate(locale: AppLocale): Promise<void> {
-  const outputPath = join(ROOT, 'public', whitePaperPdfPath(locale));
   const tempDir = mkdtempSync(join(tmpdir(), `cosmic-white-paper-${locale}-`));
 
   try {
@@ -315,7 +272,7 @@ async function generate(locale: AppLocale): Promise<void> {
     const markdown = buildMarkdown(build);
     const markdownPath = join(tempDir, 'white-paper.md');
     writeFileSync(markdownPath, markdown, 'utf8');
-    mkdirSync(dirname(outputPath), { recursive: true });
+    const compiledPdf = join(tempDir, 'white-paper.pdf');
     execFileSync(
       'pandoc',
       [
@@ -323,7 +280,7 @@ async function generate(locale: AppLocale): Promise<void> {
         '--from',
         'markdown+smart',
         '--output',
-        outputPath,
+        compiledPdf,
         '--pdf-engine',
         'tectonic',
         '--toc',
@@ -332,15 +289,18 @@ async function generate(locale: AppLocale): Promise<void> {
       ],
       { stdio: 'inherit' },
     );
+    const bytes = readFileSync(compiledPdf);
+    const outputPath = await publishWhitePaperPdf(
+      ROOT,
+      locale,
+      paperSourceSha256(build.content),
+      bytes,
+    );
+    // eslint-disable-next-line no-console -- CLI status for the generated asset.
+    console.log(`✅  wrote ${outputPath} (${Math.round(bytes.length / 1024)} KB)`);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
-
-  recordInManifest(locale, BUILDS[locale].content);
-  const sizeKb = Math.round(statSync(outputPath).size / 1024);
-  /* eslint-disable-next-line no-console -- CLI status output; this script
-     runs via `npm run white-paper:pdf` and never ships to the browser. */
-  console.log(`\u2705  wrote ${outputPath} (${sizeKb} KB)`);
 }
 
 async function main(): Promise<void> {

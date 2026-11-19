@@ -23,12 +23,13 @@ class InspectionFailure extends Error {
 }
 
 async function inspectV4Upgrade(rpcUrl_ = process.env.ART_AUCTION_RPC_URL || "https://arb1.arbitrum.io/rpc") {
+	const proxyAddress_ = ethers.getAddress(baseline.proxyAddress);
 	let requestId_ = 0;
 	async function rpc_(method_, params_) {
 		let response_;
 		try {
 			response_ = await fetch(rpcUrl_, {
-				method: "POST", headers: { "content-type": "application/json" },
+				method: "POST", redirect: "error", headers: { "content-type": "application/json" },
 				body: JSON.stringify({ jsonrpc: "2.0", id: ++requestId_, method: method_, params: params_ }),
 				signal: AbortSignal.timeout(30000),
 			});
@@ -48,7 +49,7 @@ async function inspectV4Upgrade(rpcUrl_ = process.env.ART_AUCTION_RPC_URL || "ht
 	const block_ = await rpc_("eth_getBlockByNumber", ["latest", false]);
 	const chainId_ = Number(BigInt(await rpc_("eth_chainId", [])));
 	if (chainId_ !== baseline.chainId) throw new InspectionFailure("CHAIN_MISMATCH");
-	const implementationWord_ = await rpc_("eth_getStorageAt", [baseline.proxyAddress, implementationSlot, block_.number]);
+	const implementationWord_ = await rpc_("eth_getStorageAt", [proxyAddress_, implementationSlot, block_.number]);
 	const implementationAddress_ = ethers.getAddress(`0x${implementationWord_.slice(-40)}`);
 	const code_ = await rpc_("eth_getCode", [implementationAddress_, block_.number]);
 	const abi_ = new ethers.Interface([
@@ -64,12 +65,12 @@ async function inspectV4Upgrade(rpcUrl_ = process.env.ART_AUCTION_RPC_URL || "ht
 	]);
 	const values_ = {};
 	for (const fragment_ of abi_.fragments) {
-		const result_ = await rpc_("eth_call", [{ to: baseline.proxyAddress, data: abi_.encodeFunctionData(fragment_.name) }, block_.number]);
+		const result_ = await rpc_("eth_call", [{ to: proxyAddress_, data: abi_.encodeFunctionData(fragment_.name) }, block_.number]);
 		values_[fragment_.name] = abi_.decodeFunctionResult(fragment_.name, result_)[0].toString();
 	}
 	return {
 		mode: "read-only", chainId: chainId_, blockNumber: Number(BigInt(block_.number)), blockHash: block_.hash,
-		timestamp: Number(BigInt(block_.timestamp)), proxyAddress: baseline.proxyAddress, implementationAddress: implementationAddress_,
+		timestamp: Number(BigInt(block_.timestamp)), proxyAddress: proxyAddress_, implementationAddress: implementationAddress_,
 		runtimeBytecodeKeccak256: ethers.keccak256(code_),
 		matchesRecordedV3: implementationAddress_ === baseline.implementationAddress && ethers.keccak256(code_) === baseline.runtimeBytecodeKeccak256,
 		inactive: BigInt(block_.timestamp) < BigInt(values_.roundActivationTime),

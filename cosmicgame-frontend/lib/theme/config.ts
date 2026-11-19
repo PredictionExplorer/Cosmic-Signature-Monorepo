@@ -49,12 +49,35 @@ export function themeCookieString(theme: SiteTheme, hostname: string, secure: bo
   ].join('; ');
 }
 
+/** React serializes these values as HTML attributes on the bootstrap script. */
+export const THEME_SCRIPT_ATTRIBUTES = {
+  'data-cookie-name': THEME_COOKIE_NAME,
+  'data-storage-key': THEME_STORAGE_KEY,
+  'data-default-theme': DEFAULT_SITE_THEME,
+  'data-colors': JSON.stringify(THEME_CHROME),
+};
+
 /**
- * Runs synchronously in the shared document head, before first paint. Reading
- * preferences here preserves static rendering and CDN caching on both hosts.
- * Only validated IDs can reach the DOM; no request data is interpolated.
- * The shared cookie wins over an older, origin-specific storage fallback.
- * It also points the browser-chrome colour at the chosen palette; the
- * viewport's `theme-color` meta precedes this script in the head.
+ * Synchronous script in the shared document head. The code is constant; preferences
+ * and palette configuration are read as data. The cross-host cookie takes priority.
  */
-export const THEME_INIT_SCRIPT = `(()=>{let t;try{t=document.cookie.split(';').map(p=>p.trim()).find(p=>p.startsWith('${THEME_COOKIE_NAME}='))?.slice(${THEME_COOKIE_NAME.length + 1})}catch{}const a=${JSON.stringify(SITE_THEMES)};if(!a.includes(t)){try{t=localStorage.getItem('${THEME_STORAGE_KEY}')}catch{}}t=a.includes(t)?t:'${DEFAULT_SITE_THEME}';document.documentElement.dataset.theme=t;const c=${JSON.stringify(THEME_CHROME)}[t];try{document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.setAttribute('content',c))}catch{}})()`;
+export const THEME_INIT_SCRIPT = `(() => {
+  const {cookieName, storageKey, defaultTheme, colors} = document.currentScript.dataset;
+  const palette = JSON.parse(colors);
+  const known = (value) => typeof value === 'string' && Object.hasOwn(palette, value);
+  let theme;
+  try {
+    const prefix = cookieName + '=';
+    theme = document.cookie.split(';').map(part => part.trim())
+      .find(part => part.startsWith(prefix))?.slice(prefix.length);
+  } catch {}
+  if (!known(theme)) {
+    try { theme = localStorage.getItem(storageKey); } catch {}
+  }
+  if (!known(theme)) theme = defaultTheme;
+  document.documentElement.dataset.theme = theme;
+  try {
+    document.querySelectorAll('meta[name="theme-color"]')
+      .forEach(meta => meta.setAttribute('content', palette[theme]));
+  } catch {}
+})()`;

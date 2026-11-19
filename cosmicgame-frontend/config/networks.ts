@@ -188,6 +188,14 @@ export function getPublicClientRpcUrl(): string {
   const rpc = networkConfig.rpcUrl || '';
   if (typeof window === 'undefined') return rpc;
   if (!rpc) return '';
-  if (rpc.includes('infura.io') || rpc.includes('alchemy.com')) return rpc;
+  try {
+    const url = new URL(rpc);
+    const knownProvider = ['infura.io', 'alchemy.com'].some(
+      (domain) => url.hostname === domain || url.hostname.endsWith(`.${domain}`),
+    );
+    if (url.protocol === 'https:' && !url.username && !url.password && knownProvider) return rpc;
+  } catch {
+    // Only absolute provider endpoints can use the direct browser transport.
+  }
   return `${window.location.origin}/api/rpc`;
 }
