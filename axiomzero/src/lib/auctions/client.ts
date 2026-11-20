@@ -18,7 +18,7 @@ import {
   auctionRpcUrl,
   requireAuctionConfig,
 } from "./config";
-import { checkId, type AuctionLot } from "./types";
+import { checkId, phaseOf, type AuctionLot } from "./types";
 
 export { auctionConfigured, auctionAddress, auctionChainId } from "./config";
 export { phaseOf, type AuctionLot } from "./types";
@@ -160,14 +160,7 @@ export async function readLot(tokenId: number) {
   };
 }
 
-async function readBatchAt(snapshot: Snapshot, page: number) {
-  const count = await client.readContract({
-    ...snapshot.base,
-    functionName: "registeredBatchCount",
-  });
-  const index = count - 1n - BigInt(page);
-  if (index < 0n)
-    return { count, lots: [] as AuctionLot[], ...stamp(snapshot) };
+async function firstInBatch(snapshot: Snapshot, index: bigint) {
   const first = await client.readContract({
     ...snapshot.base,
     functionName: "firstNftIdByBatchIndex",
@@ -175,23 +168,113 @@ async function readBatchAt(snapshot: Snapshot, page: number) {
   });
   if (first > BigInt(Number.MAX_SAFE_INTEGER) - 7n)
     throw new RangeError("Token ID exceeds the catalogue range.");
-  const rows = await Promise.all(
+  return first;
+}
+
+type LotRecord = Awaited<ReturnType<typeof readRecord>>;
+
+async function lotsInBatch(
+  snapshot: Snapshot,
+  first: bigint,
+  onlyOpen: boolean,
+  firstRecord?: LotRecord,
+): Promise<AuctionLot[]> {
+  const records = await Promise.all(
     Array.from({ length: 8 }, async (_, offset) => {
       const id = first + BigInt(offset);
-      const [record, minimumNextBid, seed] = await Promise.all([
-        readRecord(snapshot, id),
-        minimum(snapshot, id),
-        artworkSeed(snapshot, id),
-      ]);
-      return { ...record, tokenId: Number(id), minimumNextBid, seed };
+      const record =
+        offset === 0 && firstRecord
+          ? firstRecord
+          : await readRecord(snapshot, id);
+      return { id, record };
     }),
   );
-  const openingBid = await openingPrice(snapshot, rows[0].roundNum);
-  return {
+  const rows = onlyOpen
+    ? records.filter(({ record }) => {
+        const phase = phaseOf(record, snapshot.blockTime);
+        return phase === "waiting" || phase === "active";
+      })
+    : records;
+  if (!rows.length) return [];
+  const [openingBid, details] = await Promise.all([
+    openingPrice(snapshot, rows[0].record.roundNum),
+    Promise.all(
+      rows.map(async ({ id, record }) => {
+        const [minimumNextBid, seed] = await Promise.all([
+          minimum(snapshot, id),
+          artworkSeed(snapshot, id),
+        ]);
+        return { ...record, tokenId: Number(id), minimumNextBid, seed };
+      }),
+    ),
+  ]);
+  return details.map((row) => ({ ...row, openingBid }));
+}
+
+const batchCount = (snapshot: Snapshot) =>
+  client.readContract({
+    ...snapshot.base,
+    functionName: "registeredBatchCount",
+  });
+
+async function readBatchAt(snapshot: Snapshot, page: number) {
+  const count = await batchCount(snapshot);
+  const index = count - 1n - BigInt(page);
+  const lots =
+    index < 0n
+      ? []
+      : await lotsInBatch(snapshot, await firstInBatch(snapshot, index), false);
+  return { count, lots, ...stamp(snapshot) };
+}
+
+// A batch receives one immutable eligibleAt when appended. Skip any number
+// of previews in O(log count); bid/settlement states within a batch vary.
+export async function readOpenLots(before?: number) {
+  if (before !== undefined) checkId(before);
+  const snapshot = await verifiedSnapshot();
+  const count = await batchCount(snapshot);
+  const limit = before === undefined ? count : BigInt(before);
+  const base = {
     count,
-    lots: rows.map((row) => ({ ...row, openingBid })),
+    lots: [] as AuctionLot[],
+    nextBefore: null as bigint | null,
+    firstOpening: null as bigint | null,
     ...stamp(snapshot),
   };
+  if (limit === 0n || limit > count) return base;
+  const headers = new Map<bigint, { first: bigint; record: LotRecord }>();
+  async function header(index: bigint) {
+    const known = headers.get(index);
+    if (known) return known;
+    const first = await firstInBatch(snapshot, index);
+    const result = { first, record: await readRecord(snapshot, first) };
+    headers.set(index, result);
+    return result;
+  }
+  let end = limit;
+  if ((await header(limit - 1n)).record.eligibleAt > snapshot.blockTime) {
+    let start = 0n;
+    end = limit - 1n;
+    while (start < end) {
+      const mid = (start + end) / 2n;
+      if ((await header(mid)).record.eligibleAt <= snapshot.blockTime)
+        start = mid + 1n;
+      else end = mid;
+    }
+  }
+  if (!end)
+    return { ...base, firstOpening: (await header(0n)).record.eligibleAt };
+  // Keep RPC work per page bounded even when years of lots have sold.
+  // The stable exclusive cursor always continues with the next unexamined batch.
+  const floor = end > 4n ? end - 4n : 0n;
+  while (end > floor) {
+    end -= 1n;
+    const index = end;
+    const { first, record } = await header(index);
+    const lots = await lotsInBatch(snapshot, first, true, record);
+    if (lots.length) return { ...base, lots, nextBefore: index || null };
+  }
+  return { ...base, nextBefore: floor || null };
 }
 
 export async function readBatch(page = 0) {

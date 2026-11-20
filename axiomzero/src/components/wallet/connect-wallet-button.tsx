@@ -5,7 +5,13 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export function ConnectWalletButton({ className }: { className?: string }) {
+export function ConnectWalletButton({
+  className,
+  connectLabel = "Connect wallet",
+}: {
+  className?: string;
+  connectLabel?: string;
+}) {
   return (
     <ConnectButton.Custom>
       {({
@@ -22,8 +28,7 @@ export function ConnectWalletButton({ className }: { className?: string }) {
           ready &&
           account &&
           chain &&
-          (!authenticationStatus ||
-            authenticationStatus === "authenticated");
+          (!authenticationStatus || authenticationStatus === "authenticated");
 
         if (!ready) {
           return (
@@ -39,17 +44,18 @@ export function ConnectWalletButton({ className }: { className?: string }) {
 
         return (
           <div
-            className={cn(
-              "connect-wallet flex items-center gap-2",
-              className,
-            )}
+            className={cn("connect-wallet flex items-center gap-2", className)}
           >
             {!connected ? (
               <Button onClick={openConnectModal} type="button">
-                Connect wallet
+                {connectLabel}
               </Button>
             ) : chain.unsupported ? (
-              <Button onClick={openChainModal} type="button" variant="secondary">
+              <Button
+                onClick={openChainModal}
+                type="button"
+                variant="secondary"
+              >
                 Wrong network
               </Button>
             ) : (

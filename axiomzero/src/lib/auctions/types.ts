@@ -15,7 +15,10 @@ export type AuctionLot = {
   proceedsForwarded: boolean;
 };
 
-export function phaseOf(lot: AuctionLot, time: bigint) {
+export function phaseOf(
+  lot: Pick<AuctionLot, "settled" | "eligibleAt" | "endAt">,
+  time: bigint,
+) {
   if (lot.settled) return "settled";
   if (time < lot.eligibleAt) return "preview";
   if (lot.endAt === 0n) return "waiting";

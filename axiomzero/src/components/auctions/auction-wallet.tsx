@@ -43,10 +43,27 @@ export function ChainLink({
   );
 }
 
-export function WalletGate({ children }: { children: ReactNode }) {
+export function WalletGate({
+  children,
+  bidding = false,
+}: {
+  children: ReactNode;
+  bidding?: boolean;
+}) {
   const { address, chainId } = useAccount();
   const { switchChain, isPending, error } = useSwitchChain();
-  if (!address) return <ConnectWalletButton />;
+  if (!address)
+    return bidding ? (
+      <div className={styles.bidConnect}>
+        <p>
+          Connect a wallet to review your bid in{" "}
+          {auctionChainId === 31337 ? "test ETH" : "ETH on Arbitrum One"}.
+        </p>
+        <ConnectWalletButton connectLabel="Connect wallet to bid" />
+      </div>
+    ) : (
+      <ConnectWalletButton />
+    );
   if (chainId !== auctionChainId)
     return (
       <div>
@@ -93,7 +110,11 @@ export function useAuctionTransaction() {
           action,
           (hash) => setState({ stage: "confirm", hash }),
         );
-        setState({ stage: "done", hash: receipt.transactionHash });
+        setState({
+          stage: "done",
+          hash: receipt.transactionHash,
+          message: action.kind === "bid" ? "Bid confirmed." : undefined,
+        });
         await cache.invalidateQueries({ queryKey: ["auction"] });
         return true;
       } catch (error) {
@@ -137,7 +158,7 @@ export function TransactionStatus({ state }: { state: TxState }) {
     idle: "",
     sign: "Review the transaction in your wallet.",
     confirm: "Transaction submitted. Waiting for confirmation.",
-    done: "Transaction confirmed.",
+    done: state.message ?? "Transaction confirmed.",
     unknown:
       "Confirmation is unavailable. Check the transaction receipt before taking another action.",
     failed: state.message,

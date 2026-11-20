@@ -106,7 +106,7 @@ minimal motion.
 
 ## V4 artwork auctions
 
-The catalogue at `/auctions` groups eight works per cycle. Each lot at `/auctions/{tokenId}` has a seven-day preview, a 48-hour clock from its first funded bid, and a ten-minute rolling close. The opening price starts at 0.001 ETH and is frozen per batch. Subsequent bids raise the current total by at least 10%, rounded up to whole wei. The winning price goes to the game reserve. Outbid collectors can retrieve ETH before the lot ends.
+The catalogue at `/auctions` opens with works eligible for bids. Use **All cycles** to browse all eight works per cycle, including previews and past sales. On an open lot, enter a total in ETH, select **Review bid** and check the amount due. **Confirm in wallet** requests wallet approval. A preview lot links back to open auctions and shows its opening time. Each lot at `/auctions/{tokenId}` has a seven-day preview, a 48-hour clock from its first funded bid, and a ten-minute rolling close. The opening price starts at 0.001 ETH and is frozen per batch. Subsequent bids raise the current total by at least 10%, rounded up to whole wei. The winning price goes to the game reserve. Outbid collectors can retrieve ETH before the lot ends.
 
 Use `/auctions/account` for funded bids, won lots, delivery and refunds. The settlement archive at `/auctions/results` links primary sales to their on-chain records. A settled primary sale and a later order-book resale are separate trades.
 
