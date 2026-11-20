@@ -4,6 +4,8 @@ This Playwright scenario connects Cosmic Signature, Chaos Zero and Axiom Zero to
 
 The [V4 browser workflow](../../../.github/workflows/chaos-v4-playground.yml) exercises the game and three websites from one monorepo revision, with the external indexer/API from the [shared backend lock](../../../Cosmic-Signature-frontend/harness.lock.json). The local runner tests the current working tree, including edited and newly added frontend source files.
 
+For a persistent interactive session with funded wallet windows, optional bots and fast cycles, follow the [V4 local playground guide](../../../docs/local-playground.md).
+
 ## Run locally
 
 Run the following commands from the monorepo root. The game and websites come from the in-tree `Cosmic-Signature/`, `Cosmic-Signature-frontend/`, `ChaosZero/` and `axiomzero/` packages. Place an augur-explorer checkout alongside the monorepo or point `RWCG_BACKEND_DIR` at an existing checkout. For a clean CI-equivalent backend without switching someone’s working branch, run:

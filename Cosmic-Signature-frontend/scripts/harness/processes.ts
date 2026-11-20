@@ -145,6 +145,8 @@ export function mirrorLogFile(name: string, logFile: string): () => void {
 }
 
 export interface RunBlockingOptions {
+  /** Stop the complete foreground command group if its owning session is interrupted. */
+  signal?: AbortSignal;
   name: string;
   command: string;
   args: string[];
@@ -157,6 +159,9 @@ export interface RunBlockingOptions {
 
 /** Run a one-shot step to completion, logging output; throws on non-zero exit. */
 export async function runBlocking(options: RunBlockingOptions): Promise<void> {
+  options.signal?.throwIfAborted();
+  let abortChild: (() => void) | undefined;
+  let stopping: Promise<void> | undefined;
   mkdirSync(dirname(options.logFile), { recursive: true });
   const fd = openSync(options.logFile, 'a');
   const stopMirror =
@@ -167,7 +172,15 @@ export async function runBlocking(options: RunBlockingOptions): Promise<void> {
         cwd: options.cwd,
         env: { ...process.env, ...options.env },
         stdio: ['ignore', fd, fd],
+        detached: Boolean(options.signal),
       });
+      if (options.signal && child.pid !== undefined) {
+        const pid = child.pid;
+        abortChild = () => {
+          stopping = stopProcessGroup(pid);
+        };
+        options.signal.addEventListener('abort', abortChild, { once: true });
+      }
       child.on('error', rejectRun);
       child.on('exit', (code, sig) => {
         if (code === 0) resolveRun();
@@ -180,6 +193,8 @@ export async function runBlocking(options: RunBlockingOptions): Promise<void> {
       });
     });
   } finally {
+    if (abortChild) options.signal?.removeEventListener('abort', abortChild);
+    await stopping;
     // Give the tail a beat to drain the final lines before detaching.
     await new Promise((resolveSleep) => setTimeout(resolveSleep, 400));
     stopMirror();

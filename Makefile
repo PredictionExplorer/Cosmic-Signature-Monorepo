@@ -1,9 +1,20 @@
 .DEFAULT_GOAL := help
+BOTS ?= 0
+WALLET ?= 1
+export BOTS WALLET BY
 .NOTPARALLEL:
-.PHONY: help setup hooks test test-repo test-v4 test-game test-site test-chaos test-axiom test-auction test-playground verify-import
+.PHONY: help setup hooks play-setup play play-wallet play-bots play-advance play-status play-stop test-play test test-repo test-v4 test-game test-site test-chaos test-axiom test-auction test-playground verify-import
 
 help:
 	@printf '%s\n' 'make setup           Install locked dependencies for all four components' \
+		'make play-setup      Install locked dependencies and the wallet browser' \
+		'make play            Start a local V4 session (BOTS=0..3)' \
+		'make play-wallet     Open all three sites in a funded wallet window (WALLET=1..3)' \
+		'make play-status     Show the running session and bot activity' \
+		'make play-bots       Set the number of active bots (BOTS=0..3)' \
+		'make play-advance    Advance the local chain clock (BY=seconds)' \
+		'make play-stop       Stop the session and dispose of its chain and database' \
+		'make test-play       Rehearse the interactive wallets, bots and time controls' \
 		'make hooks           Enable the shared, component-scoped Git hooks' \
 		'make test-repo       Check shared tooling, documentation links and import history' \
 		'make test-game       Check the game, upgrades and auction contract invariants' \
@@ -26,6 +37,30 @@ setup:
 
 hooks:
 	./scripts/install-hooks
+
+play-setup: setup
+	cd Cosmic-Signature-frontend && ./node_modules/.bin/playwright install chromium
+
+play:
+	V4_BOT_COUNT="$$BOTS" bash ChaosZero/verification/playground/run.bash --interactive
+
+play-wallet:
+	node ChaosZero/verification/playground/human-wallet.mjs "$$WALLET"
+
+play-bots:
+	node ChaosZero/verification/playground/control.mjs bots "$$BOTS"
+
+play-advance:
+	node ChaosZero/verification/playground/control.mjs advance "$$BY"
+
+play-status:
+	node ChaosZero/verification/playground/control.mjs status
+
+play-stop:
+	node ChaosZero/verification/playground/control.mjs stop
+
+test-play:
+	bash ChaosZero/verification/playground/run.bash --interactive-smoke
 
 test: test-repo test-game test-site test-chaos test-axiom
 

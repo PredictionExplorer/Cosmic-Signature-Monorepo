@@ -13,6 +13,7 @@ on:
       - axiomzero/**
       - .github/workflows/chaos-v4-playground.yml
       - scripts/ci/install-game-solc.sh
+      - Makefile
       - .gitmodules
   push:
     branches:
@@ -25,6 +26,7 @@ on:
       - axiomzero/**
       - .github/workflows/chaos-v4-playground.yml
       - scripts/ci/install-game-solc.sh
+      - Makefile
       - .gitmodules
   workflow_dispatch:
 
@@ -110,6 +112,10 @@ jobs:
         env:
           TMPDIR: ${{ runner.temp }}
         run: pnpm test:v4:browser
+      - name: Exercise human wallets, bots, accelerated cycles and session controls
+        env:
+          TMPDIR: ${{ runner.temp }}
+        run: make test-play
       - name: Upload failure logs and browser traces
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
