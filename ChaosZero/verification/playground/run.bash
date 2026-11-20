@@ -19,6 +19,7 @@ main() {
 	# This copy has its own build, addresses, testing wallet and database configuration.
 	# No .env files, browser profiles or running developer stacks are reused.
 	scratch="$(mktemp -d "${TMPDIR:-/tmp}/cosmic-v4-browser.XXXXXXXX")"
+	scratch="$(cd "$scratch" && pwd -P)"
 	echo "V4 browser workspace: $scratch"
 	node "$root/verification/playground/stage-frontend.mjs" "$frontend" "$scratch"
 	if [[ "$(uname -s)" == Darwin ]]; then
@@ -59,7 +60,7 @@ main() {
 	forge build --root "$root" src/GameFundedOutcomeMarket.sol src/V3OutcomeSource.sol src/IndependentOutcomeMarket.sol
 	cd "$scratch"
 	if [[ "${1:-}" == --interactive || "${1:-}" == --interactive-smoke ]]; then
-		node --import tsx e2e/v4-playground/stack.ts "$@" &
+		node --import tsx "$scratch/e2e/v4-playground/stack.ts" "$@" &
 		runner=$!
 		trap 'kill -TERM "$runner" 2>/dev/null || true' INT TERM
 		status=0

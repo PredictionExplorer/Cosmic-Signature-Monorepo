@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { linkSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
@@ -103,8 +104,6 @@ export async function runInteractive(
       req.headers.authorization !== "Bearer " + controlToken
     )
       return reply(403, { error: "Local session authentication required" });
-    if (req.method === "GET" && req.url === "/session")
-      return reply(200, { instanceId: manifest.instanceId });
     if (req.method === "GET" && req.url === "/status") {
       try {
         await verifyChain();
@@ -171,20 +170,16 @@ export async function runInteractive(
     // A killed process can leave its ready file behind. Never replace a live session.
     try {
       const previous = JSON.parse(readFileSync(sessionPath, "utf8"));
-      if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(previous.controlUrl))
-        throw new Error("Invalid previous session origin at " + sessionPath);
       if (Number.isSafeInteger(previous.pid) && previous.pid > 0 && isProcessAlive(previous.pid)) {
-        // A crashed supervisor's PID may since have been assigned to a different program.
-        // Only a controller holding this session's capability and instance ID is its owner.
-        const identity = await fetch(previous.controlUrl + "/session", {
-          headers: { authorization: "Bearer " + previous.controlToken },
-          signal: AbortSignal.timeout(2000),
-          redirect: "error",
-        }).catch((error) => {
-          if (error.cause?.code === "ECONNREFUSED") return null;
-          throw error;
+        // Each run invokes Node with an absolute path inside its unique temporary workspace.
+        // A recycled PID therefore cannot claim ownership of a crashed session's ready file.
+        const command = spawnSync("ps", ["-ww", "-p", String(previous.pid), "-o", "command="], {
+          encoding: "utf8",
+          timeout: 2000,
         });
-        if (identity?.ok && (await identity.json()).instanceId === previous.instanceId)
+        if (command.error) throw command.error;
+        const entry = join(dirname(previous.manifestPath), "../e2e/v4-playground/stack.ts");
+        if (command.stdout.includes(entry + " --interactive"))
           throw new Error("A V4 playground session already exists at " + sessionPath);
       }
       rmSync(sessionPath);
