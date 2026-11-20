@@ -1,0 +1,2 @@
+# Preserve the patch bytes and the single space that represents an empty context line.
+patches/*.patch text eol=lf whitespace=-blank-at-eol
