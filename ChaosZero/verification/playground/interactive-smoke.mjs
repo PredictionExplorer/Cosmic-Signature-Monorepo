@@ -3,18 +3,19 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import { control } from "./control.mjs";
+import { control, controlSession } from "./control.mjs";
 
 const file = process.argv[2];
 const session = JSON.parse(readFileSync(file, "utf8"));
 const command = (...args) => control(args, file);
-const forbidden = await fetch(session.controlUrl + "/advance/1", { method: "POST" });
-assert.equal(forbidden.status, 403);
-const crossOrigin = await fetch(session.controlUrl + "/bots/3", {
-  method: "POST",
-  headers: { authorization: "Bearer " + session.controlToken, origin: session.cosmicUrl },
-});
-assert.equal(crossOrigin.status, 403);
+// A stale ready file must not be able to mutate another local session.
+await assert.rejects(
+  controlSession(["bots", "3"], {
+    ...session,
+    instanceId: "0x" + (session.instanceId[2] === "a" ? "b" : "a").repeat(64),
+  }),
+  /different session/,
+);
 const initial = await command("status");
 assert.equal(initial.instanceId, session.instanceId);
 assert.equal(initial.bots, 0);
@@ -35,24 +36,35 @@ execFileSync(
   },
 );
 
+const port = Number(process.env.HARNESS_CHAIN_PORT);
+assert.ok(Number.isSafeInteger(port) && port >= 1 && port <= 65535);
+const rpcUrl = "http://127.0.0.1:" + port;
+assert.equal(session.rpcUrl, rpcUrl);
+async function rpc(method, params = []) {
+  const response = await fetch(rpcUrl, {
+    method: "POST",
+    redirect: "error",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  const body = await response.json();
+  assert.ok(response.ok && !body.error);
+  return body.result;
+}
+const metadata = await rpc("hardhat_metadata");
+assert.equal(BigInt(metadata.chainId), 31337n);
+assert.equal(metadata.instanceId, initial.instanceId);
+const botAddresses = (await rpc("eth_accounts")).slice(7, 10);
+assert.deepEqual(
+  botAddresses.map((a) => a.toLowerCase()),
+  session.botWallets.map((w) => w.address.toLowerCase()),
+);
 async function nonces() {
   return Promise.all(
-    session.botWallets.map(async ({ address }) => {
-      const response = await fetch(session.rpcUrl, {
-        method: "POST",
-        redirect: "error",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          id: 1,
-          method: "eth_getTransactionCount",
-          params: [address, "latest"],
-        }),
-      });
-      const body = await response.json();
-      assert.ok(response.ok && !body.error);
-      return BigInt(body.result);
-    }),
+    botAddresses.map(async (address) =>
+      BigInt(await rpc("eth_getTransactionCount", [address, "latest"])),
+    ),
   );
 }
 const before = await nonces();

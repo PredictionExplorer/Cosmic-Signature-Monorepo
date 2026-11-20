@@ -34,12 +34,12 @@ main() {
 	if [[ "${1:-}" == --interactive-smoke ]]; then
 		# These integration modules resolve against the actual staged frontend.
 		(cd "$scratch" && node_modules/.bin/tsc --noEmit)
-		# Reserve all seven ports together, then release for the individual servers.
+		# Reserve all six TCP ports together, then release for the individual servers.
 		# The stack also preflights each port before deploying its fresh local node.
-		read -r HARNESS_CHAIN_PORT HARNESS_DB_PORT HARNESS_API_PORT HARNESS_WEB_PORT HARNESS_CONTROL_PORT V4_CHAOS_PORT V4_AXIOM_PORT < <(
+		read -r HARNESS_CHAIN_PORT HARNESS_DB_PORT HARNESS_API_PORT HARNESS_WEB_PORT V4_CHAOS_PORT V4_AXIOM_PORT < <(
 			node --input-type=module -e '
 				import { createServer } from "node:net";
-				const servers = await Promise.all(Array.from({length: 7}, () => new Promise((ok, fail) => {
+				const servers = await Promise.all(Array.from({length: 6}, () => new Promise((ok, fail) => {
 					const server = createServer();
 					server.once("error", fail).listen(0, "127.0.0.1", () => ok(server));
 				})));

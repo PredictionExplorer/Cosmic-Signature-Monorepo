@@ -1,7 +1,17 @@
 import { spawnSync } from "node:child_process";
-import { randomBytes, randomUUID } from "node:crypto";
-import { linkSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
+import {
+  chmodSync,
+  linkSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { createServer, type Socket } from "node:net";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { HarnessConfig } from "../../scripts/harness/config";
 import {
@@ -18,6 +28,32 @@ function numberInRange(raw: string, min: number, max: number) {
   if (!/^\d+$/.test(raw) || Number(raw) < min || Number(raw) > max)
     throw new Error(`Expected a number between ${min} and ${max}`);
   return Number(raw);
+}
+
+type ControlCommand =
+  | { command: "status" }
+  | { command: "stop" }
+  | { command: "bots"; value: number }
+  | { command: "advance"; value: number };
+
+// Only these four operations are exposed by the owner-only control socket.
+function readCommand(line: string): ControlCommand | undefined {
+  let input;
+  try {
+    input = JSON.parse(line);
+  } catch {
+    return undefined;
+  }
+  if (!input || typeof input !== "object" || Array.isArray(input)) return undefined;
+  const { command, value } = input;
+  if (Object.keys(input).some((key) => key !== "command" && key !== "value")) return undefined;
+  if (command === "status" && value === undefined) return { command: "status" };
+  if (command === "stop" && value === undefined) return { command: "stop" };
+  if (!Number.isSafeInteger(value)) return undefined;
+  if (command === "bots" && value >= 0 && value <= 3) return { command: "bots", value };
+  if (command === "advance" && value > 0 && value <= 31 * 86400)
+    return { command: "advance", value };
+  return undefined;
 }
 
 interface SessionManifest {
@@ -49,20 +85,21 @@ export async function runInteractive(
   await verifyChain();
   const botSeed = numberInRange(process.env.V4_BOT_SEED ?? "42", 0, 0xffffffff);
   const initialCount = smoke ? 0 : numberInRange(process.env.V4_BOT_COUNT ?? "0", 0, 3);
-  const controlToken = randomBytes(32).toString("hex");
-  const controlUrl = "http://127.0.0.1:" + config.controlPort;
   const sessionPath = smoke
     ? join(config.runDir, "session.json")
     : join(process.env.CHAOS_ZERO_ROOT!, "../.local/v4-playground/session.json");
   mkdirSync(dirname(sessionPath), { recursive: true, mode: 0o700 });
+  // A short private path fits sockaddr_un on both Darwin and Linux. No TCP listener is needed.
+  const base = Buffer.byteLength(join(tmpdir(), "csv4-XXXXXX", "ctl")) <= 100 ? tmpdir() : "/tmp";
+  const controlDir = mkdtempSync(join(base, "csv4-"));
+  const controlSocket = join(controlDir, "ctl");
   const session = {
     ...manifest,
     manifestPath,
     cosmicUrl: manifest.cosmicUrl,
     chaosUrl,
     axiomUrl,
-    controlUrl,
-    controlToken,
+    controlSocket,
     pid: process.pid,
     logs: join(config.runDir, "logs"),
   };
@@ -93,26 +130,18 @@ export async function runInteractive(
     fail = reject;
   });
   let busy = false;
-  const server = createServer(async (req, res) => {
-    const reply = (code: number, value: unknown) => {
-      res.writeHead(code, { "content-type": "application/json", "cache-control": "no-store" });
-      res.end(JSON.stringify(value));
-    };
-    if (
-      req.headers.host !== new URL(controlUrl).host ||
-      req.headers.origin !== undefined ||
-      req.headers.authorization !== "Bearer " + controlToken
-    )
-      return reply(403, { error: "Local session authentication required" });
-    if (req.method === "GET" && req.url === "/status") {
-      try {
-        await verifyChain();
-        const block = await jsonRpc<{ timestamp: string; number: string }>(
-          rpc,
-          "eth_getBlockByNumber",
-          ["latest", false],
-        );
-        return reply(200, {
+  const clients = new Set<Socket>();
+  async function dispatch(command: ControlCommand) {
+    if (command.command === "status") {
+      await verifyChain();
+      const block = await jsonRpc<{ timestamp: string; number: string }>(
+        rpc,
+        "eth_getBlockByNumber",
+        ["latest", false],
+      );
+      return {
+        ok: true,
+        result: {
           instanceId: manifest.instanceId,
           game: deployment.game,
           cosmicUrl: session.cosmicUrl,
@@ -123,50 +152,77 @@ export async function runInteractive(
           blockNumber: Number(BigInt(block.number)),
           bots: bot && isProcessAlive(bot.pid) ? botCount : 0,
           logs: session.logs,
-        });
-      } catch (error) {
-        return reply(503, { error: String(error) });
-      }
+        },
+      };
     }
-    if (req.method !== "POST") return reply(405, { error: "POST required" });
-    if (busy) return reply(409, { error: "Another local control command is in progress" });
+    if (busy) return { ok: false, error: "Another local control command is in progress" };
     busy = true;
     try {
-      if (req.url === "/stop") {
-        reply(200, { stopping: true });
-        finish();
-        return;
+      if (command.command === "stop") return { ok: true, result: { stopping: true } };
+      if (command.command === "bots") {
+        await setBots(command.value);
+        return { ok: true, result: { bots: botCount, seed: botSeed } };
       }
-      const match = /^\/(bots|advance)\/(\d+)$/.exec(req.url ?? "");
-      if (!match?.[2]) return reply(400, { error: "Unknown control command" });
-      if (match[1] === "bots") {
-        await setBots(numberInRange(match[2], 0, 3));
-        return reply(200, { bots: botCount, seed: botSeed });
-      }
-      const seconds = numberInRange(match[2], 1, 31 * 86400);
       await verifyChain();
-      // Add to the node's current clock so a concurrent transaction or interval block
-      // cannot make a previously sampled absolute timestamp invalid.
-      await jsonRpc(rpc, "evm_increaseTime", [seconds]);
+      await jsonRpc(rpc, "evm_increaseTime", [command.value]);
       await jsonRpc(rpc, "evm_mine");
       const block = await jsonRpc<{ timestamp: string }>(rpc, "eth_getBlockByNumber", [
         "latest",
         false,
       ]);
-      return reply(200, { advancedSeconds: seconds, chainTime: Number(BigInt(block.timestamp)) });
-    } catch (error) {
-      return reply(400, { error: String(error) });
+      return {
+        ok: true,
+        result: { advancedSeconds: command.value, chainTime: Number(BigInt(block.timestamp)) },
+      };
     } finally {
       busy = false;
     }
+  }
+  const server = createServer((socket) => {
+    clients.add(socket);
+    socket.on("close", () => clients.delete(socket));
+    socket.on("error", () => socket.destroy());
+    socket.setTimeout(30_000, () => socket.destroy());
+    socket.setEncoding("utf8");
+    socket.write(JSON.stringify({ instanceId: manifest.instanceId }) + "\n");
+    let frame = "";
+    socket.on("data", (chunk: string) => {
+      frame += chunk;
+      if (Buffer.byteLength(frame) > 512) {
+        socket.pause();
+        socket.end('{"ok":false,"error":"Control request too large"}\n');
+        return;
+      }
+      const newline = frame.indexOf("\n");
+      if (newline < 0) return;
+      socket.pause(); // Each connection carries one command.
+      const command =
+        newline === frame.length - 1 ? readCommand(frame.slice(0, newline)) : undefined;
+      if (!command) {
+        socket.end('{"ok":false,"error":"Invalid control command"}\n');
+        return;
+      }
+      void dispatch(command)
+        .then((result) => {
+          socket.end(JSON.stringify(result) + "\n");
+          if (result.ok && command.command === "stop") finish();
+        })
+        .catch((error) => {
+          console.error("Local playground control failed", error);
+          socket.end(
+            '{"ok":false,"error":"Control command failed. See the playground terminal."}\n',
+          );
+        });
+    });
   });
   let monitor;
   const pendingSession = sessionPath + "." + randomUUID() + ".tmp";
   let published = false;
   try {
     await new Promise<void>((resolve, reject) => {
-      server.once("error", reject).listen(config.controlPort, "127.0.0.1", resolve);
+      server.once("error", reject).listen(controlSocket, resolve);
     });
+    chmodSync(controlSocket, 0o600);
     // A killed process can leave its ready file behind. Never replace a live session.
     try {
       const previous = JSON.parse(readFileSync(sessionPath, "utf8"));
@@ -242,7 +298,12 @@ export async function runInteractive(
     signal.removeEventListener("abort", finish);
     clearInterval(monitor);
     if (published) rmSync(sessionPath, { force: true });
-    if (server.listening) await new Promise<void>((resolve) => server.close(() => resolve()));
+    if (server.listening) {
+      const closed = new Promise<void>((resolve) => server.close(() => resolve()));
+      for (const socket of clients) socket.destroySoon();
+      await closed;
+    }
+    rmdirSync(controlDir);
     rmSync(pendingSession, { force: true });
     await setBots(0);
   }

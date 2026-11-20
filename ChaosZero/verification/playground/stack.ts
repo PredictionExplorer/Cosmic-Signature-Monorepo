@@ -73,7 +73,7 @@ async function main(): Promise<void> {
     config.dbPort,
     config.webPort,
     config.apiPort,
-    config.controlPort,
+    ...(interactive ? [] : [config.controlPort]),
     harnessPort(process.env.V4_CHAOS_PORT ?? 4671, "V4_CHAOS_PORT"),
     harnessPort(process.env.V4_AXIOM_PORT ?? 4672, "V4_AXIOM_PORT"),
   ]) {
