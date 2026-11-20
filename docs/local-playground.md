@@ -34,7 +34,7 @@ For a dedicated Chromium window that keeps the same identity across all three si
 | Command | Effect |
 | --- | --- |
 | `make play BOTS=2` | Start a fresh game with two bots already active. The default is zero. |
-| `make play-status` | Show the site URLs, chain time, block number, bot count and log directory. Confirmed bot actions appear in `bots.log` there. |
+| `make play-status` | Show the site URLs, chain time, block number, bot count and log directory. Confirmed bot actions appear in `bots.log` there. If the worker exits, the sites keep running and status reports how to restart the bots. |
 | `make play-advance BY=90` | Advance the whole chain by 90 seconds and mine a block. Every open cycle and lot sees that time advance. |
 | `make play-stop` | Close the session and discard its local chain and database. Ctrl-C in the launcher terminal also stops it. |
 | `make test-play` | Run the automated human-wallet, market, auction, bot and clock checks in a separate disposable session on other ports. |

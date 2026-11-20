@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getAddress, parseEther, ZeroAddress } from "ethers";
-import { auctionChoice, botRpcUrl, gameChoice, marketOrder, validateBotSession } from "./bots.mjs";
+import { getAddress, JsonRpcProvider, parseEther, ZeroAddress } from "ethers";
+import {
+  auctionChoice,
+  botRpcUrl,
+  gameChoice,
+  marketOrder,
+  recoverableTurnError,
+  validateBotSession,
+} from "./bots.mjs";
 
 const accounts = Array.from({ length: 10 }, (_, i) =>
   getAddress("0x" + (i + 1).toString(16).padStart(40, "0")),
@@ -37,6 +44,41 @@ test("wallets and node must belong to the unforked local playground", () => {
   assert.throws(() =>
     validate({ ...manifest, botWallets: wallets([7, 8]) }, { instanceId }, 31337),
   );
+});
+
+test("a mined Hardhat send revert skips a turn without masking node or session errors", () => {
+  const provider = new JsonRpcProvider();
+  const message = "Error: Transaction reverted without a reason string";
+  const minedRevert = provider.getRpcError(
+    { id: 1, jsonrpc: "2.0", method: "eth_sendTransaction", params: [{ from: accounts[7] }] },
+    {
+      error: {
+        code: -32603,
+        message,
+        data: { data: "0x", message, txHash: "0x" + "ef".repeat(32) },
+      },
+    },
+  );
+  provider.destroy();
+  assert.equal(recoverableTurnError(minedRevert), "The submitted transaction reverted");
+  for (const code of [
+    "CALL_EXCEPTION",
+    "TIMEOUT",
+    "TRANSACTION_REPLACED",
+    "NONCE_EXPIRED",
+    "REPLACEMENT_UNDERPRICED",
+    "INSUFFICIENT_FUNDS",
+  ]) {
+    assert.equal(recoverableTurnError({ code }), code);
+  }
+  for (const error of [
+    new Error("Bots require the original unforked playground node instance"),
+    { code: "NETWORK_ERROR" },
+    { ...minedRevert, payload: { method: "hardhat_metadata" } },
+    { ...minedRevert, error: { code: -32603, message: "Internal server error" } },
+    { ...minedRevert, error: { code: -32601, message: "Missing RPC method" } },
+  ])
+    assert.equal(recoverableTurnError(error), null);
 });
 
 test("players wait at the opening, respect the current leader and observe close exclusivity", () => {

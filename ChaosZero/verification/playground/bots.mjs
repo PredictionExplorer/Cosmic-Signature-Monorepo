@@ -148,6 +148,31 @@ export function marketOrder({
   return { yes, buy: true, input: size };
 }
 
+// A failed turn is never resubmitted. The next turn rereads the wallet and contract state.
+export function recoverableTurnError(error) {
+  if (
+    isError(error, "CALL_EXCEPTION") ||
+    isError(error, "TRANSACTION_REPLACED") ||
+    isError(error, "NONCE_EXPIRED") ||
+    isError(error, "REPLACEMENT_UNDERPRICED") ||
+    isError(error, "INSUFFICIENT_FUNDS") ||
+    isError(error, "TIMEOUT")
+  )
+    return error.shortMessage || error.code;
+
+  // ethers normalizes estimate-time reverts, but a mined Hardhat send can instead
+  // come back as UNKNOWN_ERROR containing the original JSON-RPC execution error.
+  if (
+    isError(error, "UNKNOWN_ERROR") &&
+    error.payload?.method === "eth_sendTransaction" &&
+    error.error?.code === -32603 &&
+    typeof error.error.message === "string" &&
+    /\brevert(?:ed)?\b/i.test(error.error.message)
+  )
+    return "The submitted transaction reverted";
+  return null;
+}
+
 function artifact(root, packagePath) {
   return JSON.parse(readFileSync(new URL(packagePath, root), "utf8")).abi;
 }
@@ -291,7 +316,12 @@ export async function connectBots(manifest, { count = 3, seed = 42, signal } = {
           `${player.persona.name} · local rehearsal`,
           0n,
         );
-      if (action === "close") return send(player, game, "claimMainPrize");
+      if (action === "close") {
+        // Prize recipients can change between estimation and mining. Match the
+        // main site's allowance for the extra gas used by different recipients.
+        const estimate = await game.connect(player.signer).claimMainPrize.estimateGas();
+        return send(player, game, "claimMainPrize", { gasLimit: estimate + 1_000_000n });
+      }
       if (action === "gesture")
         return send(
           player,
@@ -398,12 +428,16 @@ export async function connectBots(manifest, { count = 3, seed = 42, signal } = {
       async step(domain) {
         await verifyNode();
         const player = players[turn++ % players.length];
-        const [cycle, head, balance] = await Promise.all([
+        const [cycle, head, balance, confirmedNonce, pendingNonce] = await Promise.all([
           game.roundNum(),
           provider.getBlock("latest"),
           provider.getBalance(player.address),
+          provider.getTransactionCount(player.address, "latest"),
+          provider.getTransactionCount(player.address, "pending"),
         ]);
-        if (balance < cashReserve) return null;
+        // A receipt timeout leaves the outcome undecided. Let the node resolve
+        // that wallet's pending transaction before it can act again.
+        if (pendingNonce > confirmedNonce || balance < cashReserve) return null;
         const now = BigInt(head.timestamp);
         switch (domain ?? pickWeighted(rng, player.preferences)) {
           case "game":
@@ -443,8 +477,9 @@ async function main() {
       try {
         await bots.step();
       } catch (error) {
-        if (!isError(error, "CALL_EXCEPTION")) throw error;
-        console.log(`[bots] State changed before the action completed: ${error.shortMessage}`);
+        const reason = recoverableTurnError(error);
+        if (!reason) throw error;
+        console.log(`[bots] Skipping this turn: ${reason}`);
       }
     }
   } catch (error) {
