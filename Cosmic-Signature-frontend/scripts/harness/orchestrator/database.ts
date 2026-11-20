@@ -50,7 +50,7 @@ function writeComposeOverride(config: HarnessConfig): void {
       'services:',
       '  db:',
       '    ports: !override',
-      `      - "${config.dbPort}:5432"`,
+      `      - "127.0.0.1:${config.dbPort}:5432"`,
       '',
     ].join('\n'),
   );
@@ -87,9 +87,10 @@ export async function ensureDockerUp(waitMs = 90_000): Promise<void> {
 }
 
 /** Start Postgres (waiting for health) and apply the goose migrations. */
-export async function startDatabase(config: HarnessConfig): Promise<void> {
+export async function startDatabase(config: HarnessConfig, signal?: AbortSignal): Promise<void> {
   writeComposeOverride(config);
   await runBlocking({
+    signal,
     name: 'db',
     command: 'docker',
     args: [...composeArgs(config), 'up', '-d', '--wait', 'db'],
@@ -102,6 +103,7 @@ export async function startDatabase(config: HarnessConfig): Promise<void> {
   // version. Falls back to a PATH-installed goose binary when Go is absent.
   const dbString = `postgres://rwcg:rwcg@localhost:${config.dbPort}/rwcg?sslmode=disable`;
   const goRunGoose = await runBlocking({
+    signal,
     name: 'migrate',
     command: 'go',
     args: [
@@ -121,6 +123,7 @@ export async function startDatabase(config: HarnessConfig): Promise<void> {
   );
   if (!goRunGoose) {
     await runBlocking({
+      signal,
       name: 'migrate',
       command: 'goose',
       args: ['-dir', 'db/migrations', 'postgres', dbString, 'up'],

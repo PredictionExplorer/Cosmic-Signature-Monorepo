@@ -7,9 +7,11 @@ import { checkA11y, render, screen, within } from '@/test-utils';
 import { ClaimsByRoundSection } from '../ClaimsByRoundSection';
 
 const mockUseClaimsByRound = jest.fn();
+const mockUseCurrentTime = jest.fn();
 const mockUseClaimDetailByRound = jest.fn();
 
 jest.mock('../../../hooks/useApiQuery', () => ({
+  useCurrentTime: () => ({ data: mockUseCurrentTime() }),
   useClaimsByRound: (...args: unknown[]) => mockUseClaimsByRound(...args),
   useClaimDetailByRound: (...args: unknown[]) => mockUseClaimDetailByRound(...args),
   // The live cycle, which a cycle link sends to /current-cycle.
@@ -65,6 +67,7 @@ const detail: RoundClaimDetail = {
 const ok = <T,>(data: T) => ({ data, isLoading: false, isError: false, refetch: jest.fn() });
 
 beforeEach(() => {
+  mockUseCurrentTime.mockReset();
   jest.clearAllMocks();
   mockUseClaimsByRound.mockReturnValue(
     ok([cycle(), cycle({ RoundNum: 11, TotalUnclaimed: 0, EthUnclaimed: 0, UnclaimedItems: [] })]),
@@ -104,6 +107,26 @@ describe('ClaimsByRoundSection', () => {
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByText(/Retrieval window closes in 1h/)).toBeInTheDocument();
     expect(within(dialog).getByText(/^2\.50* ETH$/)).toBeInTheDocument();
+  });
+
+  it('shows that retrieval has opened to everyone after the chain reaches the deadline', async () => {
+    const user = userEvent.setup();
+    mockUseCurrentTime.mockReturnValue(NOW_SEC + 3_600);
+    render(<ClaimsByRoundSection />);
+    await user.click(screen.getByRole('button', { name: /1 unretrieved/ }));
+    expect(
+      within(screen.getByRole('dialog')).getByText(/retrieval window has closed/i),
+    ).toBeInTheDocument();
+  });
+
+  it('uses the reported expiry when the chain clock is unavailable', async () => {
+    const user = userEvent.setup();
+    mockUseClaimsByRound.mockReturnValue(ok([cycle({ Expired: true })]));
+    render(<ClaimsByRoundSection />);
+    await user.click(screen.getByRole('button', { name: /1 unretrieved/ }));
+    expect(
+      within(screen.getByRole('dialog')).getByText(/retrieval window has closed/i),
+    ).toBeInTheDocument();
   });
 
   it('unfolds a cycle’s retrieval transactions under its row, noting a retrieval by someone else', async () => {

@@ -24,6 +24,12 @@ Use Node 22.23.2 and pnpm 10.32.0 for the shared test environment. The game and 
 
 For your first change, use the [contributor guide and test matrix](CONTRIBUTING.md). The [architecture guide](docs/architecture.md) maps each directory to the code it owns and traces a V4 cycle across the four components. Use the [security policy](SECURITY.md) to report a vulnerability privately.
 
+## Play V4 locally
+
+Start a funded session with `make play`. Once the three sites are ready, run `make play-wallet WALLET=1` in another terminal. A dedicated Chromium window opens the game, Chaos Zero and Axiom Zero with the same test account. Two more human wallets can play alongside it. The first gesture starts a 75-second timer and each later gesture adds 20 seconds.
+
+Use `make play-bots BOTS=2` for company, or advance the local chain to try auction settlement. The [playground guide](docs/local-playground.md) covers one-time setup, a first playthrough and cleanup.
+
 ## Verify V4
 
 With the local test prerequisites installed, run `make test-v4` to exercise the upgrade sequence, the auction lifecycle and the three-site browser flow.

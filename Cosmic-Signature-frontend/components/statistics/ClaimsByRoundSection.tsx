@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { formatAddress, formatSeconds } from '@/utils/format';
 import { useFormat } from '@/hooks/useFormat';
 import { useNow } from '@/hooks/useNow';
-import { useClaimsByRound, useClaimDetailByRound } from '@/hooks/useApiQuery';
+import { useClaimsByRound, useClaimDetailByRound, useCurrentTime } from '@/hooks/useApiQuery';
 import type {
   AttachedToken,
   ClaimTxn,
@@ -73,17 +73,36 @@ function useLastShown<T>(value: T | null): T | null {
 /** A dialog header that reads left to right and keeps clear of the close button in its corner. */
 const DIALOG_HEADER_CLASS = 'pr-12 text-left';
 
+function RetrievalWindowDescription({ cycle }: { cycle: RoundClaimSummary }) {
+  const t = useTranslations('statistics');
+  const format = useFormat();
+  const { data: chainTime } = useCurrentTime();
+  const wallSeconds = Math.floor(useNow(30_000) / 1000);
+  const sampled = typeof chainTime === 'number' && chainTime > 0;
+  const expired =
+    sampled && cycle.ClaimWindowTimeout > 0 ? chainTime >= cycle.ClaimWindowTimeout : cycle.Expired;
+  return (
+    <DialogDescription>
+      {expired
+        ? t('performance.claims.dialog.expired')
+        : t('performance.claims.dialog.closesIn', {
+            duration: formatSeconds(
+              Math.max(0, cycle.ClaimWindowTimeout - (sampled ? chainTime : wallSeconds)),
+              format.locale,
+            ),
+          })}
+    </DialogDescription>
+  );
+}
+
 const UnretrievedDialog = ({
   cycle,
-  nowSec,
   onClose,
 }: {
   cycle: RoundClaimSummary | null;
-  nowSec: number;
   onClose: () => void;
 }) => {
   const t = useTranslations('statistics');
-  const format = useFormat();
   const assetText = useAssetText();
   // Kept through the closing animation, so the dialog does not empty as it fades.
   const shown = useLastShown(cycle);
@@ -113,16 +132,7 @@ const UnretrievedDialog = ({
               <DialogTitle>
                 {t('performance.claims.dialog.unclaimedTitle', { cycle: shown.RoundNum })}
               </DialogTitle>
-              <DialogDescription>
-                {shown.Expired
-                  ? t('performance.claims.dialog.expired')
-                  : t('performance.claims.dialog.closesIn', {
-                      duration: formatSeconds(
-                        Math.max(0, shown.ClaimWindowTimeout - nowSec),
-                        format.locale,
-                      ),
-                    })}
-              </DialogDescription>
+              <RetrievalWindowDescription cycle={shown} />
             </DialogHeader>
             <div className="max-h-[60vh] overflow-auto">
               <DataTable
@@ -285,8 +295,6 @@ export const ClaimsByRoundSection = () => {
   const [selected, setSelected] = useState<RoundClaimSummary | null>(null);
   const { data, isLoading, isError, refetch } = useClaimsByRound();
   const list = useMemo(() => data ?? [], [data]);
-  // Ticks every 30s so the "window closes in …" countdown never goes stale.
-  const nowSec = Math.floor(useNow(30_000) / 1000);
 
   const columns = useMemo<DataTableColumn<RoundClaimSummary>[]>(
     () => [
@@ -398,7 +406,7 @@ export const ClaimsByRoundSection = () => {
           detailsHeader={t('performance.claims.columns.details')}
         />
       )}
-      <UnretrievedDialog cycle={selected} nowSec={nowSec} onClose={() => setSelected(null)} />
+      <UnretrievedDialog cycle={selected} onClose={() => setSelected(null)} />
     </div>
   );
 };

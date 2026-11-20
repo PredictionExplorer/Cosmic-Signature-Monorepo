@@ -23,11 +23,13 @@ const query = (data: unknown, extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
+let mockChainTime: number | undefined;
 const mockUseUnclaimedDonatedNFTByUser = jest.fn();
 const mockUseUnretrievedStellarSelectionDepositsByUser = jest.fn();
 const mockUseDonationsERC20ByUser = jest.fn();
 
 jest.mock('../../../../../hooks/useApiQuery', () => ({
+  useCurrentTime: () => ({ data: mockChainTime }),
   useUnclaimedDonatedNFTByUser: (...args: unknown[]) => mockUseUnclaimedDonatedNFTByUser(...args),
   useUnretrievedStellarSelectionDepositsByUser: (...args: unknown[]) =>
     mockUseUnretrievedStellarSelectionDepositsByUser(...args),
@@ -239,6 +241,26 @@ describe('MyWinnings', () => {
     expect(figure('eth')).toHaveTextContent('myPages.allocations.summary.cycles(count=2)');
     expect(figure('nfts')).toHaveTextContent('2');
     expect(figure('tokens')).toHaveTextContent('1');
+  });
+
+  it('selects and classifies the next retrieval deadline as the chain clock advances', () => {
+    const browserNow = Math.floor(Date.now() / 1000);
+    mockDeadlines[1] = browserNow + 60;
+    mockDeadlines[3] = browserNow + 90;
+    try {
+      mockChainTime = browserNow + 65;
+      const { rerender } = render(<MyWinnings />);
+      const stateLabel = () =>
+        screen.getByTestId('retrieval-summary').querySelector('[data-deadline-state]');
+      expect(stateLabel()).toHaveAttribute('data-deadline-state', 'soon');
+      mockChainTime = browserNow + 120;
+      rerender(<MyWinnings />);
+      expect(stateLabel()).toHaveAttribute('data-deadline-state', 'expired');
+    } finally {
+      delete mockDeadlines[1];
+      delete mockDeadlines[3];
+      mockChainTime = undefined;
+    }
   });
 
   it('retrieves everything in one transaction: distinct cycles, NFT indexes and raw token amounts', () => {
