@@ -41,7 +41,7 @@ export interface EthAllocationsTableProps {
    * Each cycle's retrieval deadline: adds a "Retrieve by" column. Only
    * meaningful for ETH that is still waiting.
    */
-  deadlines?: RetrievalDeadlines;
+  deadlineColumn?: { byRound: RetrievalDeadlines; chainTime: number };
   /** Adds whether each allocation was retrieved (a wallet's whole history). */
   showStatus?: boolean;
   /** Where each allocation came from; off where the page already says (Stellar Selection · ETH). */
@@ -69,11 +69,13 @@ export interface EthAllocationsTableProps {
 export function EthAllocationsTable({
   rows,
   ariaLabel,
-  deadlines,
+  deadlineColumn,
   showStatus = false,
   showSource = true,
   ...state
 }: EthAllocationsTableProps) {
+  const deadlines = deadlineColumn?.byRound;
+  const chainTime = deadlineColumn?.chainTime ?? 0;
   const t = useTranslations('myPages');
   const tTables = useTranslations('tables');
   const cycleCell = useCycleCell();
@@ -128,6 +130,7 @@ export function EthAllocationsTable({
         value: (row) => (typeof row.RoundNum === 'number' ? deadlines[row.RoundNum] : undefined),
         cell: (row) => (
           <RetrievalDeadline
+            chainTime={chainTime}
             deadline={typeof row.RoundNum === 'number' ? deadlines[row.RoundNum] : undefined}
           />
         ),
@@ -152,7 +155,7 @@ export function EthAllocationsTable({
       });
     }
     return list;
-  }, [cycleCell, deadlines, showSource, showStatus, t, tTables]);
+  }, [chainTime, cycleCell, deadlines, showSource, showStatus, t, tTables]);
 
   return (
     <DataTable

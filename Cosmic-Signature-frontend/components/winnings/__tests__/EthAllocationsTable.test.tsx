@@ -4,10 +4,6 @@ import { EthAllocationsTable, type EthAllocationRow } from '../EthAllocationsTab
 
 const NOW_SECONDS = 1_800_000_000;
 
-jest.mock('../../../hooks/useNow', () => ({
-  useNow: () => NOW_SECONDS * 1000,
-}));
-
 const rows: EthAllocationRow[] = [
   {
     EvtLogId: 1,
@@ -63,7 +59,10 @@ describe('EthAllocationsTable', () => {
       <EthAllocationsTable
         rows={rows}
         ariaLabel="ETH allocations"
-        deadlines={{ 2: NOW_SECONDS + 3 * 24 * 3600, 3: NOW_SECONDS - 60 }}
+        deadlineColumn={{
+          byRound: { 2: NOW_SECONDS + 3 * 24 * 3600, 3: NOW_SECONDS - 60 },
+          chainTime: NOW_SECONDS,
+        }}
       />,
     );
 

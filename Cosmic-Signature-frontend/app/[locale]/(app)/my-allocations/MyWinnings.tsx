@@ -29,12 +29,12 @@ import { buildRetrievalPlan, nextDeadline } from '@/utils/allocationRetrieval';
 import { useRetrievalDeadlines } from '@/components/winnings/useRetrievalDeadlines';
 import { useApiData } from '@/contexts/ApiDataContext';
 import {
+  useCurrentTime,
   useDonationsERC20ByUser,
   useUnclaimedDonatedNFTByUser,
   useUnretrievedStellarSelectionDepositsByUser,
 } from '@/hooks/useApiQuery';
 import { useClaimAllocations } from '@/hooks/useClaimAllocations';
-import { useNow } from '@/hooks/useNow';
 import { useActiveWeb3React } from '@/hooks/web3';
 import { AllocationIcon } from '@/lib/conceptIcons';
 import { getDonatedErc20RawClaimAmount } from '@/utils/donatedErc20';
@@ -127,11 +127,11 @@ export default function MyWinnings() {
     return map;
   }, [plan]);
   const { deadlines } = useRetrievalDeadlines(plan?.rounds ?? [], walletByRound);
-  const nowSeconds = Math.floor(useNow(60_000) / 1000);
+  const { data: chainTime = 0 } = useCurrentTime();
   const deadline = plan
     ? nextDeadline(
         plan.rounds.map((round) => deadlines[round]),
-        nowSeconds,
+        chainTime,
       )
     : null;
 
@@ -240,6 +240,7 @@ export default function MyWinnings() {
             plan={summaryPlan}
             anchorAmount={anchorAmount}
             deadline={deadline}
+            chainTime={chainTime}
             busy={isClaiming.everything}
             stage={origin === 'everything' ? txStage : { status: 'idle' }}
             onRetrieveEverything={handleRetrieveEverything}
@@ -276,7 +277,7 @@ export default function MyWinnings() {
               <EthAllocationsTable
                 rows={deposits}
                 ariaLabel={t('allocations.sections.eth')}
-                deadlines={deadlines}
+                deadlineColumn={{ byRound: deadlines, chainTime }}
                 loading={loadingDeposits}
                 headingLevel={3}
               />

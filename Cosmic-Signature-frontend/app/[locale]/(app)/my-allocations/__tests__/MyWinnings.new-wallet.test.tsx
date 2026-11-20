@@ -74,6 +74,7 @@ const envelope = (fields: Record<string, unknown>) => ({
 });
 // lexicon-allow-start: backend HTTP URL paths mirror the Go server routes and are a sealed contract
 const NEW_WALLET_PAYLOADS: [route: string, fields: Record<string, unknown>][] = [
+  ['time/current', { CurrentTimeStamp: 1_800_000_000 }],
   ['user/notif_red_box/', { Winnings: [] }],
   ['staking/cst/rewards/to_claim/by_user/', { UnclaimedEthDeposits: [] }],
   ['donations/nft/unclaimed/by_user/', { UnclaimedDonatedNFTs: [] }],

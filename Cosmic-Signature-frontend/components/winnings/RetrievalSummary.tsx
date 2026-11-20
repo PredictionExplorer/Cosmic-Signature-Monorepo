@@ -15,7 +15,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TxStatus } from '@/components/ui/tx-status';
 import { ChainGuard } from '@/components/wallet/NetworkGuard';
 import { useFormat } from '@/hooks/useFormat';
-import { useNow } from '@/hooks/useNow';
 import { useTxStageLabel } from '@/hooks/useTxStageLabel';
 import { deadlineState, type RetrievalPlan } from '@/utils/allocationRetrieval';
 
@@ -30,6 +29,7 @@ export interface RetrievalSummaryProps {
   anchorAmount: number | null | undefined;
   /** The next retrieval deadline among the items, in Unix seconds. */
   deadline: number | null;
+  chainTime: number;
   /** The one-transaction retrieval is running. */
   busy: boolean;
   /** The lifecycle of the latest retrieve on the page. */
@@ -50,6 +50,7 @@ export function RetrievalSummary({
   plan,
   anchorAmount,
   deadline,
+  chainTime,
   busy,
   stage,
   onRetrieveEverything,
@@ -59,8 +60,7 @@ export function RetrievalSummary({
   const format = useFormat();
   const stageLabel = useTxStageLabel();
   const headingId = useId();
-  const nowSeconds = Math.floor(useNow(60_000) / 1000);
-  const deadlineStatus = deadlineState(deadline, nowSeconds);
+  const deadlineStatus = deadlineState(deadline, chainTime);
   const deadlineNeedsAction = deadlineStatus === 'soon' || deadlineStatus === 'expired';
 
   const pending = (width: string) => <Skeleton className={cn('h-7', width)} />;
