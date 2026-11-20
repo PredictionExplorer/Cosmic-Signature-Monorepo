@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
-import { cp, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import { copyFile, cp, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 async function main() {
@@ -23,6 +24,15 @@ async function main() {
         "next.config.ts",
       ].map((file) => cp(join(source, file), join(site, file), { recursive: true })),
     );
+    // Only the interactive launcher supplies this generated, session-specific entry.
+    const browserWallet = process.env.V4_PLAYGROUND_BROWSER_WALLET;
+    if (browserWallet) {
+      await copyFile(
+        browserWallet,
+        join(site, "src", "instrumentation-client.js"),
+        constants.COPYFILE_EXCL,
+      );
+    }
     await symlink(join(source, "node_modules"), join(site, "node_modules"), "dir");
     if (kind === "chaos") {
       await mkdir(join(temp, "deployment"));

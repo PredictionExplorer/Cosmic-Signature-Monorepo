@@ -18,15 +18,9 @@ make play
 
 The launcher prepares the version of the indexer/API in the [backend lock](../Cosmic-Signature-frontend/harness.lock.json). On first use it may download that checkout, Go modules and the PostgreSQL image. It prints the site addresses when all three sites are ready. The default game URL is `http://localhost:14670/experimental-ui`, Chaos Zero is at `http://127.0.0.1:4671` and Axiom Zero is at `http://127.0.0.1:4672/auctions`.
 
-In a second terminal, open a wallet:
+Open any of the three site addresses in your browser. The interactive site connects **Playground Wallet 1** automatically. Choose another funded wallet from the playground wallet selector. Each tab remembers its selection when reloaded. Review the sender, recipient and amount before approving a local transaction. The three human wallets each start with at least 1,000 test ETH and 1,000 CST.
 
-```sh
-make play-wallet WALLET=1
-```
-
-The dedicated Chromium window opens all three sites already connected to **Playground Wallet 1**. Launch this window to use its funded account; opening a site URL in your usual browser uses that browser’s own wallet setup. A separate review tab shows the contract, action, arguments and ETH amount before each transaction. Click **Confirm transaction** to submit it. Closing the review tab or clicking **Cancel** declines it.
-
-Run `make play-wallet WALLET=2` or `WALLET=3` in another terminal to play as someone else. Keep both windows open to see each participant's view. Each has at least 1,000 test ETH and 1,000 CST. These browser sessions use the local node's test accounts and require no extension, seed phrase or imported key.
+For a dedicated Chromium window that keeps the same identity across all three sites, run `make play-wallet WALLET=1` in a second terminal. Use `WALLET=2` or `WALLET=3` for another window. Dedicated windows review transactions in a separate confirmation tab. Both approaches use the local node’s accounts and require no extension, seed phrase or imported key.
 
 ## Try one cycle
 

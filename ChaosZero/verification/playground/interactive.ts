@@ -272,7 +272,7 @@ export async function runInteractive(
         sessionPath +
         "\n  Logs: " +
         session.logs +
-        "\n\nOpen a funded wallet with make play-wallet WALLET=1 in another terminal. Press Ctrl+C here to stop.\n",
+        "\n\nOpen a site above and pick a funded playground wallet. For a dedicated window, run make play-wallet WALLET=1. Press Ctrl+C here to stop.\n",
     );
     monitor = setInterval(() => {
       const exited = [...services, ...(bot ? [bot] : [])].find((p) => !isProcessAlive(p.pid));

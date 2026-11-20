@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { Contract, JsonRpcProvider, parseEther } from "ethers";
 import { enableWallet } from "./human-wallet.mjs";
+import { exerciseOrdinaryWallet } from "./ordinary-wallet.smoke.mjs";
 
 const { chromium, expect } = createRequire(
   new URL("../../../Cosmic-Signature-frontend/package.json", import.meta.url),
@@ -40,6 +41,9 @@ try {
       await expect(page.getByRole("button", { name: displayedAddress }).first()).toBeVisible({
         timeout: 30_000,
       });
+      await expect(
+        page.getByRole("combobox", { name: "Playground wallet", exact: true }),
+      ).toHaveCount(0);
     }
     async function review(button, approve = true) {
       const pending = context.waitForEvent("page", { timeout: 30_000 });
@@ -116,6 +120,7 @@ try {
     await bob.page.evaluate(() => window.ethereum.request({ method: "eth_accounts" })),
     [],
   );
+  await exerciseOrdinaryWallet(browser, session, rpc);
   console.log(
     "Two human wallets played the game, traded CST, competed in a funded auction and cancelled a transaction.",
   );
