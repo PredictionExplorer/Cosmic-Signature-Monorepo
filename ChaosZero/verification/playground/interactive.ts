@@ -33,7 +33,8 @@ function numberInRange(raw: string, min: number, max: number) {
 type ControlCommand =
   | { command: "status" }
   | { command: "stop" }
-  | { command: "bots"; value: number }
+  | { command: "stopBots" }
+  | { command: "startBots"; value: number }
   | { command: "advance"; value: number };
 
 // Only these four operations are exposed by the owner-only control socket.
@@ -50,7 +51,8 @@ function readCommand(line: string): ControlCommand | undefined {
   if (command === "status" && value === undefined) return { command: "status" };
   if (command === "stop" && value === undefined) return { command: "stop" };
   if (!Number.isSafeInteger(value)) return undefined;
-  if (command === "bots" && value >= 0 && value <= 3) return { command: "bots", value };
+  if (command === "bots" && value === 0) return { command: "stopBots" };
+  if (command === "bots" && value >= 1 && value <= 3) return { command: "startBots", value };
   if (command === "advance" && value > 0 && value <= 31 * 86400)
     return { command: "advance", value };
   return undefined;
@@ -105,23 +107,25 @@ export async function runInteractive(
   };
   let bot: ManagedProcess | undefined;
   let botCount = 0;
-  const setBots = async (count: number) => {
-    if (bot && count === botCount && isProcessAlive(bot.pid)) return;
+  const stopBots = async () => {
     if (bot) await stopProcessGroup(bot.pid);
     bot = undefined;
     botCount = 0;
-    if (count) {
-      await verifyChain();
-      bot = spawnSupervised({
-        name: "bots",
-        command: process.execPath,
-        args: [join(process.env.CHAOS_ZERO_ROOT!, "verification/playground/bots.mjs")],
-        cwd: config.frontendDir,
-        env: { V4_BOT_SEED: String(botSeed), V4_BOT_COUNT: String(count) },
-        logFile: join(session.logs, "bots.log"),
-      });
-      botCount = count;
-    }
+  };
+  const startBots = async (count: number) => {
+    // Verify the bound node before keeping, replacing or spawning a bot worker.
+    await verifyChain();
+    if (bot && count === botCount && isProcessAlive(bot.pid)) return;
+    await stopBots();
+    bot = spawnSupervised({
+      name: "bots",
+      command: process.execPath,
+      args: [join(process.env.CHAOS_ZERO_ROOT!, "verification/playground/bots.mjs")],
+      cwd: config.frontendDir,
+      env: { V4_BOT_SEED: String(botSeed), V4_BOT_COUNT: String(count) },
+      logFile: join(session.logs, "bots.log"),
+    });
+    botCount = count;
   };
   let finish!: () => void;
   let fail!: (error: Error) => void;
@@ -159,8 +163,9 @@ export async function runInteractive(
     busy = true;
     try {
       if (command.command === "stop") return { ok: true, result: { stopping: true } };
-      if (command.command === "bots") {
-        await setBots(command.value);
+      if (command.command === "startBots" || command.command === "stopBots") {
+        if (command.command === "startBots") await startBots(command.value);
+        else await stopBots();
         return { ok: true, result: { bots: botCount, seed: botSeed } };
       }
       await verifyChain();
@@ -242,7 +247,7 @@ export async function runInteractive(
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
-    await setBots(initialCount);
+    if (initialCount > 0) await startBots(initialCount);
     writeFileSync(pendingSession, JSON.stringify(session, null, 2) + "\n", {
       flag: "wx",
       mode: 0o600,
@@ -305,6 +310,6 @@ export async function runInteractive(
     }
     rmdirSync(controlDir);
     rmSync(pendingSession, { force: true });
-    await setBots(0);
+    await stopBots();
   }
 }
