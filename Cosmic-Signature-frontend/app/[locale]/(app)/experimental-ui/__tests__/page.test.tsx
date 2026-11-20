@@ -24,6 +24,7 @@ jest.mock('@/services/api/server', () => ({
 jest.mock('../ExperimentalHomePage', () => ({
   __esModule: true,
   default: ({
+    localPaceLabels,
     initialDashboardData,
     initialBannerToken,
     initialLatestGesture,
@@ -31,6 +32,7 @@ jest.mock('../ExperimentalHomePage', () => ({
     initialTimingSample,
     initialRenderAtMs,
   }: {
+    localPaceLabels?: { opening: string; increment: string };
     initialDashboardData?: { CurRoundNum?: number } | null;
     initialBannerToken?: { id: number; info: { Seed?: string } } | null;
     initialLatestGesture?: { EvtLogId?: number } | null;
@@ -40,6 +42,7 @@ jest.mock('../ExperimentalHomePage', () => ({
   }) => (
     <div
       data-testid="experimental-home"
+      data-local-pace={localPaceLabels?.increment}
       data-cycle={initialDashboardData?.CurRoundNum ?? ''}
       data-banner-id={initialBannerToken?.id ?? ''}
       data-banner-seed={initialBannerToken?.info.Seed ?? ''}
@@ -87,6 +90,27 @@ beforeEach(() => {
 });
 
 describe('experimental UI server page', () => {
+  it.each([
+    ['local', 'Time added per gesture'],
+    ['mainnet', null],
+    ['sepolia', null],
+  ] as const)(
+    'passes the localized pace labels only on the local network (%s)',
+    async (network, expectedLabel) => {
+      const previous = process.env.NEXT_PUBLIC_NETWORK;
+      try {
+        process.env.NEXT_PUBLIC_NETWORK = network;
+        render(await Page(englishProps));
+        expect(screen.getByTestId('experimental-home').getAttribute('data-local-pace')).toBe(
+          expectedLabel,
+        );
+      } finally {
+        if (previous === undefined) delete process.env.NEXT_PUBLIC_NETWORK;
+        else process.env.NEXT_PUBLIC_NETWORK = previous;
+      }
+    },
+  );
+
   it('hydrates the alternate UI with the shared live seed shape', async () => {
     render(await Page(englishProps));
 

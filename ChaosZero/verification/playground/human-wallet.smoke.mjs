@@ -30,13 +30,16 @@ try {
     const wallet = await enableWallet(context, session, index);
     const page = await context.newPage();
     page.setDefaultTimeout(30_000);
-    async function connect(url, name) {
+    async function visit(url) {
       await page.goto(url, { waitUntil: "domcontentloaded" });
-      await page.getByRole("button", { name }).first().click();
-      await page
-        .getByRole("button", { name: new RegExp("Playground Wallet " + index, "i") })
-        .first()
-        .click();
+      // The site itself must recognize the selected account on first visit.
+      const displayedAddress = new RegExp(
+        wallet.address.slice(0, 4) + ".*" + wallet.address.slice(-4),
+        "i",
+      );
+      await expect(page.getByRole("button", { name: displayedAddress }).first()).toBeVisible({
+        timeout: 30_000,
+      });
     }
     async function review(button, approve = true) {
       const pending = context.waitForEvent("page", { timeout: 30_000 });
@@ -47,10 +50,10 @@ try {
         .getByRole("button", { name: approve ? "Confirm transaction" : "Cancel", exact: true })
         .click();
     }
-    return { page, wallet, connect, review };
+    return { page, wallet, visit, review };
   }
   const alice = await player(1);
-  await alice.connect(session.cosmicUrl + "/experimental-ui", /connect.*wallet/i);
+  await alice.visit(session.cosmicUrl + "/experimental-ui");
   const form = alice.page.locator("#make-gesture");
   const message = "Human V4 wallet rehearsal";
   await form.getByTestId("gesture-message-input").fill(message);
@@ -59,7 +62,7 @@ try {
     timeout: 60_000,
   });
 
-  await alice.connect(session.chaosUrl, /^Connect wallet$/i);
+  await alice.visit(session.chaosUrl);
   const panel = alice.page.getByTestId("independent-trade-panel");
   await panel.getByLabel(/CST to spend/).fill("1");
   await alice.review(panel.getByRole("button", { name: "Approve CST to trade" }));
@@ -77,7 +80,7 @@ try {
     [alice, "0.001"],
     [bob, "0.0011"],
   ]) {
-    await user.connect(url, /^Connect wallet$/i);
+    await user.visit(url);
     await user.page.getByRole("textbox", { name: "Total bid (ETH)" }).fill(amount);
     await user.page.getByRole("button", { name: "Place bid", exact: true }).click();
     await user.review(user.page.getByRole("button", { name: "Confirm bid", exact: true }));
@@ -104,6 +107,15 @@ try {
   await cancel.getByRole("button", { name: "Cancel", exact: true }).click();
   assert.equal(await result, 4001);
   assert.equal(await rpc.getTransactionCount(bob.wallet.address), before);
+  await bob.page.evaluate(() =>
+    window.ethereum.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] }),
+  );
+  await bob.page.reload({ waitUntil: "domcontentloaded" });
+  await expect(bob.page.getByRole("button", { name: /^Connect wallet$/i }).first()).toBeVisible();
+  assert.deepEqual(
+    await bob.page.evaluate(() => window.ethereum.request({ method: "eth_accounts" })),
+    [],
+  );
   console.log(
     "Two human wallets played the game, traded CST, competed in a funded auction and cancelled a transaction.",
   );

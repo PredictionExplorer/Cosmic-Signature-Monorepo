@@ -33,7 +33,7 @@ import {
 } from '@/components/home/observatory/gestureSubmitLabel';
 import { StandingsLedger } from '@/components/home/observatory/StandingsLedger';
 import { AllocationTracksBoard } from '@/components/home/experimental/AllocationTracksBoard';
-import { CycleMonument } from '@/components/home/experimental/CycleMonument';
+import { CycleMonument, type LocalPaceLabels } from '@/components/home/experimental/CycleMonument';
 import { CyclePhaseGuide } from '@/components/home/experimental/CyclePhaseGuide';
 import {
   DeckPersonalStrip,
@@ -124,6 +124,7 @@ function renderSheetTitle({ className, children }: { className: string; children
 }
 
 interface ExperimentalHomePageProps {
+  localPaceLabels?: LocalPaceLabels;
   initialDashboardData?: DashboardInfo | null;
   /** Server-picked artwork so its URL ships in the SSR HTML. */
   initialBannerToken?: { id: number; info: CSTTokenInfo } | null;
@@ -157,6 +158,7 @@ function toStageToken(id: number, info: CSTTokenInfo | null | undefined): StageT
  * allocation tracks follow, then the cycle's phases.
  */
 const ExperimentalHomePage = ({
+  localPaceLabels,
   initialDashboardData = null,
   initialBannerToken = null,
   initialLatestGesture = null,
@@ -879,6 +881,7 @@ const ExperimentalHomePage = ({
               className="min-w-0 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1"
             >
               <CycleMonument
+                localPaceLabels={localPaceLabels}
                 data={data}
                 loading={loading}
                 allocationTime={allocationTime}

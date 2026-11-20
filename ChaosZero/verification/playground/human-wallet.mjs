@@ -218,6 +218,9 @@ export async function enableWallet(context, session, index) {
   await context.addInitScript(({ address, index, sites }) => {
     if (window !== window.top || !sites.includes(location.origin)) return;
     const storageKey = "cosmic.local.wallet." + address;
+    // Opening this dedicated window grants the selected test account to the three
+    // playground origins. A revoked permission stays revoked, including after reload.
+    if (localStorage.getItem(storageKey) === null) localStorage.setItem(storageKey, "1");
     const permissions = [{ parentCapability: "eth_accounts" }];
     const listeners = new Map();
     function emit(accounts) {
@@ -250,7 +253,7 @@ export async function enableWallet(context, session, index) {
             if (!connected) emit([address]);
             return method === "eth_requestAccounts" ? [address] : permissions;
           case "wallet_revokePermissions":
-            localStorage.removeItem(storageKey);
+            localStorage.setItem(storageKey, "0");
             emit([]);
             return null;
           case "wallet_switchEthereumChain":
@@ -319,7 +322,7 @@ async function main() {
     );
     await pages[0].bringToFront();
     console.log(
-      `Wallet ${index}: ${wallet.address}\nChoose Playground Wallet ${index} in each site's wallet picker. Review each transaction in the confirmation tab.`,
+      `Wallet ${index}: ${wallet.address}\nYour test wallet is available on all three sites. Review each transaction in the confirmation tab.`,
     );
     await closed;
   } finally {

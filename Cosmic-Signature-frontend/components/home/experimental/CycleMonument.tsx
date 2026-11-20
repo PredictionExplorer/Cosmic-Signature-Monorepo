@@ -10,6 +10,7 @@ import {
   type LocalizedCountdownRenderProps,
 } from '@/components/common/SmoothCountdown';
 import { Amount } from '@/components/ui/amount';
+import { Duration } from '@/components/ui/duration';
 import { Badge } from '@/components/ui/badge';
 import { ExplainedTerm } from '@/components/ui/explain-popover';
 import { LiveStatus } from '@/components/ui/live-status';
@@ -21,10 +22,17 @@ import { getCycleState } from '@/lib/cycleState';
 import { TOUCH_TARGET_HEIGHT_CLASS } from '@/lib/touch-target';
 import { cn } from '@/lib/utils';
 import type { DashboardInfo } from '@/services/api';
+import { initialDurationSeconds, secondsFromMicroseconds } from '@/utils/protocolParams';
 
 import { viewForPhase, type PhaseTone } from './phaseView';
 
+export interface LocalPaceLabels {
+  opening: string;
+  increment: string;
+}
+
 interface CycleMonumentProps {
+  localPaceLabels?: LocalPaceLabels;
   data: DashboardInfo | null;
   loading: boolean;
   allocationTime: number;
@@ -98,6 +106,7 @@ function ClockFigures({
  * column.
  */
 export function CycleMonument({
+  localPaceLabels,
   data,
   loading,
   allocationTime,
@@ -181,6 +190,15 @@ export function CycleMonument({
     ) : null;
 
   const calendarStart = cycleState.activationTime ?? 0;
+  const localIncrement = localPaceLabels
+    ? secondsFromMicroseconds(data?.MainPrizeTimeIncrementInMicroSeconds)
+    : null;
+  const localOpening = localPaceLabels
+    ? initialDurationSeconds(
+        data?.MainPrizeTimeIncrementInMicroSeconds,
+        data?.InitialSecondsUntilPrize,
+      )
+    : null;
 
   // A group, not a region: the console it holds is the page's section, and
   // regions nested three deep (clock › console › Calibration Window) only
@@ -218,6 +236,25 @@ export function CycleMonument({
       <p className="mt-3 max-w-[var(--measure-lede)] type-body-sm text-muted-foreground">
         {phaseCopy('status')}
       </p>
+
+      {localPaceLabels && localIncrement !== null ? (
+        <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 type-caption text-subtle">
+          {localOpening !== null ? (
+            <div className="flex items-baseline gap-2">
+              <dt>{localPaceLabels.opening}</dt>
+              <dd className="text-foreground">
+                <Duration seconds={localOpening} />
+              </dd>
+            </div>
+          ) : null}
+          <div className="flex items-baseline gap-2">
+            <dt>{localPaceLabels.increment}</dt>
+            <dd className="text-foreground">
+              <Duration seconds={Math.floor(localIncrement)} />
+            </dd>
+          </div>
+        </dl>
+      ) : null}
 
       {cycleState.isOpeningSoon && calendarStart > 0 ? (
         <a
