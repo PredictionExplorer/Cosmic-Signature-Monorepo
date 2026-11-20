@@ -137,6 +137,78 @@ test.describe('Wallet connection state (disconnected)', () => {
     await expect(dialog.getByRole('button', { name: /^WalletConnect$/i })).toBeVisible();
   });
 
+  test('Rainbow obtains a WalletConnect pairing for this device', async ({
+    page,
+    context,
+    isMobile,
+  }) => {
+    // The SDK creates the encrypted proposal and pairing URI. The local relay acknowledges it.
+    const topics: string[] = [];
+    await context.route(/^https:\/\//, (route) => route.abort());
+    await context.routeWebSocket(/^wss:\/\/relay\.walletconnect\.(org|com)\//, (socket) => {
+      socket.onMessage((message) => {
+        const { id, method, params } = JSON.parse(message.toString());
+        if (method === 'wc_proposeSession') {
+          topics.push(params.pairingTopic);
+          socket.send(JSON.stringify({ id, jsonrpc: '2.0', result: true }));
+        }
+      });
+    });
+
+    const dialog = await openWalletModal(page);
+    await dialog.getByRole('button', { name: /^Rainbow$/i }).click();
+    await expect.poll(() => topics[0]).toMatch(/^[a-f0-9]{64}$/);
+    if (isMobile) {
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const entry = localStorage.getItem('WALLETCONNECT_DEEPLINK_CHOICE');
+            return entry && JSON.parse(entry);
+          }),
+        )
+        .toEqual({ name: 'Rainbow', href: `wc:${topics[0]}@2` });
+    } else {
+      await expect(dialog.getByRole('img', { name: 'QR Code', exact: true })).toBeVisible();
+    }
+  });
+
+  for (const wallet of ['Base Account', 'Coinbase Wallet']) {
+    test(`${wallet} opens its account handshake with this site's identity`, async ({
+      page,
+      context,
+    }) => {
+      await context.route(/^https:\/\//, (route) => route.abort());
+      await context.route('https://keys.coinbase.com/connect*', (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<title>Local wallet fixture</title>' }),
+      );
+      const dialog = await openWalletModal(page);
+      const [popup] = await Promise.all([
+        page.waitForEvent('popup'),
+        dialog
+          .getByRole('button', {
+            name: wallet === 'Coinbase Wallet' ? /^Coinbase(?: Wallet)?$/ : wallet,
+            exact: true,
+          })
+          .click(),
+      ]);
+      await expect(popup).toHaveTitle('Local wallet fixture');
+      const appName = await popup.evaluate(
+        (appOrigin) =>
+          new Promise<string>((resolve) => {
+            window.addEventListener('message', (event) => {
+              if (event.origin === appOrigin && event.data.requestId === 'local-popup') {
+                resolve(event.data.data.metadata.appName);
+              }
+            });
+            window.opener.postMessage({ event: 'PopupLoaded', id: 'local-popup' }, appOrigin);
+          }),
+        new URL(page.url()).origin,
+      );
+      expect(appName).toBe('Cosmic Signature');
+      await popup.close();
+    });
+  }
+
   test('MetaMask connects through injected provider without loading MetaMask SDK', async ({
     page,
     isMobile,
