@@ -86,8 +86,8 @@ try {
   ]) {
     await user.visit(url);
     await user.page.getByRole("textbox", { name: "Total bid (ETH)" }).fill(amount);
-    await user.page.getByRole("button", { name: "Place bid", exact: true }).click();
-    await user.review(user.page.getByRole("button", { name: "Confirm bid", exact: true }));
+    await user.page.getByRole("button", { name: "Review bid", exact: true }).click();
+    await user.review(user.page.getByRole("button", { name: "Confirm in wallet", exact: true }));
     await expect
       .poll(() => auction.minimumNextBid(token), { timeout: 20_000 })
       .toBeGreaterThan(parseEther(amount));

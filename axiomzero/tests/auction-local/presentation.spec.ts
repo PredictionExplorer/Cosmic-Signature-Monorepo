@@ -23,9 +23,9 @@ for (const viewport of [
           ),
         }),
     );
-    await page.goto("/auctions");
+    await page.goto("/auctions?view=all");
     const lots = page.getByRole("link", {
-      name: /View auction for Cosmic Signature #/,
+      name: /^(?:View auction for|Place a bid on) Cosmic Signature #/,
     });
     await expect(lots).toHaveCount(8);
     await expect(lots.last().getByRole("img")).toBeVisible();

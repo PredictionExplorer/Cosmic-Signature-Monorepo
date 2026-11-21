@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   config: { id: 42161, enabled: true },
   readLot: vi.fn(),
   readBatch: vi.fn(),
+  readOpenLots: vi.fn(),
   wallet: vi.fn(),
   history: vi.fn(),
   submit: vi.fn(),
@@ -54,6 +55,7 @@ vi.mock("@/lib/auctions/config", () => ({
 vi.mock("@/lib/auctions/client", () => ({
   readLot: mocks.readLot,
   readBatch: mocks.readBatch,
+  readOpenLots: mocks.readOpenLots,
   readWalletActivity: mocks.wallet,
   readBidHistory: mocks.history,
 }));
@@ -65,7 +67,11 @@ vi.mock("@/lib/auctions/actions", async () => {
 });
 vi.mock("next/navigation", () => ({ notFound: mocks.notFound }));
 vi.mock("@/components/wallet/connect-wallet-button", () => ({
-  ConnectWalletButton: () => <button>Connect wallet</button>,
+  ConnectWalletButton: ({
+    connectLabel = "Connect wallet",
+  }: {
+    connectLabel?: string;
+  }) => <button>{connectLabel}</button>,
 }));
 vi.mock("@/components/auctions/collection-31.webp", () => ({
   default: { src: "/collection-31.webp", width: 1280, height: 828 },
@@ -164,6 +170,14 @@ beforeEach(() => {
     blockTime: initial.blockTime,
     blockNumber: 3n,
   });
+  mocks.readOpenLots.mockResolvedValue({
+    count: 60n,
+    lots: [lot],
+    blockTime: initial.blockTime,
+    blockNumber: 3n,
+    nextBefore: null,
+    firstOpening: null,
+  });
   mocks.history.mockResolvedValue({ bids: [], nextBeforeBlock: null });
   mocks.wallet.mockResolvedValue(walletData);
   mocks.submit.mockResolvedValue(receipt);
@@ -179,7 +193,9 @@ it("parses canonical public page numbers and handles clock boundaries", () => {
 });
 
 it("links the sale, results, collector, and calendar without a connected wallet", async () => {
-  const component = await CataloguePage({ searchParams: Promise.resolve({}) });
+  const component = await CataloguePage({
+    searchParams: Promise.resolve({ page: "1" }),
+  });
   const view = renderApp(component);
   expect(screen.getByRole("heading", { name: "Cycle auctions" })).toBeVisible();
   expect(screen.getByRole("link", { name: "Sale results" })).toHaveAttribute(
@@ -187,10 +203,14 @@ it("links the sale, results, collector, and calendar without a connected wallet"
     "/auctions/results",
   );
   const card = screen.getByRole("link", {
-    name: /View auction for Cosmic Signature #20/,
+    name: /Place a bid on Cosmic Signature #20/,
   });
   expect(card).toHaveAttribute("href", "/auctions/20");
-  expect(card).toHaveTextContent("Opening bid");
+  expect(card).toHaveTextContent("Minimum bid");
+  expect(screen.getByRole("link", { name: "All cycles" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
   const pic = within(card).getByRole("img");
   expect(pic.getAttribute("src")).toContain(seed);
   fireEvent.error(pic);
@@ -225,6 +245,97 @@ it("links the sale, results, collector, and calendar without a connected wallet"
   view.rerender(<CataloguePagination base="/auctions" page={0} count={1n} />);
   expect(view.container).toBeEmptyDOMElement();
 });
+it("opens on actionable lots, with stable links to all cycles and an older search", async () => {
+  mocks.readOpenLots.mockResolvedValue({
+    count: 60n,
+    lots: [
+      {
+        ...lot,
+        highestBid: parseEther("0.002"),
+        minimumNextBid: parseEther("0.0022"),
+        endAt: initial.blockTime + 1234n,
+      },
+    ],
+    blockTime: initial.blockTime,
+    blockNumber: 3n,
+    nextBefore: 22n,
+    firstOpening: null,
+  });
+  renderApp(await CataloguePage({ searchParams: Promise.resolve({}) }));
+  expect(screen.getByRole("link", { name: "Open for bids" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(screen.getByRole("link", { name: "All cycles" })).toHaveAttribute(
+    "href",
+    "/auctions?view=all",
+  );
+  const card = screen.getByRole("link", {
+    name: "Place a bid on Cosmic Signature #20",
+  });
+  expect(card).toHaveTextContent("Minimum bid");
+  expect(card).toHaveTextContent("0.0022 ETH");
+  expect(
+    screen.getByRole("link", { name: /Check earlier cycles/ }),
+  ).toHaveAttribute("href", "/auctions?view=open&before=22");
+  expect(mocks.readBatch).not.toHaveBeenCalled();
+});
+it("explains when the first bidding opens and makes previews reachable", async () => {
+  mocks.readOpenLots.mockResolvedValue({
+    count: 1n,
+    lots: [],
+    blockTime: initial.blockTime,
+    blockNumber: 3n,
+    nextBefore: null,
+    firstOpening: initial.blockTime + 30n,
+  });
+  renderApp(
+    await CataloguePage({ searchParams: Promise.resolve({ view: "open" }) }),
+  );
+  expect(
+    screen.getByRole("heading", { name: "Bidding hasn’t opened yet" }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("link", { name: /Browse all cycles/i }),
+  ).toHaveAttribute("href", "/auctions?view=all");
+});
+it("continues discovery when one bounded group of older cycles has ended", async () => {
+  mocks.readOpenLots.mockResolvedValue({
+    count: 60n,
+    lots: [],
+    blockTime: initial.blockTime,
+    blockNumber: 3n,
+    nextBefore: 4n,
+    firstOpening: null,
+  });
+  renderApp(
+    await CataloguePage({
+      searchParams: Promise.resolve({ view: "open", before: "8" }),
+    }),
+  );
+  expect(mocks.readOpenLots).toHaveBeenCalledWith(8);
+  expect(
+    screen.getByRole("link", { name: "Newest eligible cycle" }),
+  ).toHaveAttribute("href", "/auctions?view=open");
+  expect(
+    screen.getByRole("link", { name: /Check earlier cycles/ }),
+  ).toHaveAttribute("href", "/auctions?view=open&before=4");
+});
+it("rejects ambiguous catalogue views and invalid cursors", async () => {
+  for (const params of [
+    { view: ["open"] },
+    { view: "unknown" },
+    { view: "open", page: "1" },
+    { view: "all", before: "2" },
+    { view: "open", before: "0" },
+    { before: "9007199254740992" },
+    { before: "61" },
+  ])
+    await expect(
+      CataloguePage({ searchParams: Promise.resolve(params) }),
+    ).rejects.toThrow("NOT_FOUND");
+});
+
 it("describes eligible/active/sold lots and both close time states", () => {
   const active = {
     ...lot,
@@ -292,7 +403,9 @@ it("renders initial lot, account and read-failure pages independently of wallet 
   );
   expect(screen.getByRole("heading", { name: "Signature #20" })).toBeVisible();
   expect(screen.getByText("On-chain artwork seed")).toBeVisible();
-  expect(screen.getByRole("button", { name: "Connect wallet" })).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Connect wallet to bid" }),
+  ).toBeVisible();
   view.rerender(await CollectorPage({ searchParams: Promise.resolve({}) }));
   expect(
     screen.getByRole("heading", { name: "Connect your wallet" }),
@@ -316,16 +429,25 @@ it("quotes binding bid and amount due, then sends exactly the reviewed command",
   renderApp(<BidForm lot={live} busy={false} onAction={send} />);
   const field = screen.getByRole("textbox", { name: "Total bid (ETH)" });
   fireEvent.change(field, { target: { value: "0.0000000000000000001" } });
-  expect(screen.getByRole("button", { name: "Place bid" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Review bid" })).toBeDisabled();
   fireEvent.submit(field.closest("form")!);
   expect(send).not.toHaveBeenCalled();
   fireEvent.change(field, { target: { value: "110" } });
-  fireEvent.click(screen.getByRole("button", { name: "Place bid" }));
+  fireEvent.click(screen.getByRole("button", { name: "Review bid" }));
   expect(screen.getByText("Due from wallet").parentElement).toHaveTextContent(
     "10 ETH",
   );
   expect(send).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "Confirm bid" }));
+  expect(
+    screen.getByRole("heading", { name: "Review your bid" }),
+  ).toHaveFocus();
+  fireEvent.click(screen.getByRole("button", { name: "Edit bid" }));
+  expect(
+    screen.getByRole("textbox", { name: "Total bid (ETH)" }),
+  ).toHaveFocus();
+  expect(screen.getByRole("textbox")).toHaveValue("110");
+  fireEvent.click(screen.getByRole("button", { name: "Review bid" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm in wallet" }));
   await waitFor(() =>
     expect(send).toHaveBeenCalledWith({
       kind: "bid",
@@ -338,21 +460,41 @@ it("quotes binding bid and amount due, then sends exactly the reviewed command",
 it("invalidates a review after an outbid or account change", async () => {
   const send = vi.fn().mockResolvedValue(false);
   const view = renderApp(<BidForm lot={lot} busy={false} onAction={send} />);
-  fireEvent.click(screen.getByRole("button", { name: "Place bid" }));
+  fireEvent.click(screen.getByRole("button", { name: "Review bid" }));
   mocks.account.address = other;
   view.rerender(<BidForm lot={lot} busy={false} onAction={send} />);
   expect(screen.getByRole("status")).toHaveTextContent(/wallet changed/);
-  fireEvent.click(screen.getByRole("button", { name: "Place bid" }));
-  fireEvent.click(screen.getByRole("button", { name: "Confirm bid" }));
+  fireEvent.click(screen.getByRole("button", { name: "Review bid" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm in wallet" }));
   await waitFor(() => expect(send).toHaveBeenCalledOnce());
   view.rerender(<BidForm lot={lot} busy onAction={send} />);
-  expect(screen.getByRole("button", { name: "Place bid" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Review bid" })).toBeDisabled();
+});
+it("requires another review when the minimum rises below a manually entered bid", () => {
+  const send = vi.fn();
+  const view = renderApp(<BidForm lot={lot} busy={false} onAction={send} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "1" } });
+  fireEvent.click(screen.getByRole("button", { name: "Review bid" }));
+  view.rerender(
+    <BidForm
+      lot={{ ...lot, minimumNextBid: lot.minimumNextBid + 1n }}
+      busy={false}
+      onAction={send}
+    />,
+  );
+  expect(
+    screen.queryByRole("button", { name: "Confirm in wallet" }),
+  ).toBeNull();
+  expect(screen.getByRole("button", { name: "Review bid" })).toBeEnabled();
+  expect(send).not.toHaveBeenCalled();
 });
 it("requires a fresh review when the open lot changes at the same price", () => {
   const send = vi.fn().mockResolvedValue(true);
   const view = renderApp(<BidForm lot={lot} busy={false} onAction={send} />);
-  fireEvent.click(screen.getByRole("button", { name: "Place bid" }));
-  expect(screen.getByRole("button", { name: "Confirm bid" })).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Review bid" }));
+  expect(
+    screen.getByRole("button", { name: "Confirm in wallet" }),
+  ).toBeVisible();
   view.rerender(
     <BidForm
       lot={{ ...lot, tokenId: lot.tokenId + 1 }}
@@ -360,8 +502,10 @@ it("requires a fresh review when the open lot changes at the same price", () => 
       onAction={send}
     />,
   );
-  expect(screen.queryByRole("button", { name: "Confirm bid" })).toBeNull();
-  expect(screen.getByRole("button", { name: "Place bid" })).toBeEnabled();
+  expect(
+    screen.queryByRole("button", { name: "Confirm in wallet" }),
+  ).toBeNull();
+  expect(screen.getByRole("button", { name: "Review bid" })).toBeEnabled();
   expect(send).not.toHaveBeenCalled();
 });
 
@@ -604,10 +748,13 @@ it.each([
   renderApp(<AuctionLotView initial={s} mediaOrigin={media} />);
   if (phase === "preview") {
     expect(screen.getByText("Bidding opens in")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Place bid" })).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Browse open auctions" }),
+    ).toHaveAttribute("href", "/auctions?view=open");
+    expect(screen.queryByRole("button", { name: "Review bid" })).toBeNull();
   }
   if (phase === "active") {
-    expect(screen.getByText("Next minimum")).toBeVisible();
+    expect(screen.getByText("Minimum next bid")).toBeVisible();
     expect(screen.getByText("Time remaining")).toBeVisible();
   }
   if (phase === "ended") {
@@ -699,10 +846,12 @@ it("keeps the last verified catalogue visible while retrying a failed live updat
     blockNumber: 4n,
   };
   mocks.readBatch.mockRejectedValue(new Error("temporarily offline"));
-  renderApp(<LiveCatalogue initial={batch} page={0} mediaOrigin={media} />);
+  renderApp(
+    <LiveCatalogue initial={batch} view="all" page={0} mediaOrigin={media} />,
+  );
   await screen.findByRole("alert");
   expect(screen.getByText("Signature #20")).toBeVisible();
-  mocks.readBatch.mockResolvedValue({ ...batch, lots: [] });
+  mocks.readBatch.mockResolvedValue({ ...batch, count: 0n, lots: [] });
   fireEvent.click(screen.getByText("Refresh catalogue"));
   await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
   expect(screen.getByText(/first sale opens/)).toBeVisible();

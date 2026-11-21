@@ -1,4 +1,5 @@
 import { test, expect, type Browser, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
@@ -6,6 +7,7 @@ import {
   createPublicClient,
   http,
   parseAbi,
+  parseAbiItem,
   parseEther,
   numberToHex,
   type Address,
@@ -56,14 +58,43 @@ async function moveTo(time: number) {
   await rpc("evm_setNextBlockTimestamp", [numberToHex(time)]);
   await rpc("evm_mine", []);
 }
-async function collector(browser: Browser, account: Address) {
+function registerNextBatch() {
+  execFileSync(
+    process.execPath,
+    [resolve(__dirname, "seed.mjs"), "--next-batch"],
+    {
+      cwd: process.env.COSMIC_CONTRACT_ROOT,
+      env: { ...process.env, HARDHAT_NETWORK: "hardhat_on_localhost" },
+      stdio: "pipe",
+    },
+  );
+  return JSON.parse(
+    readFileSync(process.env.AXIOM_AUCTION_FIXTURE! + ".next", "utf8"),
+  ) as Pick<Fixture, "firstTokenId" | "eligibleAt">;
+}
+async function collector(
+  browser: Browser,
+  account: Address,
+  alternateAccount?: Address,
+) {
   const context = await browser.newContext({
     baseURL: "http://127.0.0.1:4599",
     reducedMotion: "reduce",
   });
   await context.addInitScript(
-    ({ account, rpc, address }) => {
+    ({ initialAccount, alternateAccount, rpc, address }) => {
+      let account = initialAccount;
       const listeners = new Map<string, Set<(...args: unknown[]) => void>>();
+      if (alternateAccount) {
+        window.addEventListener("rehearsal-switch-wallet", (event) => {
+          const next = (event as CustomEvent<Address>).detail;
+          if (next !== initialAccount && next !== alternateAccount) return;
+          account = next;
+          sessionStorage.setItem("rehearsal-connected", account);
+          for (const listener of listeners.get("accountsChanged") ?? [])
+            listener([account]);
+        });
+      }
       const provider = {
         isMetaMask: false,
         on(event: string, fn: (...args: unknown[]) => void) {
@@ -164,14 +195,22 @@ async function collector(browser: Browser, account: Address) {
       window.addEventListener("eip6963:requestProvider", announce);
       announce();
     },
-    { account, rpc: LOCAL_RPC, address: f.auction },
+    {
+      initialAccount: account,
+      alternateAccount,
+      rpc: LOCAL_RPC,
+      address: f.auction,
+    },
   );
   const page = await context.newPage();
   page.on("pageerror", (err) => console.error("Browser error:", err.message));
   return page;
 }
 async function connect(page: Page) {
-  await page.getByRole("button", { name: "Connect wallet" }).first().click();
+  await page
+    .getByLabel("Auction bidding")
+    .getByRole("button", { name: "Connect wallet to bid", exact: true })
+    .click();
   await page
     .getByRole("button", { name: /Rehearsal Wallet/i })
     .first()
@@ -182,8 +221,10 @@ async function connect(page: Page) {
 }
 async function bid(page: Page, total: string) {
   await page.getByRole("textbox", { name: "Total bid (ETH)" }).fill(total);
-  await page.getByRole("button", { name: "Place bid", exact: true }).click();
-  await page.getByRole("button", { name: "Confirm bid", exact: true }).click();
+  await page.getByRole("button", { name: "Review bid", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Confirm in wallet", exact: true })
+    .click();
 }
 test("two wallets bid, extend, recover ETH and collect a real V4 artwork on Axiom Zero", async ({
   browser,
@@ -192,10 +233,10 @@ test("two wallets bid, extend, recover ETH and collect a real V4 artwork on Axio
   const [alice, bob, recipient] = f.accounts;
   const token = BigInt(f.firstTokenId);
   const lot = "/auctions/" + f.firstTokenId;
-  const a = await collector(browser, alice);
+  const a = await collector(browser, alice, bob);
   const b = await collector(browser, bob);
   try {
-    await a.goto("/auctions", { waitUntil: "domcontentloaded" });
+    await a.goto("/auctions?view=all", { waitUntil: "domcontentloaded" });
     await expect(a.locator('a[href="' + lot + '"]').first()).toBeVisible();
     await a
       .locator('a[href="' + lot + '"]')
@@ -204,7 +245,7 @@ test("two wallets bid, extend, recover ETH and collect a real V4 artwork on Axio
     await expect(a).toHaveURL(new RegExp(lot + "$"));
     await expect(a.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(
-      a.getByRole("button", { name: "Place bid", exact: true }),
+      a.getByRole("button", { name: "Review bid", exact: true }),
     ).toHaveCount(0);
     await moveTo(f.eligibleAt);
     await a.reload({ waitUntil: "domcontentloaded" });
@@ -227,26 +268,95 @@ test("two wallets bid, extend, recover ETH and collect a real V4 artwork on Axio
     await b.goto(lot, { waitUntil: "domcontentloaded" });
     await connect(b);
     await bid(b, "0.003");
-    const refund = () =>
-      publicClient.readContract({
-        address: f.auction,
-        abi,
-        functionName: "refundCredits",
-        args: [alice],
+    await test.step("Collect an outbid refund from the still-open auction", async () => {
+      const refund = () =>
+        publicClient.readContract({
+          address: f.auction,
+          abi,
+          functionName: "refundCredits",
+          args: [alice],
+        });
+      const refundAmount = parseEther("0.002");
+      await expect.poll(refund).toBe(refundAmount);
+      const notice = a.getByRole("region", { name: "Auction refunds" });
+      const recover = notice.getByRole("link", {
+        name: "Withdraw refund",
+        exact: true,
       });
-    await expect.poll(refund).toBe(parseEther("0.002"));
-    await a.goto("/auctions/account", { waitUntil: "domcontentloaded" });
-    await expect(
-      a.getByRole("button", { name: "Withdraw refund", exact: true }),
-    ).toBeVisible();
-    await a
-      .getByRole("button", { name: "Withdraw refund", exact: true })
-      .click();
-    await expect.poll(refund).toBe(0n);
+      // Alice stays on the auction while Bob outbids her in another window.
+      await expect(recover).toBeVisible({ timeout: 25_000 });
+      await expect(notice).toContainText("0.002 ETH");
+
+      const switchWallet = (address: Address) =>
+        a.evaluate(
+          (next) =>
+            window.dispatchEvent(
+              new CustomEvent("rehearsal-switch-wallet", { detail: next }),
+            ),
+          address,
+        );
+      await switchWallet(bob);
+      await expect(
+        a.getByRole("button", { name: new RegExp(bob.slice(-4), "i") }).first(),
+      ).toBeVisible();
+      await expect(recover).toHaveCount(0);
+      await expect(notice.filter({ hasText: "0.002 ETH" })).toHaveCount(0);
+      await switchWallet(alice);
+      await expect(recover).toBeVisible();
+      await expect(recover).toHaveAttribute(
+        "href",
+        "/auctions/account#refunds",
+      );
+      await recover.click();
+      await expect(a).toHaveURL(/\/auctions\/account#refunds$/);
+      const credit = a.getByRole("region", { name: "Available refund" });
+      await expect(credit).toContainText("0.002 ETH");
+      await expect(
+        credit.getByRole("textbox", { name: "Refund address" }),
+      ).toHaveValue(alice);
+
+      const beforeBlock = await publicClient.getBlockNumber({ cacheTime: 0 });
+      const balanceBefore = await publicClient.getBalance({
+        address: alice,
+        blockNumber: beforeBlock,
+      });
+      await credit
+        .getByRole("button", { name: "Withdraw refund", exact: true })
+        .click();
+      await expect.poll(refund).toBe(0n);
+      await expect(credit.getByRole("status")).toContainText(
+        "Refund withdrawn.",
+      );
+      await expect(
+        credit.getByRole("button", { name: "Withdraw refund", exact: true }),
+      ).toHaveCount(0);
+      const withdrawals = await publicClient.getLogs({
+        address: f.auction,
+        fromBlock: beforeBlock + 1n,
+        event: parseAbiItem(
+          "event AuctionRefundWithdrawn(address indexed bidder,address indexed recipient,uint256 amount)",
+        ),
+        args: { bidder: alice, recipient: alice },
+        strict: true,
+      });
+      expect(withdrawals.map((log) => log.args.amount)).toEqual([refundAmount]);
+      const receipt = await publicClient.getTransactionReceipt({
+        hash: withdrawals[0].transactionHash,
+      });
+      const balanceAfter = await publicClient.getBalance({
+        address: alice,
+        blockNumber: receipt.blockNumber,
+      });
+      expect(balanceAfter).toBe(
+        balanceBefore +
+          refundAmount -
+          receipt.gasUsed * receipt.effectiveGasPrice,
+      );
+    });
     await moveTo(f.eligibleAt + 48 * 3600 + 10);
     await b.reload({ waitUntil: "domcontentloaded" });
     await expect(
-      b.getByRole("button", { name: "Place bid", exact: true }),
+      b.getByRole("button", { name: "Review bid", exact: true }),
     ).toBeVisible();
     await moveTo(f.eligibleAt + 48 * 3600 + 610);
     await b.reload({ waitUntil: "domcontentloaded" });
@@ -301,24 +411,13 @@ test("the registered price is preserved on an unbid lot after a new batch opens 
   const snapshot = await rpc("evm_snapshot", []);
   const page = await collector(browser, f.accounts[0]);
   try {
-    execFileSync(
-      process.execPath,
-      [resolve(__dirname, "seed.mjs"), "--next-batch"],
-      {
-        cwd: process.env.COSMIC_CONTRACT_ROOT,
-        env: { ...process.env, HARDHAT_NETWORK: "hardhat_on_localhost" },
-        stdio: "pipe",
-      },
-    );
-    const next = JSON.parse(
-      readFileSync(process.env.AXIOM_AUCTION_FIXTURE! + ".next", "utf8"),
-    ) as Pick<Fixture, "firstTokenId" | "eligibleAt">;
+    const next = registerNextBatch();
     await moveTo(next.eligibleAt);
     for (const [pageNum, tokenId, floor, nextMinimum] of [
       [1, f.firstTokenId + 1, "0.001", "0.0011"],
       [0, next.firstTokenId, "0.002", "0.0022"],
     ] as const) {
-      await page.goto("/auctions?page=" + (pageNum + 1), {
+      await page.goto("/auctions?view=all&page=" + (pageNum + 1), {
         waitUntil: "domcontentloaded",
       });
       const href = "/auctions/" + tokenId;
@@ -333,7 +432,7 @@ test("the registered price is preserved on an unbid lot after a new batch opens 
       if (pageNum === 0) {
         await input.fill("0.001");
         await expect(
-          page.getByRole("button", { name: "Place bid", exact: true }),
+          page.getByRole("button", { name: "Review bid", exact: true }),
         ).toBeDisabled();
       }
       await bid(page, floor);
@@ -348,6 +447,119 @@ test("the registered price is preserved on an unbid lot after a new batch opens 
         )
         .toBe(parseEther(nextMinimum));
     }
+  } finally {
+    await page.context().close();
+    expect(await rpc("evm_revert", [snapshot])).toBe(true);
+  }
+});
+
+test("a new mobile collector finds an open auction from a preview and funds a reviewed bid", async ({
+  browser,
+}, info) => {
+  const snapshot = await rpc("evm_snapshot", []);
+  const account = f.accounts[2];
+  const page = await collector(browser, account);
+  try {
+    // One eligible batch and one newer preview reproduce the first-time visitor's
+    // path even if this case runs alone with a freshly seeded node.
+    const block = await publicClient.getBlock();
+    if (block.timestamp < BigInt(f.eligibleAt)) await moveTo(f.eligibleAt);
+    const preview = registerNextBatch();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/auctions/" + preview.firstTokenId);
+    const panel = page.getByLabel("Auction bidding");
+    const browse = panel.getByRole("link", { name: "Browse open auctions" });
+    await expect(browse).toBeInViewport();
+    await expect(panel.getByRole("textbox")).toHaveCount(0);
+    await browse.press("Enter");
+    await expect(page).toHaveURL(/\/auctions\?view=open$/);
+
+    // Discover a bid-ready artwork from its accessible card, without knowing a
+    // token ID, a cycle number or the history page on which it was registered.
+    await page
+      .getByRole("link", { name: /^Place a bid on Cosmic Signature #/i })
+      .first()
+      .press("Enter");
+    await expect(page).toHaveURL(/\/auctions\/\d+$/);
+    const lotId = BigInt(new URL(page.url()).pathname.split("/").at(-1)!);
+    const walletCta = panel.getByRole("button", {
+      name: "Connect wallet to bid",
+      exact: true,
+    });
+    await expect(walletCta).toBeInViewport();
+    await connect(page);
+    const amount = panel.getByRole("textbox", { name: "Total bid (ETH)" });
+    const review = panel.getByRole("button", {
+      name: "Review bid",
+      exact: true,
+    });
+    const confirm = panel.getByRole("button", {
+      name: "Confirm in wallet",
+      exact: true,
+    });
+    const min = await publicClient.readContract({
+      address: f.auction,
+      abi,
+      functionName: "minimumNextBid",
+      args: [lotId],
+    });
+    const nonce = () =>
+      publicClient.getTransactionCount({
+        address: account,
+        blockTag: "pending",
+      });
+    const nonceBefore = await nonce();
+    const fromBlock = await publicClient.getBlockNumber({ cacheTime: 0 });
+    expect(parseEther(await amount.inputValue())).toBe(min);
+    await amount.fill("0.0001");
+    await expect(review).toBeDisabled();
+    await amount.fill("0.004");
+    await review.press("Enter");
+    await expect(
+      panel.getByRole("heading", { name: "Review your bid" }),
+    ).toBeFocused();
+    await expect(confirm).toBeEnabled();
+    expect(await nonce()).toBe(nonceBefore);
+    const audit = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    expect(audit.violations).toEqual([]);
+    const screenshot = info.outputPath("mobile-bid-review.png");
+    await page.screenshot({ path: screenshot, animations: "disabled" });
+    await info.attach("mobile-bid-review", {
+      path: screenshot,
+      contentType: "image/png",
+    });
+    await panel
+      .getByRole("button", { name: "Edit bid", exact: true })
+      .press("Enter");
+    await expect(confirm).toHaveCount(0);
+    await expect(amount).toBeFocused();
+    await expect(amount).toHaveValue("0.004");
+    await amount.fill("0.003");
+    await review.press("Enter");
+    expect(await nonce()).toBe(nonceBefore);
+    await confirm.press("Enter");
+
+    const bidEvent = parseAbiItem(
+      "event AuctionBidPlaced(uint256 indexed nftId,uint256 indexed roundNum,address indexed bidder,uint256 amount,uint256 ethPaid,uint256 endAt)",
+    );
+    await expect
+      .poll(async () => {
+        const logs = await publicClient.getLogs({
+          address: f.auction,
+          fromBlock,
+          event: bidEvent,
+          args: { nftId: lotId, bidder: account },
+          strict: true,
+        });
+        return logs.map(({ args }) => [args.amount, args.ethPaid]);
+      })
+      .toEqual([[parseEther("0.003"), parseEther("0.003")]]);
+    await expect(
+      panel.getByRole("status").filter({ hasText: "Bid confirmed." }),
+    ).toBeVisible();
+    expect(await nonce()).toBe(nonceBefore + 1);
   } finally {
     await page.context().close();
     expect(await rpc("evm_revert", [snapshot])).toBe(true);

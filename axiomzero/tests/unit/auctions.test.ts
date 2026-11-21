@@ -16,6 +16,7 @@ import {
   readBatch,
   readBidHistory,
   readLot,
+  readOpenLots,
   readWalletActivity,
   verifiedSnapshot,
 } from "@/lib/auctions/client";
@@ -150,6 +151,40 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("verified auction reads", () => {
+  it("reads wallet-wide refund credit for the connected lot visitor at the same verified block", async () => {
+    const publicLot = await readLot(16);
+    expect(publicLot).not.toHaveProperty("accountRefund");
+    expect(
+      mocks.client.readContract.mock.calls.some(
+        ([call]) => call.functionName === "refundCredits",
+      ),
+    ).toBe(false);
+    const connectedLot = await readLot(16, holder);
+    expect(connectedLot?.accountRefund).toEqual({
+      account: holder,
+      amount: 7n,
+    });
+    expect(mocks.client.readContract).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address,
+        functionName: "refundCredits",
+        args: [holder],
+        blockNumber: connectedLot?.blockNumber,
+      }),
+    );
+    expect(mocks.client.getBlock).toHaveBeenCalledTimes(2);
+  });
+  it("preserves the public lot if only the connected wallet’s credit read fails", async () => {
+    mocks.client.readContract.mockImplementation((call) => {
+      if (call.functionName === "refundCredits")
+        throw new Error("Credit unavailable");
+      return read(call);
+    });
+    const result = await readLot(16, holder);
+    expect(result?.accountRefund).toEqual({ account: holder, amount: null });
+    expect(result?.lot.tokenId).toBe(16);
+  });
+
   it("pins every contract call in a catalogue to one block and reads the batch opening price once", async () => {
     const b = await readBatch();
     expect(b.lots.map((l) => l.tokenId)).toEqual([
@@ -171,6 +206,80 @@ describe("verified auction reads", () => {
     expect((await readBatch(2)).lots).toEqual([]);
     await expect(readBatch(-1)).rejects.toThrow();
     await expect(readLot(1.1)).rejects.toThrow();
+  });
+  it("skips 59 preview cycles logarithmically and returns only bid-ready siblings at the boundary", async () => {
+    mocks.client.readContract.mockImplementation((c) => {
+      if (c.functionName === "registeredBatchCount") return 60n;
+      if (c.functionName === "getAuction") {
+        const id = c.args[0];
+        return {
+          ...record,
+          eligibleAt: id < 16n ? 120n : 121n,
+          settled: id === 9n,
+          endAt: id === 10n ? 120n : id === 11n ? 121n : 0n,
+        };
+      }
+      return read(c);
+    });
+    const page = await readOpenLots();
+    expect(page.lots.map((l) => l.tokenId)).toEqual([8, 11, 12, 13, 14, 15]);
+    expect(page.nextBefore).toBeNull();
+    expect(
+      mocks.client.readContract.mock.calls.filter(
+        ([c]) => c.functionName === "firstNftIdByBatchIndex",
+      ).length,
+    ).toBeLessThanOrEqual(8);
+    expect(
+      mocks.client.readContract.mock.calls.filter(
+        ([c]) => c.functionName === "getNftSeed",
+      ),
+    ).toHaveLength(6);
+    expect(
+      mocks.client.readContract.mock.calls.every(
+        ([c]) => c.blockNumber === 10n,
+      ),
+    ).toBe(true);
+  });
+  it("limits each search and continues from the same batch index after new registrations", async () => {
+    let count = 7n;
+    mocks.client.readContract.mockImplementation((c) => {
+      if (c.functionName === "registeredBatchCount") return count;
+      if (c.functionName === "getAuction")
+        return { ...record, settled: c.args[0] >= 32n };
+      return read(c);
+    });
+    const first = await readOpenLots();
+    expect(first.lots).toEqual([]);
+    expect(first.nextBefore).toBe(3n);
+    count += 5n;
+    const next = await readOpenLots(Number(first.nextBefore));
+    expect(next.lots.map((l) => l.tokenId)).toEqual([
+      24, 25, 26, 27, 28, 29, 30, 31,
+    ]);
+    expect(next.nextBefore).toBe(2n);
+    await expect(readOpenLots(-1)).rejects.toThrow();
+  });
+  it("distinguishes an empty deployment and a catalogue with every lot still in preview", async () => {
+    let count = 0n;
+    mocks.client.readContract.mockImplementation((c) => {
+      if (c.functionName === "registeredBatchCount") return count;
+      if (c.functionName === "getAuction")
+        return { ...record, eligibleAt: 150n + c.args[0] / 8n };
+      return read(c);
+    });
+    expect(await readOpenLots()).toMatchObject({
+      count: 0n,
+      firstOpening: null,
+      lots: [],
+      nextBefore: null,
+    });
+    count = 5n;
+    expect(await readOpenLots()).toMatchObject({
+      count: 5n,
+      firstOpening: 151n,
+      lots: [],
+      nextBefore: null,
+    });
   });
   it.each(["chain", "runtime", "game", "collection"])(
     "rejects a mismatched %s",

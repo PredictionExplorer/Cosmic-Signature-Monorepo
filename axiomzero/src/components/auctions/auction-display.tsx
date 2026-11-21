@@ -97,14 +97,16 @@ export function CataloguePagination({
   page,
   count,
   base,
+  firstHref = base,
 }: {
   page: number;
   count: bigint;
   base: string;
+  firstHref?: string;
 }) {
   if (count < 2n) return null;
   function href(p: number) {
-    return p === 0 ? base : `${base}?page=${p + 1}`;
+    return p === 0 ? firstHref : `${base}?page=${p + 1}`;
   }
   return (
     <nav className={styles.pages} aria-label="Auction cycle pages">

@@ -254,8 +254,8 @@ test("one V4 cycle connects a Cosmic Signature gesture, a Chaos Zero position an
       .first()
       .click();
     await page.getByRole("textbox", { name: "Total bid (ETH)" }).fill(formatEther(openingBid));
-    await page.getByRole("button", { name: "Place bid", exact: true }).click();
-    await page.getByRole("button", { name: "Confirm bid", exact: true }).click();
+    await page.getByRole("button", { name: "Review bid", exact: true }).click();
+    await page.getByRole("button", { name: "Confirm in wallet", exact: true }).click();
     await expect
       .poll(async () => {
         const logs = await chain.getLogs({

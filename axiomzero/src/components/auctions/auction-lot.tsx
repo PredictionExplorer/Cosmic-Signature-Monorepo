@@ -7,11 +7,13 @@ import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { isAddressEqual } from "viem";
 import { readLot } from "@/lib/auctions/client";
+import { auctionAddress, auctionChainId } from "@/lib/auctions/config";
 import { phaseOf } from "@/lib/auctions/types";
 import { shortenAddress } from "@/lib/utils";
 
 import { AuctionArtwork } from "./auction-artwork";
 import { BidForm } from "./auction-bidding";
+import { AuctionRefundNotice } from "./auction-refund";
 import { ChainTime, LotPhase, Price } from "./auction-display";
 import {
   CollectorLink,
@@ -46,8 +48,15 @@ export function AuctionLotView({
   const tx = useAuctionTransaction();
   const id = initial.lot.tokenId;
   const query = useQuery({
-    queryKey: ["auction", "lot", id],
-    queryFn: () => readLot(id),
+    queryKey: [
+      "auction",
+      "lot",
+      id,
+      auctionChainId,
+      auctionAddress,
+      address?.toLowerCase() ?? null,
+    ],
+    queryFn: () => readLot(id, address),
     initialData: initial,
     refetchInterval: 8_000,
     refetchOnMount: "always",
@@ -81,39 +90,32 @@ export function AuctionLotView({
         <LotPhase lot={lot} time={blockTime} />
       </header>
       <div className={styles.lotLayout}>
-        <div>
-          <AuctionArtwork
-            key={lot.seed}
-            seed={lot.seed}
-            tokenId={id}
-            mediaOrigin={mediaOrigin}
-            large
-            priority
-          />
-          <div className={styles.provenance}>
-            <div>
-              <span>On-chain artwork seed</span>
-              <code>{lot.seed}</code>
-            </div>
-            <Link
-              href={`/token/cosmic-signature/${id}`}
-              className={styles.textLink}
-            >
-              Token record
-              <ArrowUpRight size={14} aria-hidden />
-            </Link>
-          </div>
-        </div>
         <aside className={styles.bidPanel} aria-label="Auction bidding">
+          <h2 className={styles.panelTitle}>
+            {canBuy
+              ? "Place a bid"
+              : phase === "preview"
+                ? "Bidding hasn’t opened yet"
+                : phase === "active"
+                  ? "Checking the closing block"
+                  : "Bidding has closed"}
+          </h2>
           <p className={styles.kicker}>
             {lot.settled
               ? "Sale price"
-              : lot.highestBid
-                ? "Highest bid"
-                : "Opening bid"}
+              : canBuy && lot.highestBid > 0n
+                ? "Minimum next bid"
+                : lot.highestBid
+                  ? "Highest bid"
+                  : "Opening bid"}
+            {auctionChainId === 31337 && " · Test ETH"}
           </p>
           <div className={styles.heroPrice}>
-            <Price wei={lot.highestBid || lot.openingBid} />
+            <Price
+              wei={
+                canBuy ? lot.minimumNextBid : lot.highestBid || lot.openingBid
+              }
+            />
           </div>
           {lot.highestBid > 0n && (
             <p className={styles.leader}>
@@ -122,7 +124,28 @@ export function AuctionLotView({
                 {shortenAddress(lot.highestBidder)}
               </span>
               {winner ? " · You" : ""}
+              {canBuy && (
+                <>
+                  {" "}
+                  at <Price wei={lot.highestBid} />
+                </>
+              )}
             </p>
+          )}
+          {address && (
+            <AuctionRefundNotice
+              address={address}
+              credit={outdated ? null : snapshot.accountRefund}
+              leading={winner && phase === "active" && canBuy}
+            />
+          )}
+          {canBuy && (
+            <>
+              <WalletGate bidding>
+                <BidForm lot={lot} busy={frozen} onAction={tx.run} />
+              </WalletGate>
+              <TransactionStatus state={tx.state} />
+            </>
           )}
           <div className={styles.bidTiming}>
             {phase === "active" || phase === "preview" ? (
@@ -132,6 +155,9 @@ export function AuctionLotView({
                 </span>
                 <strong>{remaining(closing - clock)}</strong>
                 <ChainTime timestamp={closing} />
+                {phase === "active" && (
+                  <p>A new bid must be at least 10% above the highest bid.</p>
+                )}
               </>
             ) : phase === "waiting" ? (
               <>
@@ -145,10 +171,19 @@ export function AuctionLotView({
               </>
             )}
           </div>
-          {phase === "active" && (
-            <p className={styles.minimum}>
-              Next minimum <Price wei={lot.minimumNextBid} />
+          {phase === "preview" && (
+            <p>
+              Each artwork has a seven-day preview. You can bid on this one when
+              its countdown ends.
             </p>
+          )}
+          {!canBuy && (
+            <Link
+              href="/auctions?view=open"
+              className={phase === "preview" ? styles.action : styles.textLink}
+            >
+              Browse open auctions <ArrowUpRight size={16} aria-hidden />
+            </Link>
           )}
           {outdated && (
             <div className={styles.notice} role="alert">
@@ -157,11 +192,6 @@ export function AuctionLotView({
                 Refresh
               </button>
             </div>
-          )}
-          {canBuy && (
-            <WalletGate>
-              <BidForm lot={lot} busy={frozen} onAction={tx.run} />
-            </WalletGate>
           )}
           {phase === "ended" && (
             <>
@@ -231,9 +261,32 @@ export function AuctionLotView({
               )}
             </>
           )}
-          <TransactionStatus state={tx.state} />
-          <CollectorLink />
+          {!canBuy && <TransactionStatus state={tx.state} />}
+          {phase !== "preview" && <CollectorLink />}
         </aside>
+        <div className={styles.lotArtwork}>
+          <AuctionArtwork
+            key={lot.seed}
+            seed={lot.seed}
+            tokenId={id}
+            mediaOrigin={mediaOrigin}
+            large
+            priority
+          />
+          <div className={styles.provenance}>
+            <div>
+              <span>On-chain artwork seed</span>
+              <code>{lot.seed}</code>
+            </div>
+            <Link
+              href={`/token/cosmic-signature/${id}`}
+              className={styles.textLink}
+            >
+              Token record
+              <ArrowUpRight size={14} aria-hidden />
+            </Link>
+          </div>
+        </div>
       </div>
     </>
   );

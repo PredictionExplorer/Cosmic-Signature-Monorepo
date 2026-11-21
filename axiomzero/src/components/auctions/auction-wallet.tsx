@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useId, useRef, useState, type ReactNode } from "react";
 import { useAccount, useSwitchChain } from "wagmi";
 import {
   isAddress,
@@ -43,10 +43,27 @@ export function ChainLink({
   );
 }
 
-export function WalletGate({ children }: { children: ReactNode }) {
+export function WalletGate({
+  children,
+  bidding = false,
+}: {
+  children: ReactNode;
+  bidding?: boolean;
+}) {
   const { address, chainId } = useAccount();
   const { switchChain, isPending, error } = useSwitchChain();
-  if (!address) return <ConnectWalletButton />;
+  if (!address)
+    return bidding ? (
+      <div className={styles.bidConnect}>
+        <p>
+          Connect a wallet to review your bid in{" "}
+          {auctionChainId === 31337 ? "test ETH" : "ETH on Arbitrum One"}.
+        </p>
+        <ConnectWalletButton connectLabel="Connect wallet to bid" />
+      </div>
+    ) : (
+      <ConnectWalletButton />
+    );
   if (chainId !== auctionChainId)
     return (
       <div>
@@ -93,7 +110,16 @@ export function useAuctionTransaction() {
           action,
           (hash) => setState({ stage: "confirm", hash }),
         );
-        setState({ stage: "done", hash: receipt.transactionHash });
+        setState({
+          stage: "done",
+          hash: receipt.transactionHash,
+          message:
+            action.kind === "bid"
+              ? "Bid confirmed."
+              : action.kind === "withdrawRefund"
+                ? "Refund withdrawn."
+                : undefined,
+        });
         await cache.invalidateQueries({ queryKey: ["auction"] });
         return true;
       } catch (error) {
@@ -137,7 +163,7 @@ export function TransactionStatus({ state }: { state: TxState }) {
     idle: "",
     sign: "Review the transaction in your wallet.",
     confirm: "Transaction submitted. Waiting for confirmation.",
-    done: "Transaction confirmed.",
+    done: state.message ?? "Transaction confirmed.",
     unknown:
       "Confirmation is unavailable. Check the transaction receipt before taking another action.",
     failed: state.message,
@@ -172,6 +198,7 @@ export function RecipientAction({
   disabled: boolean;
 }) {
   const [custom, setCustom] = useState<string | null>(null);
+  const recipientHelpId = useId();
   const recipient = custom ?? owner;
   const valid =
     isAddress(recipient) &&
@@ -199,9 +226,23 @@ export function RecipientAction({
           value={recipient}
           onChange={(e) => setCustom(e.target.value)}
           aria-invalid={!valid}
+          aria-describedby={!valid || !delivery ? recipientHelpId : undefined}
         />
       </label>
-      {!valid && <small>Enter a valid receiving wallet address.</small>}
+      {!valid ? (
+        <small className={styles.warning} id={recipientHelpId}>
+          Enter a valid receiving wallet address.
+        </small>
+      ) : (
+        !delivery && (
+          <small id={recipientHelpId}>
+            {custom && !isAddressEqual(recipient as Address, owner)
+              ? "Your refund will go to the address above. Check it before approving."
+              : "Your bidding wallet is filled in. Approve the withdrawal in your wallet to receive the ETH."}{" "}
+            Network gas applies.
+          </small>
+        )
+      )}
       <button
         className={styles.action}
         type="submit"
