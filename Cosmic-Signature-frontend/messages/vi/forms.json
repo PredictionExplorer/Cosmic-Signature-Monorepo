@@ -32,6 +32,7 @@
         "format": "Hãy nhập một số, ví dụ {example}.",
         "precision": "Tối đa {decimals} chữ số thập phân.",
         "zero": "Hãy nhập số lượng lớn hơn 0.",
+        "outOfRange": "Số tiền quá lớn để gửi.",
         "exceedsBalance": "Vượt quá {amount} khả dụng.",
         "grouping": "Không dùng dấu phân cách hàng nghìn: nhập {plain}, không phải {grouped}."
       },

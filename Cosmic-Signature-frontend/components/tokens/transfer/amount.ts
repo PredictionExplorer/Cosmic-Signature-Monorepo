@@ -9,6 +9,8 @@
  * guess: the locale's own thousands mark is never read as a decimal mark, so
  * a Vietnamese "1.000" or an English "1,000" is refused, never sent as 1.
  */
+import { maxUint256 } from 'viem';
+
 import { getLocaleConfig } from '@/i18n/localeConfig';
 import { formatNumber } from '@/utils/format';
 
@@ -18,6 +20,7 @@ export type AmountInputError =
   | 'format'
   | 'grouping'
   | 'precision'
+  | 'outOfRange'
   | 'zero'
   | 'exceedsBalance';
 
@@ -123,6 +126,7 @@ export function parseTokenAmount(text: string, options: ParseAmountOptions = {})
   if (fractionPart.length > decimals) return { wei: null, error: 'precision' };
 
   const wei = BigInt(`${integerPart || '0'}${fractionPart.padEnd(decimals, '0')}`);
+  if (wei > maxUint256) return { wei: null, error: 'outOfRange' };
   if (wei === 0n) return { wei, error: 'zero' };
   if (max != null && wei > max) return { wei, error: 'exceedsBalance' };
   return { wei, error: null };

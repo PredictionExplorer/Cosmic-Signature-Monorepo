@@ -32,6 +32,7 @@
         "format": "{example}のように数字で入力してください。",
         "precision": "小数点以下は{decimals}桁までです。",
         "zero": "0より大きい数量を入力してください。",
+        "outOfRange": "金額が大きすぎるため送付できません。",
         "exceedsBalance": "利用可能な{amount}を超えています。",
         "grouping": "桁区切りの記号を使わず、{grouped}ではなく{plain}のように入力してください。"
       },

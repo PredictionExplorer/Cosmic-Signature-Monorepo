@@ -32,6 +32,7 @@
         "format": "{example}처럼 숫자로 입력해 주세요.",
         "precision": "소수점 이하는 {decimals}자리까지 입력할 수 있습니다.",
         "zero": "0보다 큰 수량을 입력해 주세요.",
+        "outOfRange": "금액이 너무 커서 보낼 수 없습니다.",
         "exceedsBalance": "보낼 수 있는 {amount}보다 많습니다.",
         "grouping": "천 단위 구분 기호 없이 입력하십시오. 예: {grouped} 대신 {plain}"
       },

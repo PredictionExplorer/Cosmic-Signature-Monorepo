@@ -6,6 +6,13 @@ import { amountMarks, parseTokenAmount, toPlainDecimal } from '../amount';
 const WEI = 1_000_000_000_000_000_000n;
 
 describe('parseTokenAmount', () => {
+  it('rejects the first unencodable base-unit quantity when the balance is unknown', () => {
+    expect(parseTokenAmount(String(1n << 256n), { decimals: 0 })).toEqual({
+      wei: null,
+      error: 'outOfRange',
+    });
+  });
+
   it('reads whole and fractional amounts exactly, without float rounding', () => {
     expect(parseTokenAmount('25')).toEqual({ wei: 25n * WEI, error: null });
     expect(parseTokenAmount('0.1')).toEqual({ wei: 100_000_000_000_000_000n, error: null });
