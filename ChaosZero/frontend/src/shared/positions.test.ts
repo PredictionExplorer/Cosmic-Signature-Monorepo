@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
+import { scaleFuzzBudget } from "@/test/fuzz";
 import {
   decodePositionId,
   matchedSets,
@@ -29,7 +30,7 @@ describe("complete sets and standard position identity", () => {
           if (roundId < MAX_ROUND_ID) expect(positionId(roundId + 1n, question, yes)).not.toBe(id);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: scaleFuzzBudget(200) },
     );
     expect(positionId(MAX_ROUND_ID, 7, true)).toBe((1n << 256n) - 1n);
     expect(positionId(0n, 0, false)).toBe(0n);

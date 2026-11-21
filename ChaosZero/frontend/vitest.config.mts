@@ -1,14 +1,27 @@
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
+import { scaleFuzzBudget } from "./src/test/fuzz";
 
-export default defineConfig({
+// New property suites follow the *.fuzz.test convention. Older suites keep their
+// generated checks alongside their examples; ordinary Vitest runs include both.
+const fuzzSuites = [
+  "src/**/*.fuzz.test.{ts,tsx}",
+  "src/shared/{independent-math,positions}.test.ts",
+  "src/lib/{history,math}.test.ts",
+  "src/hooks/use-market-events.test.ts",
+  "src/components/market/{probability-chart,threshold-race}.test.tsx",
+  "src/components/ui/tooltip.test.tsx",
+];
+
+export default defineConfig(({ mode }) => ({
   plugins: [tsconfigPaths(), react()],
   test: {
     environment: "jsdom",
     globals: true,
+    testTimeout: scaleFuzzBudget(5_000),
     setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: mode === "fuzz" ? fuzzSuites : ["src/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
       thresholds: {
@@ -55,4 +68,4 @@ export default defineConfig({
       ],
     },
   },
-});
+}));

@@ -908,6 +908,13 @@ export function useGestureForm({
       ) {
         return null;
       }
+      if (track === 'cst' && premiumExponent === 0n) {
+        // The base CST price falls over time. With exponent zero its only upward
+        // step is at window entry, then the live quote already includes the full
+        // premium. Cover both sides of that step without doubling a funded quote.
+        const nextSecond = (await read.getNextCstBidPriceAdvanced?.([1n])) as bigint | undefined;
+        if (nextSecond !== undefined) return nextSecond > quotedPrice ? nextSecond : quotedPrice;
+      }
       // ETH exposes the premium-free base directly; for CST the live quote
       // (base + current premium) over-approximates the base, which is safe
       // because the limit is never charged, only compared against.

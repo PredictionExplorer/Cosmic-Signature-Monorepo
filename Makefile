@@ -3,7 +3,7 @@ BOTS ?= 0
 WALLET ?= 1
 export BOTS WALLET BY
 .NOTPARALLEL:
-.PHONY: help setup hooks play-setup play play-wallet play-bots play-advance play-status play-stop test-play test test-repo test-v4 test-game test-site test-chaos test-axiom test-auction test-playground verify-import
+.PHONY: help setup hooks play-setup play play-wallet play-bots play-advance play-status play-stop test-play test test-repo test-v4 test-game test-site test-chaos test-axiom test-auction test-playground test-fuzz test-fuzz-contracts test-fuzz-frontends test-fuzz-integration verify-import
 
 help:
 	@printf '%s\n' 'make setup           Install locked dependencies for all four components' \
@@ -16,6 +16,10 @@ help:
 		'make play-stop       Stop the session and dispose of its chain and database' \
 		'make test-play       Rehearse the interactive wallets, bots and time controls' \
 		'make hooks           Enable the shared, component-scoped Git hooks' \
+		'make test-fuzz       Run upgrade, contract and frontend fuzz suites with one replay seed' \
+		'make test-fuzz-contracts   Run upgrade and contract invariant campaigns' \
+		'make test-fuzz-frontends   Run property tests on all three websites' \
+		'make test-fuzz-integration Check frontend bid quotes against the real local auction' \
 		'make test-repo       Check shared tooling, documentation links and import history' \
 		'make test-game       Check the game, upgrades and auction contract invariants' \
 		'make test-site       Check main site languages, lint, types and Jest coverage' \
@@ -67,6 +71,18 @@ test: test-repo test-game test-site test-chaos test-axiom
 test-repo: verify-import
 	python3 -m unittest discover -s scripts/tests
 	python3 scripts/check_docs.py
+
+test-fuzz:
+	node scripts/run-fuzz.mjs all
+
+test-fuzz-contracts:
+	node scripts/run-fuzz.mjs contracts
+
+test-fuzz-frontends:
+	node scripts/run-fuzz.mjs frontends
+
+test-fuzz-integration:
+	node scripts/run-fuzz.mjs integration
 
 test-v4: test-game test-auction test-playground
 

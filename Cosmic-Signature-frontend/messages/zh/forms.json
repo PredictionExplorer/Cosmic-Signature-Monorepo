@@ -32,6 +32,7 @@
         "format": "请输入数字，例如 {example}。",
         "precision": "最多保留 {decimals} 位小数。",
         "zero": "请输入大于 0 的数量。",
+        "outOfRange": "金额过大，无法发送。",
         "exceedsBalance": "超过了可用的 {amount}。",
         "grouping": "请勿使用千位分隔符：输入 {plain}，而非 {grouped}。"
       },

@@ -151,6 +151,30 @@ cross-market isolation, and the upstream game integration. The production adapte
 Successful local gates do not authorize a public deployment; use the explicit
 operator workflow in DEPLOYMENT.md when a release is approved.
 
+### Replaying V4 funding and portfolio properties
+
+`GameFundedClaimBackingTest` generates eight-question positions, transfers one side of each position to a second holder, and executes the same batch of complete-set merges before and after settlement. The expected CST payments come from those generated positions and the game’s final answers. Both branches check each question’s remaining escrow and the fresh grant after a repeated funding sync.
+
+```sh
+forge test --offline --match-test testFuzz_batchMergesPreserveWalletClaimsAcrossGameFunding --fuzz-seed 0x4c5a
+FOUNDRY_PROFILE=heavy forge test --offline --match-test testFuzz_batchMergesPreserveWalletClaimsAcrossGameFunding --fuzz-seed 0x8000
+```
+
+From this directory, run the frontend’s generated tests and their colocated examples with:
+
+```sh
+pnpm --dir frontend test:fuzz
+FUZZ_SEED=-20261120 FUZZ_FACTOR=10 pnpm --dir frontend test:fuzz
+```
+
+The portfolio property checks both holders’ displayed rights against all 256 possible final answer masks for each generated portfolio. `FUZZ_FACTOR` scales the run counts and timeouts. To replay a failure on the same revision and lockfile, select the affected file and test and supply the signed decimal seed and shrink path printed by fast-check:
+
+```sh
+FUZZ_SEED=912401 FUZZ_PATH='0' pnpm --dir frontend test:fuzz src/independent/portfolio.fuzz.test.ts -t 'settled portfolio rights'
+```
+
+New generated frontend suites use `*.fuzz.test.ts` or `*.fuzz.test.tsx`. The fuzz mode in `frontend/vitest.config.mts` also includes the older suites that mix property and example tests. Ordinary frontend tests run them all.
+
 ## V4 workflow and credential checks
 
 Pull requests into `V4` and pushes to `V4` run the security-extended CodeQL

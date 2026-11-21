@@ -115,9 +115,61 @@ contract ArtAuctionFuzzTest {
 		require(_auction.getAuction(0).endAt == 0, "Rejected bid started clock");
 		require(_auction.totalLiabilities() == 0 && address(_auction).balance == 0, "Rejected bid changed accounting");
 	}
+
+	/// @dev Every example accrues a refund in each of two cycles, rejects a payout destination, then pays once.
+	function testFuzz_MultipleLotsRefundPreviousLeaderExactlyOnce(
+		uint8 tokenInput_, uint8 offsetInput_, uint96 firstInput_, uint96 secondInput_, bool paySelf_
+	) public {
+		uint256 firstToken_ = uint256(tokenInput_) % 8;
+		uint256 opening_ = _game.artAuctionOpeningBid();
+		uint256 first_ = opening_ + uint256(firstInput_);
+		uint256 second_ = opening_ + uint256(secondInput_);
+		uint256 raised_ = 2 * first_;
+		_VM.deal(_ALICE, raised_ + second_);
+		_VM.deal(_BOB, 2 * (raised_ + second_));
+
+		_VM.prank(_ALICE);
+		_auction.bid{value: first_}(firstToken_, first_);
+		_VM.prank(_ALICE);
+		_auction.bid{value: raised_ - first_}(firstToken_, raised_);
+		require(_auction.totalRefundCredits() == 0, "Self raise credited a refund");
+
+		_VM.prank(_BOB);
+		_auction.bid{value: 2 * raised_}(firstToken_, 2 * raised_);
+		require(_auction.refundCredits(_ALICE) == raised_, "Wrong first credit");
+
+		_game.setArtAuctionOpeningBid(second_);
+		uint256 secondToken_ = _game.mintAndRegister(address(_auction), 1, 456) + uint256(offsetInput_) % 8;
+		_VM.warp(block.timestamp + 7 days);
+		_auction.settle(firstToken_);
+		_VM.prank(_ALICE);
+		_auction.bid{value: second_}(secondToken_, second_);
+		_VM.prank(_BOB);
+		_auction.bid{value: 2 * second_}(secondToken_, 2 * second_);
+		uint256 credit_ = raised_ + second_;
+		require(_auction.refundCredits(_ALICE) == credit_ && _auction.refundCredits(_BOB) == 0, "Wrong credit owner");
+
+		// This test contract has no payable receiver. A failed transfer must leave the credit available for retry.
+		_VM.expectRevert(abi.encodeWithSelector(ICosmicSignatureArtAuction.RefundTransferFailed.selector, address(this), credit_));
+		_VM.prank(_ALICE);
+		_auction.withdrawRefund(payable(address(this)));
+		require(_auction.refundCredits(_ALICE) == credit_ && _auction.totalRefundCredits() == credit_, "Failed withdrawal consumed credit");
+		address payable recipient_ = payable(paySelf_ ? _ALICE : _BOB);
+		uint256 before_ = recipient_.balance;
+		_VM.prank(_ALICE);
+		_auction.withdrawRefund(recipient_);
+		require(recipient_.balance == before_ + credit_, "Recipient paid wrong amount");
+		require(_auction.refundCredits(_ALICE) == 0 && _auction.totalRefundCredits() == 0, "Paid credit remains");
+		_VM.expectRevert(abi.encodeWithSelector(ICosmicSignatureArtAuction.NoRefundCredit.selector, _ALICE));
+		_VM.prank(_ALICE);
+		_auction.withdrawRefund(recipient_);
+		require(_auction.totalBidEscrow() == 2 * second_, "Withdrawal touched active escrow");
+		require(_auction.totalPendingProceeds() == 2 * raised_, "Withdrawal touched settled proceeds");
+		require(address(_auction).balance == 2 * credit_, "Wrong balance after withdrawal");
+	}
 }
 
-/// @notice Stateful handler records independent cash movements while interleaving every public workflow.
+/// @notice Tracks the expected lot state and wallet rights from the commands sent to the auction.
 contract ArtAuctionInvariantHandler {
 	AuctionFuzzVm private constant _VM = AuctionFuzzVm(address(uint160(uint256(keccak256("hevm cheat code")))));
 	CosmicSignatureArtAuction public immutable auction;
@@ -126,11 +178,24 @@ contract ArtAuctionInvariantHandler {
 	uint256 public totalRefunded;
 	uint256 public totalForwarded;
 	uint256 public totalForced;
+	uint256 public surplus;
+	uint256 private immutable _openingBid;
+	ICosmicSignatureArtAuction.Auction[8] private _expectedLots;
+	mapping(address => uint256) public expectedCredit;
 	mapping(uint256 => address) public deliveredTo;
 
 	constructor(CosmicSignatureArtAuction auction_, ArtAuctionTestGame game_) {
 		auction = auction_;
 		game = game_;
+		_openingBid = game_.artAuctionOpeningBid();
+		for (uint256 i_; i_ < 8; ++i_) {
+			_expectedLots[i_].registered = true;
+			_expectedLots[i_].eligibleAt = block.timestamp + 7 days;
+		}
+	}
+
+	function expectedLot(uint256 token_) external view returns (ICosmicSignatureArtAuction.Auction memory) {
+		return _expectedLots[token_];
 	}
 
 	function actor(uint256 index_) public pure returns (address) {
@@ -139,14 +204,20 @@ contract ArtAuctionInvariantHandler {
 
 	function placeBid(uint256 actorInput_, uint256 tokenInput_, uint96 jumpInput_) external {
 		uint256 token_ = tokenInput_ % 8;
-		ICosmicSignatureArtAuction.Auction memory lot_ = auction.getAuction(token_);
+		ICosmicSignatureArtAuction.Auction storage lot_ = _expectedLots[token_];
 		if (block.timestamp < lot_.eligibleAt || (lot_.endAt != 0 && block.timestamp >= lot_.endAt)) return;
 		address bidder_ = actor(actorInput_);
-		uint256 amount_ = auction.minimumNextBid(token_) + uint256(jumpInput_) % 3 ether;
+		uint256 minimum_ = lot_.highestBid == 0 ? _openingBid : lot_.highestBid + (lot_.highestBid + 9) / 10;
+		uint256 amount_ = minimum_ + uint256(jumpInput_) % 3 ether;
 		uint256 payment_ = lot_.highestBidder == bidder_ ? amount_ - lot_.highestBid : amount_;
-		_VM.deal(bidder_, payment_);
+		_VM.deal(bidder_, bidder_.balance + payment_);
 		_VM.prank(bidder_);
 		auction.bid{value: payment_}(token_, amount_);
+		if (lot_.highestBidder != address(0) && lot_.highestBidder != bidder_) expectedCredit[lot_.highestBidder] += lot_.highestBid;
+		if (lot_.endAt == 0) lot_.endAt = block.timestamp + 48 hours;
+		else if (block.timestamp + 10 minutes > lot_.endAt) lot_.endAt = block.timestamp + 10 minutes;
+		lot_.highestBidder = bidder_;
+		lot_.highestBid = amount_;
 		totalFunded += payment_;
 	}
 
@@ -156,33 +227,39 @@ contract ArtAuctionInvariantHandler {
 
 	function settle(uint256 tokenInput_) external {
 		uint256 token_ = tokenInput_ % 8;
-		ICosmicSignatureArtAuction.Auction memory lot_ = auction.getAuction(token_);
+		ICosmicSignatureArtAuction.Auction storage lot_ = _expectedLots[token_];
 		if (lot_.settled || lot_.endAt == 0 || block.timestamp < lot_.endAt) return;
 		auction.settle(token_);
+		lot_.settled = true;
 	}
 
 	function retrieve(uint256 actorInput_, uint256 recipientInput_) external {
 		address bidder_ = actor(actorInput_);
-		uint256 amount_ = auction.refundCredits(bidder_);
+		uint256 amount_ = expectedCredit[bidder_];
 		if (amount_ == 0) return;
+		address payable recipient_ = payable(actor(recipientInput_));
+		uint256 before_ = recipient_.balance;
 		_VM.prank(bidder_);
-		auction.withdrawRefund(payable(actor(recipientInput_)));
+		auction.withdrawRefund(recipient_);
+		require(recipient_.balance == before_ + amount_, "Refund paid wrong recipient or amount");
+		expectedCredit[bidder_] = 0;
 		totalRefunded += amount_;
 	}
 
 	function receiveNft(uint256 tokenInput_, uint256 recipientInput_) external {
 		uint256 token_ = tokenInput_ % 8;
-		ICosmicSignatureArtAuction.Auction memory lot_ = auction.getAuction(token_);
+		ICosmicSignatureArtAuction.Auction storage lot_ = _expectedLots[token_];
 		if (!lot_.settled || lot_.delivered) return;
 		address recipient_ = actor(recipientInput_);
 		_VM.prank(lot_.highestBidder);
 		auction.claimNft(token_, recipient_);
+		lot_.delivered = true;
 		deliveredTo[token_] = recipient_;
 	}
 
 	function forward(uint256 tokenInput_, bool fail_) external {
 		uint256 token_ = tokenInput_ % 8;
-		ICosmicSignatureArtAuction.Auction memory lot_ = auction.getAuction(token_);
+		ICosmicSignatureArtAuction.Auction storage lot_ = _expectedLots[token_];
 		if (!lot_.settled || lot_.proceedsForwarded) return;
 		game.setRejectDonations(fail_);
 		if (fail_) {
@@ -190,6 +267,7 @@ contract ArtAuctionInvariantHandler {
 			catch { require(!auction.getAuction(token_).proceedsForwarded, "Failed send consumed proceeds"); }
 		} else {
 			auction.forwardProceeds(token_);
+			lot_.proceedsForwarded = true;
 			totalForwarded += lot_.highestBid;
 		}
 		game.setRejectDonations(false);
@@ -199,12 +277,14 @@ contract ArtAuctionInvariantHandler {
 		uint256 amount_ = uint256(amountInput_) % 1 ether;
 		_VM.deal(address(auction), address(auction).balance + amount_);
 		totalForced += amount_;
+		surplus += amount_;
 	}
 
 	function forwardSurplus() external {
-		uint256 amount_ = address(auction).balance - auction.totalLiabilities();
+		uint256 amount_ = surplus;
 		if (amount_ == 0) return;
 		auction.forwardSurplus();
+		surplus = 0;
 		totalForwarded += amount_;
 	}
 }
@@ -223,7 +303,7 @@ contract ArtAuctionInvariantTest {
 		_auction = new CosmicSignatureArtAuction(address(_game), address(_nft));
 		_game.mintAndRegister(address(_auction), 0, 321);
 		_handler = new ArtAuctionInvariantHandler(_auction, _game);
-		_VM.warp(_auction.getAuction(0).eligibleAt);
+		_VM.warp(block.timestamp + 7 days);
 	}
 
 	struct FuzzSelector { address addr; bytes4[] selectors; }
@@ -251,19 +331,40 @@ contract ArtAuctionInvariantTest {
 		uint256 proceeds_;
 		uint256 refunds_;
 		for (uint256 token_ = 0; token_ < 8; ++token_) {
-			ICosmicSignatureArtAuction.Auction memory lot_ = _auction.getAuction(token_);
+			ICosmicSignatureArtAuction.Auction memory lot_ = _handler.expectedLot(token_);
+			require(keccak256(abi.encode(lot_)) == keccak256(abi.encode(_auction.getAuction(token_))), "Lot differs from command model");
 			if (!lot_.settled) escrow_ += lot_.highestBid;
 			else if (!lot_.proceedsForwarded) proceeds_ += lot_.highestBid;
 			require(_nft.ownerOf(token_) == (lot_.delivered ? _handler.deliveredTo(token_) : address(_auction)), "Custody mismatch");
 			if (lot_.delivered || lot_.proceedsForwarded) require(lot_.settled, "Action before settlement");
 		}
-		for (uint256 index_ = 0; index_ < 6; ++index_) refunds_ += _auction.refundCredits(_handler.actor(index_));
+		for (uint256 index_; index_ < 6; ++index_) {
+			address bidder_ = _handler.actor(index_);
+			uint256 credit_ = _handler.expectedCredit(bidder_);
+			require(_auction.refundCredits(bidder_) == credit_, "Wallet credit differs from command model");
+			refunds_ += credit_;
+		}
 		require(escrow_ == _auction.totalBidEscrow(), "Bid escrow mismatch");
 		require(proceeds_ == _auction.totalPendingProceeds(), "Proceeds mismatch");
 		require(refunds_ == _auction.totalRefundCredits(), "Refund mismatch");
-		require(address(_auction).balance >= escrow_ + proceeds_ + refunds_, "Insolvent");
+		require(_auction.totalLiabilities() == escrow_ + proceeds_ + refunds_, "Total liability mismatch");
+		require(address(_auction).balance == _auction.totalLiabilities() + _handler.surplus(), "Incorrect surplus or insolvency");
 		require(address(_auction).balance == _handler.totalFunded() + _handler.totalForced() - _handler.totalRefunded() - _handler.totalForwarded(), "Cash conservation mismatch");
 		require(_game.totalDonations() == _handler.totalForwarded(), "Forwarding mismatch");
 		require(_game.receiveCount() == 0, "Raw receive called");
+	}
+
+	/// @dev Close every funded lot after each generated sequence and exercise the outstanding rights.
+	function afterInvariant() public {
+		_VM.warp(block.timestamp + 48 hours);
+		for (uint256 token_; token_ < 8; ++token_) {
+			_handler.settle(token_);
+			_handler.receiveNft(token_, token_);
+			_handler.forward(token_, false);
+		}
+		for (uint256 index_; index_ < 6; ++index_) _handler.retrieve(index_, index_);
+		_handler.forwardSurplus();
+		invariant_AllLiabilitiesAndCustodyAreConserved();
+		require(address(_auction).balance == 0 && _auction.totalLiabilities() == 0, "Outstanding funds cannot exit");
 	}
 }

@@ -14,7 +14,8 @@ Run these targets from the root. A cross-component change can need more than one
 
 | What changed | First check | What it exercises |
 | --- | --- | --- |
-| Shared scripts, Git hooks, contributor documentation | `make test-repo` | Tooling regressions, relative link paths in root guides and import history. Requires Python 3 and a full Git clone with tags. |
+| Generated inputs, sequences of actions, or economic invariants | `make test-fuzz` | Use the [fuzz guide](docs/fuzz-testing.md) to select one layer, scale case counts and replay a minimized failure. |
+| Shared scripts, Git hooks, contributor documentation | `make test-repo` | Tooling regressions, relative link paths in root guides and import history. Requires Python 3, Node and a full Git clone with tags. |
 | Game contracts, storage or NFTs | `make test-game` | Hardhat regression suite across compiler modes, V1–V4 proxy upgrades, task credential handling and Foundry auction invariants. |
 | Main game website | `make test-site` | Locale and terminology gates, lint, types and Jest coverage thresholds. The [site workflow](.github/workflows/game-site.yml) also checks the production build and browser flows. |
 | Chaos Zero contracts or website | `make test-chaos` | Market behavior, accounting and website checks. Install its Chromium build once with `(cd ChaosZero && pnpm test:e2e:install)`. See the [Chaos Zero contributor guide](ChaosZero/CONTRIBUTING.md) for focused commands and the [verification tools](ChaosZero/verification/) for symbolic and static checks. |

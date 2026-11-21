@@ -1,10 +1,24 @@
 import { test, expect, type Browser, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import assert from "node:assert/strict";
+import fc from "fast-check";
+import { auctionAbi } from "../../src/lib/auctions/abi";
+import {
+  auctionAddress,
+  auctionChainId,
+  auctionRpcUrl,
+} from "../../src/lib/auctions/config";
+import { readLot } from "../../src/lib/auctions/client";
+import { bidFunding, parseEthInput } from "../../src/lib/auctions/types";
+import { fuzzParams } from "../helpers/fuzz";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import {
   createPublicClient,
+  formatEther,
+  walletActions,
+  zeroAddress,
   http,
   parseAbi,
   parseAbiItem,
@@ -37,6 +51,8 @@ const publicClient = createPublicClient({
 const abi = parseAbi([
   "function minimumNextBid(uint256) view returns(uint256)",
   "function refundCredits(address) view returns(uint256)",
+  "function totalBidEscrow() view returns(uint256)",
+  "function totalRefundCredits() view returns(uint256)",
   "function totalPendingProceeds() view returns(uint256)",
   "function totalLiabilities() view returns(uint256)",
   "function ownerOf(uint256) view returns(address)",
@@ -226,6 +242,160 @@ async function bid(page: Page, total: string) {
     .getByRole("button", { name: "Confirm in wallet", exact: true })
     .click();
 }
+test(
+  "matches frontend bid funding, minimums and wallet refunds across generated V4 sequences",
+  { tag: "@contract-quote" },
+  async () => {
+    assert.equal(auctionChainId, 31337);
+    assert.equal(auctionRpcUrl, LOCAL_RPC);
+    assert.equal(auctionAddress?.toLowerCase(), f.auction.toLowerCase());
+    assert.equal(await publicClient.getChainId(), 31337);
+    assert.match(await rpc("web3_clientVersion", []), /^HardhatNetwork\//);
+    const signer = publicClient.extend(walletActions);
+    const accounts = f.accounts.slice(0, 2);
+    const modelMinimum = (previous: bigint) =>
+      previous === 0n
+        ? parseEther("0.001")
+        : previous + previous / 10n + (previous % 10n === 0n ? 0n : 1n);
+    const total = (functionName: "totalBidEscrow" | "totalRefundCredits") =>
+      publicClient.readContract({ address: f.auction, abi, functionName });
+    const credit = (address: Address) =>
+      publicClient.readContract({
+        address: f.auction,
+        abi,
+        functionName: "refundCredits",
+        args: [address],
+      });
+    const extra = fc.bigInt({ min: 0n, max: parseEther("0.003") });
+    const slot = fc.integer({ min: 0, max: 1 });
+    const turn = fc.record({ buyer: slot, lot: slot, extra });
+    const parameters = fuzzParams(20);
+    // Allow the 10× nightly campaign on slower CI runners; individual RPC/receipt waits are bounded.
+    test.slow();
+    const suiteSnapshot = await rpc("evm_snapshot", []);
+    try {
+      if ((await publicClient.getBlock()).timestamp < BigInt(f.eligibleAt))
+        await moveTo(f.eligibleAt);
+      // Other lifecycle cases may have left unrelated liabilities on the fixture auction.
+      const [startEscrow, startCredits, startEth, startBalances] =
+        await Promise.all([
+          total("totalBidEscrow"),
+          total("totalRefundCredits"),
+          publicClient.getBalance({ address: f.auction }),
+          Promise.all(accounts.map(credit)),
+        ]);
+      await fc.assert(
+        fc.asyncProperty(
+          slot,
+          slot,
+          extra,
+          fc.array(turn, { maxLength: 5 }),
+          async (firstBuyer, firstLot, overbid, tail) => {
+            const saved = await rpc("evm_snapshot", []);
+            try {
+              const lots = [0, 1].map(() => ({
+                leader: zeroAddress as Address,
+                price: 0n,
+              }));
+              const refunds = [...startBalances];
+              const otherBuyer = 1 - firstBuyer;
+              const otherLot = 1 - firstLot;
+              const commands = [
+                { buyer: firstBuyer, lot: firstLot, extra: overbid * 10n + 1n }, // the next 10% increment must round up
+                { buyer: otherBuyer, lot: otherLot, extra: overbid },
+                { buyer: firstBuyer, lot: firstLot, extra: 0n }, // a self-raise requires only the difference
+                { buyer: otherBuyer, lot: firstLot, extra: 0n },
+                { buyer: firstBuyer, lot: otherLot, extra: 0n }, // outbid each wallet
+                ...tail,
+              ];
+              for (const step of commands) {
+                const tokenId = f.firstTokenId + 4 + step.lot;
+                const actor = accounts[step.buyer],
+                  model = lots[step.lot];
+                const quote = await readLot(tokenId, actor);
+                assert.ok(quote);
+                assert.equal(quote.lot.highestBidder, model.leader);
+                assert.equal(quote.lot.highestBid, model.price);
+                const minimum = modelMinimum(model.price);
+                assert.equal(quote.lot.minimumNextBid, minimum);
+                const amount = parseEthInput(formatEther(minimum + step.extra));
+                assert.equal(amount, minimum + step.extra);
+                const payable = bidFunding(quote.lot, amount, actor);
+                const previousOwner = accounts.indexOf(model.leader);
+                assert.equal(
+                  payable,
+                  model.leader === actor ? amount - model.price : amount,
+                );
+                const hash = await signer.writeContract({
+                  address: f.auction,
+                  abi: auctionAbi,
+                  functionName: "bid",
+                  args: [BigInt(tokenId), amount],
+                  account: actor,
+                  value: payable,
+                });
+                const receipt = await publicClient.waitForTransactionReceipt({
+                  hash,
+                  pollingInterval: 50,
+                  timeout: 10_000,
+                });
+                assert.equal(receipt.status, "success");
+                if (previousOwner >= 0 && previousOwner !== step.buyer)
+                  refunds[previousOwner] += model.price;
+                model.leader = actor;
+                model.price = amount;
+                const [
+                  after,
+                  actualEscrow,
+                  actualTotalCredits,
+                  actualEth,
+                  actualBalances,
+                ] = await Promise.all([
+                  readLot(tokenId, actor),
+                  total("totalBidEscrow"),
+                  total("totalRefundCredits"),
+                  publicClient.getBalance({
+                    address: f.auction,
+                    blockNumber: receipt.blockNumber,
+                  }),
+                  Promise.all(accounts.map(credit)),
+                ]);
+                assert.ok(after);
+                assert.equal(after.lot.highestBidder, actor);
+                assert.equal(after.lot.highestBid, amount);
+                assert.equal(after.lot.minimumNextBid, modelMinimum(amount));
+                assert.equal(after.accountRefund?.amount, refunds[step.buyer]);
+                assert.equal(
+                  actualEscrow,
+                  startEscrow + lots[0].price + lots[1].price,
+                );
+                assert.equal(
+                  actualTotalCredits,
+                  startCredits +
+                    (refunds[0] - startBalances[0]) +
+                    (refunds[1] - startBalances[1]),
+                );
+                assert.deepEqual(actualBalances, refunds);
+                assert.equal(
+                  actualEth - startEth,
+                  actualEscrow -
+                    startEscrow +
+                    (actualTotalCredits - startCredits),
+                );
+              }
+            } finally {
+              assert.equal(await rpc("evm_revert", [saved]), true);
+            }
+          },
+        ),
+        parameters,
+      );
+    } finally {
+      assert.equal(await rpc("evm_revert", [suiteSnapshot]), true);
+    }
+  },
+);
+
 test("two wallets bid, extend, recover ETH and collect a real V4 artwork on Axiom Zero", async ({
   browser,
 }) => {

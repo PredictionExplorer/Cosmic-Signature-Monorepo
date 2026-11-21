@@ -65,6 +65,8 @@ jobs:
         run: pnpm typecheck
 
       - name: Unit tests
+        env:
+          FUZZ_SEED: '17019'
         run: pnpm test:unit
 
       - name: Build
@@ -119,6 +121,8 @@ jobs:
           pnpm exec playwright install --with-deps chromium
       - name: Compile contracts and exercise the auction in Chromium
         working-directory: .
+        env:
+          FUZZ_SEED: '17019'
         run: make test-auction
       - name: Upload auction browser diagnostics
         if: failure()

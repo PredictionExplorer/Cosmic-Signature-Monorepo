@@ -1,0 +1,105 @@
+name: Frontend and auction property testing
+
+on:
+  schedule:
+    - cron: '43 5 * * *'
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: Signed 32-bit decimal seed (leave empty to generate one)
+        type: string
+        required: false
+  # Component PR checks already run their properties in the full unit suites.
+  # Exercise the standalone entry points too when their wiring changes.
+  pull_request:
+    branches: [main, V4]
+    paths:
+      - '.github/workflows/frontend-fuzz.yml'
+      - 'scripts/run-fuzz.mjs'
+      - 'scripts/ci/install-game-solc.sh'
+      - 'Makefile'
+      - '.node-version'
+      - 'axiomzero/package.json'
+      - 'axiomzero/tests/helpers/fuzz.ts'
+      - 'axiomzero/vitest.config.ts'
+      - 'Cosmic-Signature-frontend/jest.config.ts'
+      - 'Cosmic-Signature-frontend/test-utils/fuzz.ts'
+      - 'ChaosZero/frontend/vitest.config.mts'
+      - 'ChaosZero/frontend/src/test/fuzz.ts'
+      - 'ChaosZero/frontend/src/test/setup.ts'
+      - 'ChaosZero/frontend/package.json'
+      - 'Cosmic-Signature-frontend/package.json'
+permissions:
+  contents: read
+
+jobs:
+  properties:
+    name: Fuzz ${{ matrix.site }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - site: game-site
+            directory: Cosmic-Signature-frontend
+            manager: npm
+            lockfile: package-lock.json
+          - site: chaos-site
+            directory: ChaosZero/frontend
+            manager: pnpm
+            lockfile: pnpm-lock.yaml
+          - site: axiom-site
+            directory: axiomzero
+            manager: pnpm
+            lockfile: pnpm-lock.yaml
+          - site: integration
+            directory: axiomzero
+            manager: pnpm
+            lockfile: pnpm-lock.yaml
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - if: matrix.manager == 'pnpm'
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          package_json_file: ${{ matrix.directory }}/package.json
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .node-version
+          cache: ${{ matrix.manager }}
+          cache-dependency-path: ${{ matrix.directory }}/${{ matrix.lockfile }}
+      - if: matrix.manager == 'npm'
+        working-directory: ${{ matrix.directory }}
+        run: npm ci
+      - if: matrix.manager == 'pnpm'
+        working-directory: ${{ matrix.directory }}
+        run: pnpm install --frozen-lockfile
+      - name: Prepare the production contract build for the differential test
+        if: matrix.site == 'integration'
+        run: |
+          ./scripts/ci/install-game-solc.sh
+          npm --prefix Cosmic-Signature ci
+      - name: Run replayable property tests
+        id: fuzz
+        shell: bash
+        env:
+          SITE: ${{ matrix.site }}
+          REQUESTED_SEED: ${{ inputs.seed }}
+          FUZZ_FACTOR: ${{ github.event_name == 'pull_request' && '1' || '10' }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$REQUESTED_SEED" ]]; then
+            export FUZZ_SEED="$REQUESTED_SEED"
+          elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            export FUZZ_SEED=17019
+          fi
+          node scripts/run-fuzz.mjs "$SITE" 2>&1 | tee "$RUNNER_TEMP/frontend-fuzz.log"
+      - name: Preserve the counterexample and replay parameters
+        if: failure() && steps.fuzz.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ matrix.site }}-fuzz-failure
+          path: ${{ runner.temp }}/frontend-fuzz.log
+          retention-days: 30

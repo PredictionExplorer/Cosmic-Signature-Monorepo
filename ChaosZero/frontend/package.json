@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:fuzz": "vitest run --coverage=false --mode fuzz",
     "test:coverage": "vitest run --coverage",
     "icons": "node scripts/generate-icons.mjs"
   },

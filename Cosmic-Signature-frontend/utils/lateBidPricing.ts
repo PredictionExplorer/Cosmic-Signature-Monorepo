@@ -74,7 +74,7 @@ export function computeMaxLateGesturePrice({
   mainPrizeTimeIncrementInMicroSeconds,
   premiumExponent,
 }: MaxLateGesturePriceParams): bigint {
-  if (basePrice <= 0n || mainPrizeTimeIncrementInMicroSeconds <= 0n || premiumExponent <= 0n) {
+  if (basePrice <= 0n || mainPrizeTimeIncrementInMicroSeconds <= 0n || premiumExponent < 0n) {
     return basePrice;
   }
   const scaledElapsed =

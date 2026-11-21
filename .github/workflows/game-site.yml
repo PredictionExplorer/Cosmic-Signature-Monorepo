@@ -69,6 +69,8 @@ jobs:
         run: npm run type-check
 
       - name: Run tests with coverage
+        env:
+          FUZZ_SEED: '17019'
         run: npm run test:coverage
 
       - name: Preserve coverage

@@ -89,6 +89,8 @@ jobs:
       - name: Install locked frontend dependencies
         run: pnpm --dir frontend install --frozen-lockfile
       - name: Formatting, lint, types, coverage, production build and dependency audit
+        env:
+          FUZZ_SEED: '17019'
         run: pnpm check:frontend
       - name: Save frontend coverage
         if: always()

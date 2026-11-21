@@ -79,8 +79,12 @@ describe('computeMaxLateGesturePrice', () => {
         mainPrizeTimeIncrementInMicroSeconds: 0n,
       }),
     ).toBe(ONE_ETH);
+  });
+
+  it('includes the one-base premium when the configured exponent is zero', () => {
+    // Solidity's x ** 0 is 1, including when the multiplier is also zero.
     expect(computeMaxLateGesturePrice({ basePrice: ONE_ETH, ...params, premiumExponent: 0n })).toBe(
-      ONE_ETH,
+      2n * ONE_ETH,
     );
   });
 });

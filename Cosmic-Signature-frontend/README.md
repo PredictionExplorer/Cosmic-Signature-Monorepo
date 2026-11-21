@@ -224,6 +224,7 @@ Keep the [wallet SDK patches](patches/) with the npm lockfile. `npm ci` applies 
 Unit tests use Jest with React Testing Library. E2E tests use Playwright against Desktop Chrome and Mobile Chrome viewports, plus a full-stack **harness tier** that runs the real contracts on a local chain with the real indexer/API (see [docs/harness.md](docs/harness.md)).
 
 ```bash
+npm run test:fuzz         # shrinkable transfer, pricing and retrieval properties
 npm run test              # unit tests
 npm run test:coverage     # unit tests with coverage
 npm run test:e2e          # end-to-end tests (mocked-API projects + harness tier)
@@ -233,5 +234,11 @@ npm run test:e2e:harness  # harness tier only
 The coverage gate measures pages, components, contexts, hooks, services, utilities, network configuration, shared library code, locale routing and the host-routing proxy. Run `npm run test:coverage` and open `coverage/lcov-report/index.html` to inspect missed branches. The thresholds enforced by CI live in [jest.config.ts](jest.config.ts).
 
 ### Local game-state harness (testing mode)
+
+Run `FUZZ_FACTOR=10 npm run test:fuzz` for a longer campaign. The regular Jest suite also discovers these properties. Failures include the property name, seed, minimal input and shrink path. To replay, use the reported signed decimal seed, path and a single test name on the same revision, e.g.:
+
+```sh
+FUZZ_SEED=20261120 FUZZ_PATH=0:0:0 npm run test:fuzz -- -t 'wallet amount in en refuses sub-unit precision'
+```
 
 `npm run dev:testing` boots a complete local Cosmic Signature universe — Hardhat chain, deployed contracts, the Go indexer + API, a scenario "director" with a controlled virtual clock, and this app in testing mode with a burner wallet and an in-app control panel. Named scenarios put the real chain and UI in any cycle phase on demand. Full guide: [docs/harness.md](docs/harness.md).

@@ -74,7 +74,7 @@ corepack pnpm exec playwright install chromium webkit
 corepack pnpm test:e2e
 ```
 
-The unit suite includes fast-check properties. Run `corepack pnpm test:fuzz` for the property tests alone, including exact wei conversion and funded bids by leading and competing wallets. Set `FUZZ_FACTOR=10` to run ten times the default cases per property.
+The unit suite includes fast-check properties. Run `corepack pnpm test:fuzz` for the property tests alone, including exact wei conversion, funded bids, wallet/lot changes during bid review, and open-lot pagination against an independent reference model. Use the [fuzz testing guide](../docs/fuzz-testing.md) to replay a failing seed and shrink path. Set `FUZZ_FACTOR=10` to run ten times the default cases per property.
 
 GitHub Actions runs the same gates, including the Playwright end-to-end and
 axe accessibility suites, on relevant pushes and pull requests to `main` or

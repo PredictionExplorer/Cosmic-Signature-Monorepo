@@ -1112,6 +1112,42 @@ describe('useGestureForm', () => {
     expect(result.current.isGesturing).toBe(false);
   });
 
+  it.each([
+    [30n, 100n, 98n, 100n],
+    [60n, 50n, 98n, 98n],
+  ])(
+    'limits a zero-exponent CST gesture at %s seconds without adding its flat premium twice',
+    async (remaining, quote, nextQuote, limit) => {
+      const nextSecond = jest.fn().mockResolvedValue(nextQuote);
+      mockUseCosmicGameContract.mockReturnValue({
+        ...mockContractObj,
+        read: {
+          ...mockContractObj.read,
+          cstBidPriceDeclineMultiplier: jest.fn().mockResolvedValue(1n),
+          lastBidderAddress: jest.fn().mockResolvedValue('0x01'),
+          getDurationUntilMainPrize: jest.fn().mockResolvedValue(remaining),
+          getRoundLateBidDuration: jest.fn().mockResolvedValue(60n),
+          roundLateBidPricePremiumAmountBaseMultiplier: jest.fn().mockResolvedValue(1000n),
+          roundLateBidPricePremiumAmountExponent: jest.fn().mockResolvedValue(0n),
+          mainPrizeTimeIncrementInMicroSeconds: jest.fn().mockResolvedValue(60_000_000n),
+          getNextCstBidPrice: jest.fn().mockResolvedValue(quote),
+          getNextCstBidPriceAdvanced: nextSecond,
+        },
+      });
+      const { result } = renderHook(() => useGestureForm());
+      await act(flushAsyncWork);
+      expect(result.current.cstRewardToPreviousGesturer).toBe(true);
+      expect(await result.current.onGestureWithCST()).toBe(true);
+      expect(nextSecond).toHaveBeenCalledWith([1n]);
+      expect(mockTx.writeContract).toHaveBeenCalledWith(
+        expect.objectContaining({
+          functionName: 'bidWithCst',
+          args: [limit, '', 0n],
+        }),
+      );
+    },
+  );
+
   it('submits a zero CST floor when the wallet is not the latest gesturer', async () => {
     // Under V3 the Participation CST goes to the outbid previous participant,
     // so for everyone but the latest gesturer a nonzero floor only produces
