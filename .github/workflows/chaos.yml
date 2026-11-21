@@ -54,7 +54,7 @@ jobs:
           node-version-file: ChaosZero/.node-version
           cache: pnpm
           cache-dependency-path: ChaosZero/pnpm-lock.yaml
-      - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
+      - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
           version: v1.7.1
       - name: Install locked developer tools
@@ -122,7 +122,7 @@ jobs:
           cache-dependency-path: |
             ChaosZero/pnpm-lock.yaml
             ChaosZero/frontend/pnpm-lock.yaml
-      - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1.9.1
+      - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
           version: v1.7.1
       - name: Install locked developer tools
