@@ -32,6 +32,8 @@ Use `make play-bots BOTS=2` for company, or advance the local chain to try aucti
 
 ## Verify V4
 
+Run `make test-fuzz` for a replayable campaign across the contracts and all three websites. The [fuzz testing guide](docs/fuzz-testing.md) lists the properties, how to replay minimized failures, and the nightly CI settings.
+
 With the local test prerequisites installed, run `make test-v4` to exercise the upgrade sequence, the auction lifecycle and the three-site browser flow.
 
 - `make test-game` plays on one proxy through V1, V2, V3 and V4, including the real Chaos Zero market and NFT auction. A failing seed and its profile can be replayed. [Four-version campaign](Cosmic-Signature/docs/v4-art-auction-upgrade.md#four-version-stateful-campaign)

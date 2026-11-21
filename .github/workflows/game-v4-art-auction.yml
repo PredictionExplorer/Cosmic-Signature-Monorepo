@@ -89,4 +89,25 @@ jobs:
           ENABLE_HARDHAT_PREPROCESSOR: 'false'
           FUZZ_MAX_SECONDS: '1200'
       - name: Fuzz the auction with the verified game compiler
-        run: npm run test:auction:fuzz -- --use "$HOME/.solc-select/artifacts/solc-0.8.38/solc-0.8.38" --offline
+        id: auction_fuzz
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$V4_SOAK" == "true" ]]; then
+            FOUNDRY_FUZZ_SEED=$(node -p "'0x' + require('node:crypto').randomBytes(32).toString('hex')")
+            export FOUNDRY_FUZZ_SEED FOUNDRY_FUZZ_RUNS=4096 FOUNDRY_INVARIANT_RUNS=256 FOUNDRY_INVARIANT_DEPTH=128
+          fi
+          {
+            forge config --json | jq '{seed:.fuzz.seed,fuzzRuns:.fuzz.runs,invariantRuns:.invariant.runs,depth:.invariant.depth}'
+            npm run test:auction:fuzz -- --use "$HOME/.solc-select/artifacts/solc-0.8.38/solc-0.8.38" --offline
+          } 2>&1 | tee "$RUNNER_TEMP/auction-fuzz.log"
+      - name: Preserve the auction failure and minimized sequence
+        if: failure() && steps.auction_fuzz.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: game-auction-fuzz-failure
+          path: |
+            ${{ runner.temp }}/auction-fuzz.log
+            Cosmic-Signature/cache/fuzz/
+            Cosmic-Signature/cache/invariant/
+          retention-days: 30
