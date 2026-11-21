@@ -1,8 +1,6 @@
 name: Frontend and auction property testing
 
 on:
-  schedule:
-    - cron: '43 5 * * *'
   workflow_dispatch:
     inputs:
       seed:
