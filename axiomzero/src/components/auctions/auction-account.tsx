@@ -75,15 +75,23 @@ function ConnectedAccount({
           </button>
         </p>
       )}
-      <section className={styles.credit}>
+      <section
+        className={styles.credit}
+        aria-labelledby="available-refund-title"
+      >
         <div>
-          <p className={styles.kicker}>Available refund</p>
-          <h2>
-            <Price wei={info.refund} />
+          <h2 className={styles.creditTitle} id="available-refund-title">
+            Available refund
           </h2>
+          <div className={styles.creditAmount}>
+            <Price wei={info.refund} />
+          </div>
           <p>
-            Across all cycles for{" "}
-            <span title={address}>{shortenAddress(address)}</span>.
+            Across all lots for{" "}
+            <span title={address}>{shortenAddress(address)}</span>.{" "}
+            {info.refund > 0n
+              ? "You can withdraw the full balance now, even while bidding is open."
+              : "When someone outbids this wallet, your bid becomes available here immediately."}
           </p>
         </div>
         <div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useId, useRef, useState, type ReactNode } from "react";
 import { useAccount, useSwitchChain } from "wagmi";
 import {
   isAddress,
@@ -113,7 +113,12 @@ export function useAuctionTransaction() {
         setState({
           stage: "done",
           hash: receipt.transactionHash,
-          message: action.kind === "bid" ? "Bid confirmed." : undefined,
+          message:
+            action.kind === "bid"
+              ? "Bid confirmed."
+              : action.kind === "withdrawRefund"
+                ? "Refund withdrawn."
+                : undefined,
         });
         await cache.invalidateQueries({ queryKey: ["auction"] });
         return true;
@@ -193,6 +198,7 @@ export function RecipientAction({
   disabled: boolean;
 }) {
   const [custom, setCustom] = useState<string | null>(null);
+  const recipientHelpId = useId();
   const recipient = custom ?? owner;
   const valid =
     isAddress(recipient) &&
@@ -220,9 +226,23 @@ export function RecipientAction({
           value={recipient}
           onChange={(e) => setCustom(e.target.value)}
           aria-invalid={!valid}
+          aria-describedby={!valid || !delivery ? recipientHelpId : undefined}
         />
       </label>
-      {!valid && <small>Enter a valid receiving wallet address.</small>}
+      {!valid ? (
+        <small className={styles.warning} id={recipientHelpId}>
+          Enter a valid receiving wallet address.
+        </small>
+      ) : (
+        !delivery && (
+          <small id={recipientHelpId}>
+            {custom && !isAddressEqual(recipient as Address, owner)
+              ? "Your refund will go to the address above. Check it before approving."
+              : "Your bidding wallet is filled in. Approve the withdrawal in your wallet to receive the ETH."}{" "}
+            Network gas applies.
+          </small>
+        )
+      )}
       <button
         className={styles.action}
         type="submit"

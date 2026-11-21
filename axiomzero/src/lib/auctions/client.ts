@@ -132,7 +132,15 @@ export function isUnknownAuction(error: unknown, id: bigint) {
   );
 }
 
-export async function readLot(tokenId: number) {
+async function refundCredit(snapshot: Snapshot, account: Address) {
+  return client.readContract({
+    ...snapshot.base,
+    functionName: "refundCredits",
+    args: [account],
+  });
+}
+
+export async function readLot(tokenId: number, account?: Address) {
   checkId(tokenId);
   const snapshot = await verifiedSnapshot();
   const id = BigInt(tokenId);
@@ -143,10 +151,12 @@ export async function readLot(tokenId: number) {
     if (isUnknownAuction(error, id)) return null;
     throw error;
   }
-  const [openingBid, minimumNextBid, seed] = await Promise.all([
+  const [openingBid, minimumNextBid, seed, refund] = await Promise.all([
     openingPrice(snapshot, record.roundNum),
     minimum(snapshot, id),
     artworkSeed(snapshot, id),
+    // A personal balance failure must not hide the verified public lot.
+    account ? refundCredit(snapshot, account).catch(() => null) : undefined,
   ]);
   return {
     lot: {
@@ -156,6 +166,7 @@ export async function readLot(tokenId: number) {
       minimumNextBid,
       seed,
     } satisfies AuctionLot,
+    ...(account && { accountRefund: { account, amount: refund } }),
     ...stamp(snapshot),
   };
 }
@@ -287,11 +298,7 @@ export async function readWalletActivity(account: Address, page = 0) {
   const snapshot = await verifiedSnapshot();
   const [batch, refund] = await Promise.all([
     readBatchAt(snapshot, page),
-    client.readContract({
-      ...snapshot.base,
-      functionName: "refundCredits",
-      args: [account],
-    }),
+    refundCredit(snapshot, account),
   ]);
   const held = batch.lots.filter(
     (lot) => lot.highestBid > 0n && isAddressEqual(lot.highestBidder, account),

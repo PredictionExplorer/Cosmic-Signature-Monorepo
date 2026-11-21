@@ -151,6 +151,40 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("verified auction reads", () => {
+  it("reads wallet-wide refund credit for the connected lot visitor at the same verified block", async () => {
+    const publicLot = await readLot(16);
+    expect(publicLot).not.toHaveProperty("accountRefund");
+    expect(
+      mocks.client.readContract.mock.calls.some(
+        ([call]) => call.functionName === "refundCredits",
+      ),
+    ).toBe(false);
+    const connectedLot = await readLot(16, holder);
+    expect(connectedLot?.accountRefund).toEqual({
+      account: holder,
+      amount: 7n,
+    });
+    expect(mocks.client.readContract).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address,
+        functionName: "refundCredits",
+        args: [holder],
+        blockNumber: connectedLot?.blockNumber,
+      }),
+    );
+    expect(mocks.client.getBlock).toHaveBeenCalledTimes(2);
+  });
+  it("preserves the public lot if only the connected wallet’s credit read fails", async () => {
+    mocks.client.readContract.mockImplementation((call) => {
+      if (call.functionName === "refundCredits")
+        throw new Error("Credit unavailable");
+      return read(call);
+    });
+    const result = await readLot(16, holder);
+    expect(result?.accountRefund).toEqual({ account: holder, amount: null });
+    expect(result?.lot.tokenId).toBe(16);
+  });
+
   it("pins every contract call in a catalogue to one block and reads the batch opening price once", async () => {
     const b = await readBatch();
     expect(b.lots.map((l) => l.tokenId)).toEqual([

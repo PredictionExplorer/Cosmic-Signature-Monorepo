@@ -102,8 +102,8 @@ export function BidForm({
           </dl>
           <p>
             Network gas is extra. Approving in your wallet places a binding bid.
-            If someone outbids you, you can withdraw your ETH from your
-            collector account.
+            If someone outbids you, withdraw your full bid immediately from
+            Available refund in your collector account.
           </p>
         </div>
         <button

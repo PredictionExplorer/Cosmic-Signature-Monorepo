@@ -362,7 +362,7 @@
   margin-bottom: 0.4rem;
 }
 .heroPrice,
-.credit h2 {
+.creditAmount {
   font:
     450 clamp(2.25rem, 4.1vw, 3.9rem)/1.13 var(--font-fraunces),
     Georgia,
@@ -370,7 +370,7 @@
   letter-spacing: -0.05em;
 }
 .heroPrice .price small,
-.credit h2 .price small {
+.creditAmount .price small {
   font:
     500 0.37em var(--font-geist-mono),
     monospace;
@@ -547,6 +547,12 @@
   font-size: 0.8rem;
   min-height: 1.7rem;
 }
+.refundAnchor {
+  scroll-margin-top: 6rem;
+}
+.credit .creditTitle {
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+}
 .credit {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -558,7 +564,7 @@
   margin-bottom: 2.5rem;
   background: rgb(35 38 27 / 65%);
 }
-.credit h2 {
+.creditAmount {
   margin: 0.3rem 0 0.6rem;
 }
 .accountList h3 {

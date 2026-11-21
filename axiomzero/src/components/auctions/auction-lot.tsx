@@ -7,12 +7,13 @@ import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { isAddressEqual } from "viem";
 import { readLot } from "@/lib/auctions/client";
-import { auctionChainId } from "@/lib/auctions/config";
+import { auctionAddress, auctionChainId } from "@/lib/auctions/config";
 import { phaseOf } from "@/lib/auctions/types";
 import { shortenAddress } from "@/lib/utils";
 
 import { AuctionArtwork } from "./auction-artwork";
 import { BidForm } from "./auction-bidding";
+import { AuctionRefundNotice } from "./auction-refund";
 import { ChainTime, LotPhase, Price } from "./auction-display";
 import {
   CollectorLink,
@@ -47,8 +48,15 @@ export function AuctionLotView({
   const tx = useAuctionTransaction();
   const id = initial.lot.tokenId;
   const query = useQuery({
-    queryKey: ["auction", "lot", id],
-    queryFn: () => readLot(id),
+    queryKey: [
+      "auction",
+      "lot",
+      id,
+      auctionChainId,
+      auctionAddress,
+      address?.toLowerCase() ?? null,
+    ],
+    queryFn: () => readLot(id, address),
     initialData: initial,
     refetchInterval: 8_000,
     refetchOnMount: "always",
@@ -123,6 +131,13 @@ export function AuctionLotView({
                 </>
               )}
             </p>
+          )}
+          {address && (
+            <AuctionRefundNotice
+              address={address}
+              credit={outdated ? null : snapshot.accountRefund}
+              leading={winner && phase === "active" && canBuy}
+            />
           )}
           {canBuy && (
             <>

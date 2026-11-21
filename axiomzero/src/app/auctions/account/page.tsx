@@ -29,7 +29,9 @@ export default async function AccountPage({
         <h1>Collector account</h1>
       </header>
       {auctionConfigured ? (
-        <AuctionAccount page={page} />
+        <div id="refunds" className={styles.refundAnchor}>
+          <AuctionAccount page={page} />
+        </div>
       ) : (
         <p className={styles.message}>
           Wallet activity will be available when the first auction is

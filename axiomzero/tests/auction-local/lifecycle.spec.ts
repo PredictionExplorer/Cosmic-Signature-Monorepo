@@ -72,14 +72,29 @@ function registerNextBatch() {
     readFileSync(process.env.AXIOM_AUCTION_FIXTURE! + ".next", "utf8"),
   ) as Pick<Fixture, "firstTokenId" | "eligibleAt">;
 }
-async function collector(browser: Browser, account: Address) {
+async function collector(
+  browser: Browser,
+  account: Address,
+  alternateAccount?: Address,
+) {
   const context = await browser.newContext({
     baseURL: "http://127.0.0.1:4599",
     reducedMotion: "reduce",
   });
   await context.addInitScript(
-    ({ account, rpc, address }) => {
+    ({ initialAccount, alternateAccount, rpc, address }) => {
+      let account = initialAccount;
       const listeners = new Map<string, Set<(...args: unknown[]) => void>>();
+      if (alternateAccount) {
+        window.addEventListener("rehearsal-switch-wallet", (event) => {
+          const next = (event as CustomEvent<Address>).detail;
+          if (next !== initialAccount && next !== alternateAccount) return;
+          account = next;
+          sessionStorage.setItem("rehearsal-connected", account);
+          for (const listener of listeners.get("accountsChanged") ?? [])
+            listener([account]);
+        });
+      }
       const provider = {
         isMetaMask: false,
         on(event: string, fn: (...args: unknown[]) => void) {
@@ -180,7 +195,12 @@ async function collector(browser: Browser, account: Address) {
       window.addEventListener("eip6963:requestProvider", announce);
       announce();
     },
-    { account, rpc: LOCAL_RPC, address: f.auction },
+    {
+      initialAccount: account,
+      alternateAccount,
+      rpc: LOCAL_RPC,
+      address: f.auction,
+    },
   );
   const page = await context.newPage();
   page.on("pageerror", (err) => console.error("Browser error:", err.message));
@@ -213,7 +233,7 @@ test("two wallets bid, extend, recover ETH and collect a real V4 artwork on Axio
   const [alice, bob, recipient] = f.accounts;
   const token = BigInt(f.firstTokenId);
   const lot = "/auctions/" + f.firstTokenId;
-  const a = await collector(browser, alice);
+  const a = await collector(browser, alice, bob);
   const b = await collector(browser, bob);
   try {
     await a.goto("/auctions?view=all", { waitUntil: "domcontentloaded" });
@@ -248,22 +268,91 @@ test("two wallets bid, extend, recover ETH and collect a real V4 artwork on Axio
     await b.goto(lot, { waitUntil: "domcontentloaded" });
     await connect(b);
     await bid(b, "0.003");
-    const refund = () =>
-      publicClient.readContract({
-        address: f.auction,
-        abi,
-        functionName: "refundCredits",
-        args: [alice],
+    await test.step("Collect an outbid refund from the still-open auction", async () => {
+      const refund = () =>
+        publicClient.readContract({
+          address: f.auction,
+          abi,
+          functionName: "refundCredits",
+          args: [alice],
+        });
+      const refundAmount = parseEther("0.002");
+      await expect.poll(refund).toBe(refundAmount);
+      const notice = a.getByRole("region", { name: "Auction refunds" });
+      const recover = notice.getByRole("link", {
+        name: "Withdraw refund",
+        exact: true,
       });
-    await expect.poll(refund).toBe(parseEther("0.002"));
-    await a.goto("/auctions/account", { waitUntil: "domcontentloaded" });
-    await expect(
-      a.getByRole("button", { name: "Withdraw refund", exact: true }),
-    ).toBeVisible();
-    await a
-      .getByRole("button", { name: "Withdraw refund", exact: true })
-      .click();
-    await expect.poll(refund).toBe(0n);
+      // Alice stays on the auction while Bob outbids her in another window.
+      await expect(recover).toBeVisible({ timeout: 25_000 });
+      await expect(notice).toContainText("0.002 ETH");
+
+      const switchWallet = (address: Address) =>
+        a.evaluate(
+          (next) =>
+            window.dispatchEvent(
+              new CustomEvent("rehearsal-switch-wallet", { detail: next }),
+            ),
+          address,
+        );
+      await switchWallet(bob);
+      await expect(
+        a.getByRole("button", { name: new RegExp(bob.slice(-4), "i") }).first(),
+      ).toBeVisible();
+      await expect(recover).toHaveCount(0);
+      await expect(notice.filter({ hasText: "0.002 ETH" })).toHaveCount(0);
+      await switchWallet(alice);
+      await expect(recover).toBeVisible();
+      await expect(recover).toHaveAttribute(
+        "href",
+        "/auctions/account#refunds",
+      );
+      await recover.click();
+      await expect(a).toHaveURL(/\/auctions\/account#refunds$/);
+      const credit = a.getByRole("region", { name: "Available refund" });
+      await expect(credit).toContainText("0.002 ETH");
+      await expect(
+        credit.getByRole("textbox", { name: "Refund address" }),
+      ).toHaveValue(alice);
+
+      const beforeBlock = await publicClient.getBlockNumber({ cacheTime: 0 });
+      const balanceBefore = await publicClient.getBalance({
+        address: alice,
+        blockNumber: beforeBlock,
+      });
+      await credit
+        .getByRole("button", { name: "Withdraw refund", exact: true })
+        .click();
+      await expect.poll(refund).toBe(0n);
+      await expect(credit.getByRole("status")).toContainText(
+        "Refund withdrawn.",
+      );
+      await expect(
+        credit.getByRole("button", { name: "Withdraw refund", exact: true }),
+      ).toHaveCount(0);
+      const withdrawals = await publicClient.getLogs({
+        address: f.auction,
+        fromBlock: beforeBlock + 1n,
+        event: parseAbiItem(
+          "event AuctionRefundWithdrawn(address indexed bidder,address indexed recipient,uint256 amount)",
+        ),
+        args: { bidder: alice, recipient: alice },
+        strict: true,
+      });
+      expect(withdrawals.map((log) => log.args.amount)).toEqual([refundAmount]);
+      const receipt = await publicClient.getTransactionReceipt({
+        hash: withdrawals[0].transactionHash,
+      });
+      const balanceAfter = await publicClient.getBalance({
+        address: alice,
+        blockNumber: receipt.blockNumber,
+      });
+      expect(balanceAfter).toBe(
+        balanceBefore +
+          refundAmount -
+          receipt.gasUsed * receipt.effectiveGasPrice,
+      );
+    });
     await moveTo(f.eligibleAt + 48 * 3600 + 10);
     await b.reload({ waitUntil: "domcontentloaded" });
     await expect(
