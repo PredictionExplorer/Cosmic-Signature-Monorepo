@@ -75,9 +75,12 @@ export default async function Page({ params }: PageProps) {
       : Promise.resolve<GestureInfo | null>(null),
     getCurrentSpecialRecipientsSeed(),
   ]);
-  const [meta, experiment] = await Promise.all([
+  const [meta, experiment, localConfig] = await Promise.all([
     getTranslations({ locale, namespace: 'meta' }),
     getTranslations({ locale, namespace: 'home' }),
+    process.env.NEXT_PUBLIC_NETWORK === 'local'
+      ? getTranslations({ locale, namespace: 'contracts' })
+      : null,
   ]);
   const description = meta('experimentalUi.description');
   const pageUrl = localeHref(APP_ORIGIN, '/experimental-ui', locale);
@@ -114,6 +117,14 @@ export default async function Page({ params }: PageProps) {
         ]}
       />
       <ExperimentalHomePage
+        localPaceLabels={
+          localConfig
+            ? {
+                opening: localConfig('configuration.cards.initial.label'),
+                increment: localConfig('configuration.cards.timeIncrement.label'),
+              }
+            : undefined
+        }
         initialDashboardData={initialDashboardData}
         initialBannerToken={initialBannerToken}
         initialLatestGesture={initialLatestGesture}

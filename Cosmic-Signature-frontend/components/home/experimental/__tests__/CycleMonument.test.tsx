@@ -50,6 +50,31 @@ afterEach(() => {
 });
 
 describe('CycleMonument', () => {
+  it('shows the opening interval and whole seconds per gesture from the local dashboard', () => {
+    const data = makeDashboard({
+      MainPrizeTimeIncrementInMicroSeconds: '20999999',
+      InitialSecondsUntilPrize: 279999,
+    });
+    renderMonument({
+      data,
+      localPaceLabels: { opening: 'Opening interval', increment: 'Gesture increment' },
+    });
+    expect(
+      screen.getByText('Opening interval').nextElementSibling?.querySelector('time'),
+    ).toHaveAttribute('dateTime', 'PT1M15S');
+    expect(
+      screen.getByText('Gesture increment').nextElementSibling?.querySelector('time'),
+    ).toHaveAttribute('dateTime', 'PT20S');
+  });
+
+  it('omits local pace figures until the dashboard supplies an increment', () => {
+    renderMonument({
+      localPaceLabels: { opening: 'Opening interval', increment: 'Gesture increment' },
+    });
+    expect(screen.queryByText('Opening interval')).not.toBeInTheDocument();
+    expect(screen.queryByText('Gesture increment')).not.toBeInTheDocument();
+  });
+
   it('sets the finalization clock as type: the days, then the time', () => {
     renderMonument();
 

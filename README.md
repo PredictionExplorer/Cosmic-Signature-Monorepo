@@ -26,7 +26,7 @@ For your first change, use the [contributor guide and test matrix](CONTRIBUTING.
 
 ## Play V4 locally
 
-Start a funded session with `make play`. Once the three sites are ready, run `make play-wallet WALLET=1` in another terminal. A dedicated Chromium window opens the game, Chaos Zero and Axiom Zero with the same test account. Two more human wallets can play alongside it. The first gesture starts a 75-second timer and each later gesture adds 20 seconds.
+Start a funded session with `make play`, then open the game, Chaos Zero or Axiom Zero URL printed by the launcher. Each local site supplies a funded playground wallet and lets you switch between three human players. Use `make play-wallet WALLET=2` for a dedicated three-site window for the second player. The first gesture starts a 75-second timer and each later gesture adds 20 seconds.
 
 Use `make play-bots BOTS=2` for company, or advance the local chain to try auction settlement. The [playground guide](docs/local-playground.md) covers one-time setup, a first playthrough and cleanup.
 

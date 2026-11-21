@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { control, controlSession } from "./control.mjs";
 
 const file = process.argv[2];
 const session = JSON.parse(readFileSync(file, "utf8"));
+// This rehearsal may interrupt only the worker of its own private smoke session.
+assert.equal(resolve(file), join(dirname(resolve(session.manifestPath)), "session.json"));
 const command = (...args) => control(args, file);
 // A stale ready file must not be able to mutate another local session.
 await assert.rejects(
@@ -36,9 +38,12 @@ execFileSync(
   },
 );
 
-const port = Number(process.env.HARNESS_CHAIN_PORT);
-assert.ok(Number.isSafeInteger(port) && port >= 1 && port <= 65535);
-const rpcUrl = "http://127.0.0.1:" + port;
+function port(name) {
+  const value = Number(process.env[name]);
+  assert.ok(Number.isSafeInteger(value) && value >= 1 && value <= 65535, `Invalid ${name}`);
+  return value;
+}
+const rpcUrl = "http://127.0.0.1:" + port("HARNESS_CHAIN_PORT");
 assert.equal(session.rpcUrl, rpcUrl);
 async function rpc(method, params = []) {
   const response = await fetch(rpcUrl, {
@@ -67,18 +72,66 @@ async function nonces() {
     ),
   );
 }
+async function waitForBotTransaction(before) {
+  const deadline = Date.now() + 120_000;
+  while ((await nonces()).every((value, i) => value === before[i])) {
+    assert.ok(Date.now() < deadline, "Expected a confirmed transaction from a bot wallet");
+    await sleep(1000);
+  }
+}
+
 const before = await nonces();
 assert.equal((await command("bots", "3")).bots, 3);
-assert.equal((await command("status")).bots, 3);
-const deadline = Date.now() + 120_000;
-while ((await nonces()).every((value, i) => value === before[i])) {
-  assert.ok(Date.now() < deadline, "Expected a confirmed transaction from a bot wallet");
-  await sleep(1000);
+await waitForBotTransaction(before);
+
+// Terminate only the private supervisor's own bot child, never the live person's worker.
+const workerCommand = join(process.env.CHAOS_ZERO_ROOT, "verification/playground/bots.mjs");
+const workers = execFileSync("ps", ["-ww", "-A", "-o", "pid=,ppid=,command="], { encoding: "utf8" })
+  .split("\n")
+  .map((line) => line.trim().match(/^(\d+)\s+(\d+)\s+(.+)$/))
+  .filter((row) => row && Number(row[2]) === session.pid && row[3].endsWith(" " + workerCommand));
+assert.equal(workers.length, 1, "Expected one isolated bot child");
+const workerPid = Number(workers[0][1]);
+assert.ok(Number.isSafeInteger(workerPid) && workerPid > 1);
+process.kill(workerPid, "SIGTERM");
+const exitDeadline = Date.now() + 15_000;
+while ((await command("status")).bots !== 0) {
+  assert.ok(Date.now() < exitDeadline, "Expected optional worker to exit");
+  await sleep(200);
 }
+const interrupted = await command("status");
+assert.match(interrupted.botError, /restart with make play-bots/);
+assert.equal(interrupted.instanceId, initial.instanceId);
+assert.equal((await rpc("hardhat_metadata")).instanceId, initial.instanceId);
+// Probe only the loopback listeners allocated by this run, even if a ready file is stale.
+const siteUrls = [
+  `http://localhost:${port("HARNESS_WEB_PORT")}/experimental-ui`,
+  `http://127.0.0.1:${port("V4_CHAOS_PORT")}/`,
+  `http://127.0.0.1:${port("V4_AXIOM_PORT")}/auctions`,
+];
+assert.deepEqual(
+  siteUrls.map((url) => new URL(url).origin),
+  [session.cosmicUrl, session.chaosUrl, session.axiomUrl],
+);
+const replies = await Promise.all(
+  siteUrls.map((url) => fetch(url, { redirect: "error", signal: AbortSignal.timeout(30_000) })),
+);
+assert.ok(
+  replies.every((reply) => reply.ok),
+  "All three sites must survive the bot worker exit",
+);
+const afterExit = await nonces();
+assert.equal((await command("bots", "2")).bots, 2);
+assert.equal((await command("status")).botError, null);
+await waitForBotTransaction(afterExit);
 await command("bots", "0");
-assert.equal((await command("status")).bots, 0);
+const paused = await command("status");
+assert.equal(paused.bots, 0);
+assert.equal(paused.botError, null);
 const { chainTime } = await command("status");
 await command("advance", "3600");
 assert.ok((await command("status")).chainTime >= chainTime + 3600);
 assert.equal((await command("stop")).stopping, true);
-console.log("Verified session controls, confirmed bot activity, clock advance and shutdown.");
+console.log(
+  "Verified bot exit isolation, same-chain recovery, confirmed bot activity, clock advance and shutdown.",
+);

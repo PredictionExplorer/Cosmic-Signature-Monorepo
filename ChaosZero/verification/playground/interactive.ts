@@ -107,15 +107,27 @@ export async function runInteractive(
   };
   let bot: ManagedProcess | undefined;
   let botCount = 0;
-  const stopBots = async () => {
-    if (bot) await stopProcessGroup(bot.pid);
+  let botError: string | null = null;
+  const checkBotWorker = () => {
+    if (!bot || isProcessAlive(bot.pid)) return;
+    botError = `Bot worker exited. See bots.log; restart with make play-bots BOTS=${botCount}.`;
+    console.error("Bot worker exited. See bots.log and make play-status for restart instructions.");
     bot = undefined;
     botCount = 0;
+  };
+  const stopBots = async () => {
+    const worker = bot;
+    // Remove the worker from monitoring before requesting an intentional stop.
+    bot = undefined;
+    botCount = 0;
+    botError = null;
+    if (worker) await stopProcessGroup(worker.pid);
   };
   const startBots = async (count: number) => {
     // Verify the bound node before keeping, replacing or spawning a bot worker.
     await verifyChain();
-    if (bot && count === botCount && isProcessAlive(bot.pid)) return;
+    checkBotWorker();
+    if (bot && count === botCount) return;
     await stopBots();
     bot = spawnSupervised({
       name: "bots",
@@ -143,6 +155,7 @@ export async function runInteractive(
         "eth_getBlockByNumber",
         ["latest", false],
       );
+      checkBotWorker();
       return {
         ok: true,
         result: {
@@ -154,7 +167,8 @@ export async function runInteractive(
           rpcUrl: rpc,
           chainTime: Number(BigInt(block.timestamp)),
           blockNumber: Number(BigInt(block.number)),
-          bots: bot && isProcessAlive(bot.pid) ? botCount : 0,
+          bots: botCount,
+          botError,
           logs: session.logs,
         },
       };
@@ -272,12 +286,12 @@ export async function runInteractive(
         sessionPath +
         "\n  Logs: " +
         session.logs +
-        "\n\nOpen a funded wallet with make play-wallet WALLET=1 in another terminal. Press Ctrl+C here to stop.\n",
+        "\n\nOpen a site above and pick a funded playground wallet. For a dedicated window, run make play-wallet WALLET=1. Press Ctrl+C here to stop.\n",
     );
     monitor = setInterval(() => {
-      const exited = [...services, ...(bot ? [bot] : [])].find((p) => !isProcessAlive(p.pid));
-      if (exited && !(busy && exited === bot))
-        fail(new Error(exited.name + " exited; see " + exited.logFile));
+      const exited = services.find((p) => !isProcessAlive(p.pid));
+      if (exited) fail(new Error(exited.name + " exited; see " + exited.logFile));
+      checkBotWorker();
     }, 1000);
     signal.addEventListener("abort", finish, { once: true });
     if (signal.aborted) finish();

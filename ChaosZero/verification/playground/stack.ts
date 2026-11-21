@@ -193,6 +193,20 @@ async function main(): Promise<void> {
             .ready,
       );
     }
+    if (interactive) {
+      const { chaosUrl, axiomUrl } = await import("./deployment");
+      await run(
+        "stage-browser-wallet",
+        process.execPath,
+        [
+          join(process.env.CHAOS_ZERO_ROOT!, "verification/playground/stage-browser-wallet.mjs"),
+          process.env.V4_PLAYGROUND_MANIFEST!,
+          chaosUrl,
+          axiomUrl,
+        ],
+        config.frontendDir,
+      );
+    }
     const web = serve(
       "web",
       process.execPath,
@@ -224,7 +238,10 @@ async function main(): Promise<void> {
             process.execPath,
             [join(config.frontendDir, "e2e/v4-playground/site.mjs"), site.kind, site.port],
             config.frontendDir,
-            site.env,
+            {
+              ...site.env,
+              V4_PLAYGROUND_BROWSER_WALLET: join(config.frontendDir, "instrumentation-client.js"),
+            },
           );
           await ready(
             child,
