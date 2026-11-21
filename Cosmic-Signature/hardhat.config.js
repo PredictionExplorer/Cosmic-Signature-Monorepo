@@ -107,7 +107,7 @@ console.warn("%s", `Warning. Make sure \`${solidityCompilerPath}\` version is \`
 // #endregion
 // #region
 
-// const nodeOsModule = require("node:os");
+const nodeOsModule = require("node:os");
 
 // This imports a bunch of Hardhat packages. Don't import them here.
 require("@nomicfoundation/hardhat-toolbox");
@@ -536,7 +536,8 @@ const hardhatUserConfig = {
 
 	mocha: {
 		parallel: true,
-		// jobs: nodeOsModule.availableParallelism(),
+		// OpenZeppelin serializes validation-cache reads. Large worker pools can exhaust its lock retries.
+		jobs: Math.max(1, Math.min(4, nodeOsModule.availableParallelism() - 1)),
 		timeout: 12 * 60 * 60 * 1000,
 
 		// Comment-202508265 relates and/or applies.

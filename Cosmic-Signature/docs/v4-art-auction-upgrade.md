@@ -124,7 +124,17 @@ The schedule is 04:17 UTC each day. GitHub discovers schedules on the default br
 
 The [V4 main-prize tests](../test/tests-src/CosmicSignatureGameV4-MainPrize.js) include a game cycle that closes while a collector leads an earlier auction. Registering the new batch preserves the earlier lot's price, deadline and escrow. A second collector can outbid the first while the new batch is still in its seven-day waiting period.
 
-`npm run test:auction:fuzz` uses pinned Foundry 1.7.1 tooling with Solidity 0.8.38, Osaka semantics and isolated cache/output paths under `cache/`. Four properties run 1,024 cases each. They check percentage rounding and self-raise funding, opening prices across batches, late-bid timing, and rollback of underfunded bids. A separate stateful handler runs 128 sequences of depth 128, interleaving bids, time, settlement, refunds, delivery, failed/successful proceeds and forced ETH. It reconciles individual liabilities, custody and cash movements after every handler call. Calls that do not meet a workflow's preconditions are deliberate no-ops; 16,384 calls does not mean 16,384 accepted bids.
+`npm run test:auction:fuzz` uses pinned Foundry 1.7.1 tooling with Solidity 0.8.38, Osaka semantics and isolated cache/output paths under `cache/`. Five properties run 1,024 cases each. They cover rounding, self-raises, frozen batch prices, late-bid deadlines and underfunding. The cross-cycle refund property always creates credits on two distinct lots, settles the older lot, retries a rejected withdrawal and verifies that the selected recipient gets the entire credit exactly once while newer bids and settled proceeds stay backed.
+
+The stateful campaign interleaves six wallets across eight lots. A separate ledger derives the expected leader, price, close time, wallet credits, NFT owner, proceeds and surplus from the commands sent. After every call the suite compares the actual account rights, totals and custody to this model. At the end of **each** generated sequence it advances the clock, exercises all remaining settlements, refunds, NFT deliveries and transfers of proceeds, and checks that all liabilities can exit. The default 128 sequences at depth 128 produce 16,384 handler calls; some calls are no-ops when an action is unavailable.
+
+For a longer, repeatable campaign, run the following from `Cosmic-Signature/`. To replay a failure, preserve the commit, compiler, seed, run counts and depth reported by the failing invocation. Foundry also prints a minimized command sequence for invariant failures.
+
+```sh
+FOUNDRY_FUZZ_RUNS=4096 FOUNDRY_INVARIANT_RUNS=256 FOUNDRY_INVARIANT_DEPTH=128 \
+  npm run test:auction:fuzz -- --fuzz-seed 0x41f00d \
+  --use "$HOME/.solc-select/artifacts/solc-0.8.38/solc-0.8.38" --offline
+```
 
 The original tests passed. Foundry coverage had source-map anchor warnings in both compiler modes, so its percentages are not treated as reliable coverage evidence. The existing Hardhat adversarial, callback and deployed-runtime upgrade suites remain separate evidence. Cross-review identified and fixed the fully qualified artifact-name bypass in the legacy upgrade task; no unresolved actionable cross-review finding remains. This is not an independent external audit.
 
