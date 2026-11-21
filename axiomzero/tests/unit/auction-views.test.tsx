@@ -464,6 +464,11 @@ it("invalidates a review after an outbid or account change", async () => {
   mocks.account.address = other;
   view.rerender(<BidForm lot={lot} busy={false} onAction={send} />);
   expect(screen.getByRole("status")).toHaveTextContent(/wallet changed/);
+  mocks.account.address = bidder;
+  view.rerender(<BidForm lot={lot} busy={false} onAction={send} />);
+  expect(
+    screen.queryByRole("button", { name: "Confirm in wallet" }),
+  ).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Review bid" }));
   fireEvent.click(screen.getByRole("button", { name: "Confirm in wallet" }));
   await waitFor(() => expect(send).toHaveBeenCalledOnce());
@@ -506,6 +511,10 @@ it("requires a fresh review when the open lot changes at the same price", () => 
     screen.queryByRole("button", { name: "Confirm in wallet" }),
   ).toBeNull();
   expect(screen.getByRole("button", { name: "Review bid" })).toBeEnabled();
+  view.rerender(<BidForm lot={lot} busy={false} onAction={send} />);
+  expect(
+    screen.queryByRole("button", { name: "Confirm in wallet" }),
+  ).toBeNull();
   expect(send).not.toHaveBeenCalled();
 });
 

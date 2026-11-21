@@ -29,13 +29,17 @@ export function BidForm({
   const reviewHeading = useRef<HTMLHeadingElement>(null);
   const editing = useRef(false);
   const [input, setInput] = useState<string | null>(null);
-  const [review, setReview] = useState<{
-    total: bigint;
-    funding: bigint;
-    tokenId: number;
-    account: Address;
-    minimum: bigint;
-  } | null>(null);
+  const [review, setReview] = useState<
+    | {
+        total: bigint;
+        funding: bigint;
+        tokenId: number;
+        account: Address;
+        minimum: bigint;
+      }
+    | "expired"
+    | null
+  >(null);
   const display = input ?? formatEther(lot.minimumNextBid);
   const total = parseEthInput(display);
   const eligible = address && total !== null && total >= lot.minimumNextBid;
@@ -43,6 +47,7 @@ export function BidForm({
   const selfRaise = !!address && isAddressEqual(lot.highestBidder, address);
   const currentReview =
     !!review &&
+    review !== "expired" &&
     !!address &&
     review.tokenId === lot.tokenId &&
     isAddressEqual(review.account, address) &&
@@ -56,6 +61,10 @@ export function BidForm({
       amountField.current?.focus();
     }
   }, [currentReview]);
+  // Invalidation is permanent. Navigating back to a wallet or lot with the
+  // same terms must still require the collector to review the bid again.
+  if (review && review !== "expired" && !currentReview) setReview("expired");
+
   function showReview(event: FormEvent) {
     event.preventDefault();
     if (!eligible || !address || total === null || due === null || busy) return;
@@ -154,7 +163,7 @@ export function BidForm({
             ? "Your leading bid is already funded. You pay only the increase, plus gas."
             : "The minimum is filled in. You can enter a higher amount."}
       </p>
-      {review && (
+      {review === "expired" && (
         <p role="status">
           The lot or connected wallet changed. Review the latest amount before
           confirming.
