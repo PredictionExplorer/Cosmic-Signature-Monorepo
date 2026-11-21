@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
+import { scaleFuzzBudget } from "@/test/fuzz";
 import { MAX_COLLATERAL, ONE } from "./math";
 import {
   independentTradeState,
@@ -39,7 +40,9 @@ const validState = fc.record({
   initialYesBps: fc.integer({ min: 1, max: 9999 }),
 });
 
-describe("independent weighted question math", () => {
+const mathBudget = { timeout: scaleFuzzBudget(30_000) };
+
+describe("independent weighted question math", mathBudget, () => {
   it("initializes at the prescribed probability and rejects zero-reserve price claims", () => {
     for (const weight of [1, 4000, 5000, 6000, 9999])
       expect(independentYesProbabilityBps(pool({ initialYesBps: weight }))).toBe(BigInt(weight));
@@ -154,9 +157,9 @@ describe("independent weighted question math", () => {
           expect(sum === 9999n || sum === 10_000n).toBe(true);
         },
       ),
-      { numRuns: 300 },
+      { numRuns: scaleFuzzBudget(300) },
     );
-  }, 30_000);
+  });
 
   it("preserves the exact weighted product for random buys and sells, with maximal accepted outputs", () => {
     fc.assert(
@@ -191,9 +194,9 @@ describe("independent weighted question math", () => {
           }
         },
       ),
-      { numRuns: 180 },
+      { numRuns: scaleFuzzBudget(180) },
     );
-  }, 30_000);
+  });
 
   it("keeps split/merge prices and every reserve unchanged", () => {
     fc.assert(
@@ -219,9 +222,9 @@ describe("independent weighted question math", () => {
         expect(merged).toEqual(state);
         expect(weightedProductAccepts(split, merged)).toBe(true);
       }),
-      { numRuns: 200 },
+      { numRuns: scaleFuzzBudget(200) },
     );
-  }, 30_000);
+  });
 
   it("cannot change another question's price or quote by trading or funding this one", () => {
     fc.assert(
@@ -243,9 +246,9 @@ describe("independent weighted question math", () => {
             }
         },
       ),
-      { numRuns: 80 },
+      { numRuns: scaleFuzzBudget(80) },
     );
-  }, 30_000);
+  });
 
   it("agrees with exhaustive tiny-state search, including cancellation points", () => {
     for (const initialYesBps of [1, 4000, 5000, 6000, 9999])

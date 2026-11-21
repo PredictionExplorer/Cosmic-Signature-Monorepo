@@ -113,9 +113,12 @@ there too. Unsettled claims still require the outcome source to settle first.
 pnpm --dir frontend typecheck
 pnpm --dir frontend lint
 pnpm --dir frontend test
+pnpm --dir frontend test:fuzz
 pnpm --dir frontend test:coverage
 pnpm --dir frontend build
 ```
+
+The [contributor guide](../CONTRIBUTING.md#replaying-v4-funding-and-portfolio-properties) covers larger generated campaigns and replaying a minimized failure.
 
 Run the repository's `pnpm check` before release. Solidity/browser ABI checks,
 differential math fixtures, chain-pinned read tests, production identity guards,

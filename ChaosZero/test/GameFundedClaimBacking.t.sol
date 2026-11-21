@@ -166,6 +166,89 @@ contract GameFundedClaimBackingTest is Test {
         assertEq(cst.balanceOf(address(market)), 3 * GRANT);
     }
 
+    struct MergeBook {
+        uint256[8] pairs;
+        uint256[8] merges;
+        uint256[8] bobWins;
+        uint256 issued;
+        uint256 merged;
+        uint256 bobPay;
+    }
+
+    /// @dev The same positions and instructions must pay exactly the same balances whether
+    /// the batch merge debits the old pool directly or its previously settled vault.
+    function testFuzz_batchMergesPreserveWalletClaimsAcrossGameFunding(
+        uint64[8] memory sizes,
+        uint64[8] memory gifts,
+        uint64[8] memory merges,
+        uint8 winningGiftMask,
+        uint8 mergeMask
+    ) public {
+        MergeBook memory book;
+        for (uint8 q; q < 8; ++q) {
+            book.pairs[q] = bound(sizes[q], 2, 15 ether);
+            book.issued += book.pairs[q];
+            vm.prank(alice);
+            market.splitPosition(1, q, book.pairs[q]);
+        }
+        _advance();
+        (,,, uint8 answers) = source.outcomeState(1);
+        for (uint8 q; q < 8; ++q) {
+            uint8 bit = uint8(1) << q;
+            // Always include a winning gift, a losing gift and at least two nonzero merge legs.
+            bool giftWins = q == 0 || (q != 7 && winningGiftMask & bit != 0);
+            uint256 gift = bound(gifts[q], 1, book.pairs[q] - 1);
+            uint256 id = market.positionId(1, q, giftWins == (answers & bit != 0));
+            vm.prank(alice);
+            market.safeTransferFrom(alice, bob, id, gift, "");
+            book.bobWins[q] = giftWins ? gift : 0;
+            book.bobPay += book.bobWins[q];
+            if (q == 0 || q == 7 || mergeMask & bit != 0) {
+                book.merges[q] = bound(merges[q], 1, book.pairs[q] - gift);
+                book.merged += book.merges[q];
+            }
+        }
+
+        uint256 checkpoint = vm.snapshotState();
+        _redeemBatch(book, true);
+        assertTrue(vm.revertToStateAndDelete(checkpoint));
+        _redeemBatch(book, false);
+    }
+
+    function _redeemBatch(MergeBook memory book, bool mergeBeforeSettlement) private {
+        uint256 aliceBefore = cst.balanceOf(alice);
+        if (mergeBeforeSettlement) _mergeBatch(book);
+        market.syncFunding(2);
+        market.syncFunding(2);
+        if (!mergeBeforeSettlement) _mergeBatch(book);
+
+        for (uint8 q; q < 8; ++q) {
+            assertEq(vault.remaining(1, q), book.pairs[q] - book.merges[q]);
+            assertEq(market.questionState(2, q).activeCollateral, 2 * GRANT / 8);
+        }
+        assertEq(vault.totalEscrowed(), book.issued - book.merged);
+        assertEq(cst.balanceOf(address(vault)), book.issued - book.merged);
+
+        _claimAmount(1, alice, book.issued - book.bobPay - book.merged);
+        assertEq(cst.balanceOf(alice) - aliceBefore, book.issued - book.bobPay);
+        for (uint8 q; q < 8; ++q) {
+            assertEq(vault.remaining(1, q), book.bobWins[q]);
+        }
+        _claimAmount(1, bob, book.bobPay);
+        assertEq(vault.totalEscrowed(), 0);
+        assertEq(cst.balanceOf(address(vault)), 0);
+        assertEq(market.consumedGameFunding(), 2 * GRANT);
+        assertEq(market.totalActiveCollateral(), 2 * GRANT);
+        assertEq(cst.balanceOf(address(market)), 2 * GRANT);
+    }
+
+    function _mergeBatch(MergeBook memory book) private {
+        uint256 before = cst.balanceOf(alice);
+        vm.prank(alice);
+        assertEq(market.mergePositions(1, book.merges), book.merged);
+        assertEq(cst.balanceOf(alice) - before, book.merged);
+    }
+
     function test_oneGrantPerCycleWhileTwoOlderCyclesRemainRedeemable() public {
         vm.startPrank(bob);
         cst.transfer(address(vault), 1);

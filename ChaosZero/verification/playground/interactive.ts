@@ -111,7 +111,7 @@ export async function runInteractive(
   const checkBotWorker = () => {
     if (!bot || isProcessAlive(bot.pid)) return;
     botError = `Bot worker exited. See bots.log; restart with make play-bots BOTS=${botCount}.`;
-    console.error(botError);
+    console.error("Bot worker exited. See bots.log and make play-status for restart instructions.");
     bot = undefined;
     botCount = 0;
   };

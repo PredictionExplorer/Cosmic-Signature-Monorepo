@@ -38,9 +38,12 @@ execFileSync(
   },
 );
 
-const port = Number(process.env.HARNESS_CHAIN_PORT);
-assert.ok(Number.isSafeInteger(port) && port >= 1 && port <= 65535);
-const rpcUrl = "http://127.0.0.1:" + port;
+function port(name) {
+  const value = Number(process.env[name]);
+  assert.ok(Number.isSafeInteger(value) && value >= 1 && value <= 65535, `Invalid ${name}`);
+  return value;
+}
+const rpcUrl = "http://127.0.0.1:" + port("HARNESS_CHAIN_PORT");
 assert.equal(session.rpcUrl, rpcUrl);
 async function rpc(method, params = []) {
   const response = await fetch(rpcUrl, {
@@ -100,10 +103,18 @@ const interrupted = await command("status");
 assert.match(interrupted.botError, /restart with make play-bots/);
 assert.equal(interrupted.instanceId, initial.instanceId);
 assert.equal((await rpc("hardhat_metadata")).instanceId, initial.instanceId);
+// Probe only the loopback listeners allocated by this run, even if a ready file is stale.
+const siteUrls = [
+  `http://localhost:${port("HARNESS_WEB_PORT")}/experimental-ui`,
+  `http://127.0.0.1:${port("V4_CHAOS_PORT")}/`,
+  `http://127.0.0.1:${port("V4_AXIOM_PORT")}/auctions`,
+];
+assert.deepEqual(
+  siteUrls.map((url) => new URL(url).origin),
+  [session.cosmicUrl, session.chaosUrl, session.axiomUrl],
+);
 const replies = await Promise.all(
-  [session.cosmicUrl + "/experimental-ui", session.chaosUrl, session.axiomUrl + "/auctions"].map(
-    (url) => fetch(url, { signal: AbortSignal.timeout(30000) }),
-  ),
+  siteUrls.map((url) => fetch(url, { redirect: "error", signal: AbortSignal.timeout(30_000) })),
 );
 assert.ok(
   replies.every((reply) => reply.ok),
